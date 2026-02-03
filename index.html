@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <meta name="theme-color" content="#ff6b6b" />
+        <meta
+            name="description"
+            content="A choose-your-own-adventure story about invisible labor and load-bearing in relationships"
+        />
+
+        <!-- PWA -->
+        <link rel="manifest" href="manifest.json" />
+        <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Styles -->
+        <link rel="stylesheet" href="style.css" />
+
+        <title>No Vacancies</title>
+    </head>
+    <body>
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="screen active">
+            <div class="loading-content">
+                <div class="neon-sign">
+                    <span class="neon-text">VACANCY</span>
+                </div>
+                <p class="loading-text">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Title Screen -->
+        <div id="title-screen" class="screen">
+            <div class="title-container">
+                <div class="motel-sign">
+                    <div class="sign-border">
+                        <h1 class="game-title">
+                            No<br /><span class="title-accent">Vacancies</span>
+                        </h1>
+                    </div>
+                </div>
+                <p class="tagline">A story about what you carry when nobody's watching</p>
+
+                <div class="title-buttons">
+                    <button id="start-btn" class="btn btn-primary">
+                        <span class="btn-text">Begin Story</span>
+                    </button>
+                    <button id="settings-btn" class="btn btn-secondary">
+                        <span class="btn-text">Settings</span>
+                    </button>
+                </div>
+
+                <div class="content-warning">
+                    <p>
+                        <strong>Content Note:</strong> This story deals with themes of codependency,
+                        substance use, and emotional labor. It contains strong language and mature
+                        situations.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen">
+            <div class="settings-container">
+                <h2 class="settings-title">Settings</h2>
+
+                <div class="settings-group">
+                    <label class="settings-label">Story Mode</label>
+                    <div class="toggle-group">
+                        <button id="mode-mock" class="toggle-btn active" data-mode="mock">
+                            Static Story
+                        </button>
+                        <button id="mode-ai" class="toggle-btn" data-mode="ai">AI Generated</button>
+                    </div>
+                    <p class="settings-hint">
+                        Static uses pre-written scenes. AI generates unique scenes each playthrough.
+                    </p>
+                </div>
+
+                <div id="api-key-section" class="settings-group hidden">
+                    <label class="settings-label" for="api-key-input">Gemini API Key</label>
+                    <div class="input-group">
+                        <input
+                            type="password"
+                            id="api-key-input"
+                            class="text-input"
+                            placeholder="Enter your API key"
+                        />
+                        <button
+                            id="toggle-key-visibility"
+                            class="btn-icon"
+                            aria-label="Toggle visibility"
+                        >
+                            👁
+                        </button>
+                    </div>
+                    <p class="settings-hint">
+                        Get your free API key at
+                        <a href="https://makersuite.google.com/app/apikey" target="_blank"
+                            >Google AI Studio</a
+                        >
+                    </p>
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">Show Lesson Insights</label>
+                    <div class="toggle-group">
+                        <button id="lessons-on" class="toggle-btn active" data-lessons="true">
+                            On
+                        </button>
+                        <button id="lessons-off" class="toggle-btn" data-lessons="false">
+                            Off
+                        </button>
+                    </div>
+                    <p class="settings-hint">
+                        Displays the psychological insight being explored in each scene.
+                    </p>
+                </div>
+
+                <div class="settings-buttons">
+                    <button id="settings-back-btn" class="btn btn-primary">
+                        <span class="btn-text">Back</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-container">
+                <!-- Scene Image -->
+                <div class="scene-image-container">
+                    <img id="scene-image" src="" alt="Scene illustration" class="scene-image" />
+                    <div class="image-overlay"></div>
+                </div>
+
+                <!-- Scene Content -->
+                <div class="scene-content">
+                    <!-- Progress indicator -->
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+
+                    <!-- Scene Text -->
+                    <div id="scene-text" class="scene-text">
+                        <!-- Scene text rendered here -->
+                    </div>
+
+                    <!-- Lesson Popup -->
+                    <div id="lesson-popup" class="lesson-popup hidden">
+                        <div class="lesson-header">
+                            <span class="lesson-icon">💡</span>
+                            <span class="lesson-label">What's Really Happening</span>
+                            <button id="close-lesson" class="close-btn" aria-label="Close">
+                                ×
+                            </button>
+                        </div>
+                        <h3 id="lesson-title" class="lesson-title"></h3>
+                        <blockquote id="lesson-quote" class="lesson-quote"></blockquote>
+                    </div>
+
+                    <!-- Choices -->
+                    <div id="choices-container" class="choices-container">
+                        <!-- Choices rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ending Screen -->
+        <div id="ending-screen" class="screen">
+            <div class="ending-container">
+                <div id="ending-badge" class="ending-badge">
+                    <!-- Badge icon based on ending -->
+                </div>
+                <h2 id="ending-title" class="ending-title"></h2>
+                <p id="ending-subtitle" class="ending-subtitle"></p>
+
+                <div class="ending-stats">
+                    <div class="stat">
+                        <span class="stat-value" id="scenes-count">0</span>
+                        <span class="stat-label">Scenes</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="lessons-count">0</span>
+                        <span class="stat-label">Insights</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="time-played">0:00</span>
+                        <span class="stat-label">Duration</span>
+                    </div>
+                </div>
+
+                <div class="endings-discovered">
+                    <h3>Endings Discovered</h3>
+                    <div class="endings-grid">
+                        <div
+                            id="ending-loop-badge"
+                            class="ending-mini-badge locked"
+                            data-ending="loop"
+                        >
+                            <span class="badge-icon">🔄</span>
+                            <span class="badge-label">The Loop</span>
+                        </div>
+                        <div
+                            id="ending-shift-badge"
+                            class="ending-mini-badge locked"
+                            data-ending="shift"
+                        >
+                            <span class="badge-icon">⚖️</span>
+                            <span class="badge-label">The Shift</span>
+                        </div>
+                        <div
+                            id="ending-exit-badge"
+                            class="ending-mini-badge locked"
+                            data-ending="exit"
+                        >
+                            <span class="badge-icon">🚪</span>
+                            <span class="badge-label">The Exit</span>
+                        </div>
+                        <div
+                            id="ending-rare-badge"
+                            class="ending-mini-badge locked"
+                            data-ending="rare"
+                        >
+                            <span class="badge-icon">✨</span>
+                            <span class="badge-label">The Rare</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ending-buttons">
+                    <button id="play-again-btn" class="btn btn-primary">
+                        <span class="btn-text">Play Again</span>
+                    </button>
+                    <button id="main-menu-btn" class="btn btn-secondary">
+                        <span class="btn-text">Main Menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script type="module" src="js/app.js"></script>
+    </body>
+</html>

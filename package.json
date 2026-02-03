@@ -1,0 +1,23 @@
+{
+  "name": "sydney-story",
+  "version": "1.0.0",
+  "description": "No Vacancies - A choose-your-own-adventure PWA about invisible labor and load-bearing",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/smokeTest.js",
+    "lint": "eslint js/",
+    "lint:fix": "eslint js/ --fix",
+    "format": "prettier --write \"js/**/*.js\" \"*.css\" \"*.html\"",
+    "serve": "npx serve .",
+    "dev": "npx http-server . -p 8080"
+  },
+  "keywords": ["pwa", "game", "interactive-fiction"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "globals": "^17.3.0",
+    "prettier": "^3.8.1"
+  }
+}
+

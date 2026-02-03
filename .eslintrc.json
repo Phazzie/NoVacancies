@@ -1,0 +1,35 @@
+{
+    "env": {
+        "browser": true,
+        "es2022": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+    },
+    "extends": ["eslint:recommended"],
+    "rules": {
+        "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+        "no-console": "off",
+        "prefer-const": "error",
+        "no-var": "error",
+        "eqeqeq": ["error", "always"],
+        "curly": ["error", "all"],
+        "no-throw-literal": "error",
+        "no-undef": "error",
+        "no-redeclare": "error"
+    },
+    "globals": {
+        "console": "readonly",
+        "window": "readonly",
+        "document": "readonly",
+        "localStorage": "readonly",
+        "fetch": "readonly",
+        "navigator": "readonly",
+        "caches": "readonly",
+        "self": "readonly",
+        "Promise": "readonly",
+        "Date": "readonly",
+        "setTimeout": "readonly"
+    }
+}
