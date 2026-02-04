@@ -657,3 +657,162 @@ Requested follow-up work was completed:
 - `npm run lint` passes: **Yes**
 - New smoke/fallback tests stable across 3 consecutive runs: **Yes**
 - `codexreview.md` updated with fixes/evidence/remaining risks: **Yes**
+
+---
+
+## Half A Execution Report (Codex) â€” 2026-02-04
+
+Scope executed: AI narrative quality + app integration hardening (contracts/tests first, then implementation).
+
+### Plan Executed
+
+1. Lock narrative-quality contract expectations in integration tests.
+2. Add/strengthen semantic quality gates in Gemini service.
+3. Apply minimal prompt refinement aligned to those contracts.
+4. Improve app-level fallback messaging clarity.
+5. Validate with lint + smoke/thread/integration runs.
+
+### Changes Made
+
+- `js/services/geminiStoryService.js`
+  - Added `hasDistinctChoiceStarts(...)` to catch same-action choice sets.
+  - Added repetition detection helpers: `normalizeSceneTokens(...)`, `tokenSimilarity(...)`, `isRepetitiveScene(...)`.
+  - Added stricter continuity anchor helper: `getSpecificContinuityAnchors(...)`.
+  - Updated `evaluateResponseQuality(...)` to enforce:
+    - choice text distinctness,
+    - choice opening/action distinctness,
+    - anti-repetition vs prior scene,
+    - concrete continuity callback requirement.
+
+- `js/prompts.js`
+  - Continue prompt now explicitly requires avoiding repeated framing/rhythm from the immediate previous scene.
+
+- `js/app.js`
+  - During Gemini->mock fallback, loading message now updates to:
+    - "AI is unavailable. Switching to backup story mode..."
+
+- `tests/integrationTest.js`
+  - Added Test 10.6: continuity callback requirement is enforced by quality gate.
+  - Added Test 10.7: repetitive scene framing is flagged.
+  - Added Test 10.8: ending inference favors explicit EXIT/SHIFT/RARE signals.
+  - Added Test 10.9: same-action choice openings are flagged.
+
+### Validation Evidence
+
+- `npm run lint` -> PASS
+- `node tests/smokeTest.js && node tests/threadTest.js && node tests/integrationTest.js` -> PASS
+  - Integration totals after additions: 168 passed, 0 failed.
+
+### Remaining Dependencies / Cross-Check Notes
+
+- Full `npm test` still depends on Half B fixing `tests/rendererNodeTest.js` hang.
+- Shared-file merge watchlist:
+  - `tests/integrationTest.js`
+  - `codexreview.md`
+- Cross-check required after Half B merge:
+  - rerun full `npm test` and confirm no interaction regression with new quality-gate tests.
+- `npm test` -> still blocked by renderer runner hang (times out after smoke+integration before renderer completion).
+
+---
+
+## HALF B Delivery Update — Test Infra + Demo Reliability (2026-02-04)
+
+### Scope Ownership
+
+Completed under HALF B ownership (test infra + demo reliability). No new HALF A narrative/prompt-semantic tuning was introduced in this pass.
+
+### Files Changed (this pass)
+
+- `tests/e2e/demo-reliability.spec.js`
+- `tests/runE2EStability.js`
+- `js/services/geminiStoryService.js` (telemetry/recovery observability compatibility)
+- `js/app.js` (fallback telemetry hook)
+- `tests/integrationTest.js` (integration compatibility coverage)
+- `codexreview.md`
+
+Pre-existing HALF B infra from prior pass (reused, not newly edited in this pass): `tests/rendererNodeTest.js`, `playwright.config.js`, `package.json`, `js/services/aiTelemetry.js`.
+
+### What Was Fixed
+
+1. **`npm test` hang path removed for renderer runner**
+   - Added deterministic timeout guard and explicit fast-fail diagnostics in `tests/rendererNodeTest.js`.
+   - Added active handle/request summaries in timeout error payload.
+   - Ensured deterministic process exit (`0` on pass, `1` on any failure/stall).
+
+2. **Pipeline stability hardened**
+   - `npm test` includes renderer runner and exits normally.
+   - Added repeat-run validation and recorded flake status.
+
+3. **Browser reliability checks added/strengthened**
+   - AI smoke test covers: launch -> AI mode -> API key path -> start -> two choices -> loading UI -> transition/no dead-end UI.
+   - Fallback test covers: mid-run AI failure simulation and graceful continuation state.
+
+4. **E2E stability runner hardened**
+   - `tests/runE2EStability.js` now runs with `--retries=0` so any flake fails run.
+   - Fixed intermittent click flake in smoke flow by tightening active-screen selector and transition guard.
+
+5. **AI pipeline telemetry hooks (minimal)**
+   - Stages emitted and test-observable:
+     - `request_start`
+     - `model_used`
+     - `parse_recovery_attempt`
+     - `fallback_trigger`
+     - `final_success`
+     - `final_failure`
+
+### Command Results (Evidence)
+
+- `npm run lint` -> **PASS**
+- `npm test` -> **PASS** (no hang; deterministic renderer exit)
+- `npm test` repeated 3 consecutive runs -> **PASS x3** (no flake observed)
+- `npm run test:e2e` -> **PASS** (2/2)
+- `npm run test:e2e:stable` -> **PASS** (3/3 runs, retries disabled)
+
+### Flake/Blocker Notes
+
+- Initial stability run exposed a UI click flake (title button interaction timing).
+- Mitigation applied:
+  - active-screen constrained selector for start button
+  - stricter settings-to-title transition assertion
+  - stability runner now `--retries=0`
+- Post-fix stability run: **clean 3/3**, no flaky status.
+
+### Remaining Risks (Severity + Ease-of-Fix)
+
+1. **Live-model variance vs mocked E2E routing**
+   - Severity: **P2**
+   - Ease: **Medium**
+   - Note: Browser tests are network-independent by design; add optional nightly real-key canary if desired.
+
+2. **Telemetry volume in console for long sessions**
+   - Severity: **P3**
+   - Ease: **Easy**
+   - Note: Could gate via env/config flag if logs become noisy.
+
+3. **`package.json` / `tests/integrationTest.js` merge pressure with parallel HALF A edits**
+   - Severity: **P2**
+   - Ease: **Medium**
+   - Note: touched by both capability and QA coverage work.
+
+### HALF A Compatibility Cross-Check
+
+Touchpoints reviewed as requested:
+- `tests/integrationTest.js` -> compatible; no contract break to scene validation behavior.
+- `package.json` -> compatible; test/lint scripts preserved and extended.
+- `js/services/geminiStoryService.js` -> compatibility-only telemetry/recovery observability additions.
+- `codexreview.md` -> updated with evidence and residual risks.
+
+### Expected Merge Conflicts + Safe Merge Order
+
+Likely conflict files:
+1. `tests/integrationTest.js`
+2. `package.json`
+3. `js/services/geminiStoryService.js`
+4. `codexreview.md`
+
+Recommended merge order:
+1. **HALF A functional UX/content changes**
+2. **HALF B infra + telemetry + E2E harness**
+3. Resolve `tests/integrationTest.js` manually (keep both suites)
+4. Resolve `package.json` scripts/devDependencies
+5. Merge docs (`codexreview.md`) last
