@@ -1140,8 +1140,18 @@ class MockStoryService {
     }
 
     /**
+     * Get a recovery scene for when Gemini fails mid-game and
+     * the current scene ID is incompatible with mock service.
+     * Returns a non-ending scene that keeps the game going.
+     * @returns {Promise<import('../contracts.js').Scene>}
+     */
+    async getRecoveryScene() {
+        return { ...this.scenes.sit_reflect };
+    }
+
+    /**
      * Get a scene by ID
-     * @param {string} sceneId 
+     * @param {string} sceneId
      * @returns {import('../contracts.js').Scene|undefined}
      */
     getSceneById(sceneId) {

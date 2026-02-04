@@ -11,7 +11,7 @@ import { EndingTypes, ImageKeys } from './contracts.js';
 /**
  * Image paths mapping
  */
-const imagePaths = {
+export const imagePaths = {
     [ImageKeys.HOTEL_ROOM]: 'images/hotel_room.png',
     [ImageKeys.SYDNEY_LAPTOP]: 'images/sydney_laptop.png',
     [ImageKeys.SYDNEY_THINKING]: 'images/sydney_thinking.png',
@@ -61,6 +61,9 @@ const endingConfig = {
  * Cache DOM elements
  */
 const elements = {
+    // State
+    currentTypewriterController: null,
+
     // Screens
     loadingScreen: null,
     titleScreen: null,
@@ -132,6 +135,9 @@ export function initRenderer() {
     elements.sceneImage = document.getElementById('scene-image');
     elements.progressFill = document.getElementById('progress-fill');
     elements.sceneText = document.getElementById('scene-text');
+    if (elements.sceneText && !elements.sceneText.hasAttribute('tabindex')) {
+        elements.sceneText.setAttribute('tabindex', '-1');
+    }
     elements.lessonPopup = document.getElementById('lesson-popup');
     elements.lessonTitle = document.getElementById('lesson-title');
     elements.lessonQuote = document.getElementById('lesson-quote');
@@ -157,6 +163,42 @@ export function initRenderer() {
  */
 export function getElements() {
     return elements;
+}
+
+/**
+ * Focus an element on the next frame for predictable screen-reader/keyboard flow.
+ * @param {HTMLElement|null} element
+ */
+function focusElement(element) {
+    if (!element || typeof element.focus !== 'function') return;
+
+    const runFocus = () => {
+        try {
+            element.focus({ preventScroll: true });
+        } catch {
+            element.focus();
+        }
+    };
+
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(runFocus);
+    } else {
+        setTimeout(runFocus, 0);
+    }
+}
+
+/**
+ * Focus scene text when there are no interactive controls available.
+ */
+function focusSceneTextFallback() {
+    if (!elements.sceneText) return;
+
+    // Keep this out of normal tab order while allowing programmatic focus.
+    if (!elements.sceneText.hasAttribute('tabindex')) {
+        elements.sceneText.setAttribute('tabindex', '-1');
+    }
+
+    focusElement(elements.sceneText);
 }
 
 /**
@@ -188,6 +230,16 @@ export function showScreen(screenName) {
     if (targetScreen) {
         targetScreen.classList.add('active');
         console.log(`[Renderer] Showing screen: ${screenName}`);
+
+        if (screenName === 'title') {
+            focusElement(elements.startBtn);
+        } else if (screenName === 'settings') {
+            focusElement(elements.settingsBackBtn || elements.modeMock);
+        } else if (screenName === 'game') {
+            focusSceneTextFallback();
+        } else if (screenName === 'ending') {
+            focusElement(elements.playAgainBtn);
+        }
     }
 }
 
@@ -219,7 +271,11 @@ export function renderScene(scene, showLessons = true) {
         const text = scene.sceneText;
         
         // Use typewriter effect
-        typewriterEffect(elements.sceneText, text, 20);
+        if (elements.currentTypewriterController) {
+            elements.currentTypewriterController.abort();
+        }
+        elements.currentTypewriterController = new AbortController();
+        typewriterEffect(elements.sceneText, text, 20, elements.currentTypewriterController.signal);
         elements.sceneText.scrollTop = 0;
     }
 
@@ -250,7 +306,11 @@ function renderChoices(choices, isEnding) {
     elements.choicesContainer.innerHTML = '';
 
     if (isEnding || !choices || choices.length === 0) {
-        // No choices for endings - they're handled by the ending screen
+        // No choices for endings - they're handled by the ending screen.
+        // For non-ending states (loading/errors), keep keyboard focus in game content.
+        if (!isEnding) {
+            focusSceneTextFallback();
+        }
         return;
     }
 
@@ -264,6 +324,9 @@ function renderChoices(choices, isEnding) {
 
         elements.choicesContainer.appendChild(button);
     });
+
+    const firstChoice = elements.choicesContainer.querySelector('.choice-btn');
+    focusElement(firstChoice);
 }
 
 /**
@@ -440,10 +503,22 @@ export function showChoicesLoading() {
     if (!elements.choicesContainer) return;
 
     elements.choicesContainer.innerHTML = `
-        <div class="loading-indicator" style="text-align: center; padding: 1rem; color: var(--color-text-muted);">
+        <div class="loading-indicator" role="status" aria-live="polite" style="text-align: center; padding: 1rem; color: var(--color-text-muted);">
             <span class="loading-text">Generating next scene...</span>
         </div>
     `;
+}
+
+/**
+ * Update loading message while waiting on AI responses.
+ * @param {string} message
+ */
+export function updateChoicesLoadingMessage(message) {
+    if (!elements.choicesContainer) return;
+    const loadingText = elements.choicesContainer.querySelector('.loading-text');
+    if (loadingText) {
+        loadingText.textContent = message;
+    }
 }
 
 /**
@@ -454,11 +529,14 @@ export function showError(message) {
     if (!elements.choicesContainer) return;
 
     elements.choicesContainer.innerHTML = `
-        <div class="error-message" style="text-align: center; padding: 1rem; color: var(--color-error);">
+        <div class="error-message" role="alert" style="text-align: center; padding: 1rem; color: var(--color-error);">
             <p>${escapeHtml(message)}</p>
             <button class="btn btn-secondary" id="retry-btn">Try Again</button>
         </div>
     `;
+
+    const retryButton = document.getElementById('retry-btn');
+    focusElement(retryButton);
 }
 
 /**
@@ -490,9 +568,10 @@ function escapeHtml(text) {
  * @param {string} text
  * @param {number} speed - ms per character
  */
-export async function typewriterEffect(element, text, speed = 20) {
+export async function typewriterEffect(element, text, speed = 20, signal = null) {
     element.textContent = '';
     for (let i = 0; i < text.length; i++) {
+        if (signal?.aborted) return;
         element.textContent += text[i];
         await new Promise((resolve) => setTimeout(resolve, speed));
     }

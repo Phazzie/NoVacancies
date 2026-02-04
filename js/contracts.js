@@ -160,6 +160,36 @@ export function createStoryThreads() {
 }
 
 /**
+ * Merge partial storyThread updates into current threads
+ * Returns a new object (no mutation of original)
+ * @param {StoryThreads} currentThreads - Current thread state
+ * @param {Object|null} updates - Partial updates from AI response
+ * @returns {StoryThreads} - Merged thread state
+ */
+export function mergeThreadUpdates(currentThreads, updates) {
+    if (!updates) return currentThreads;
+
+    const merged = {
+        ...currentThreads,
+        boundariesSet: [...currentThreads.boundariesSet]
+    };
+
+    Object.keys(updates).forEach(key => {
+        if (!(key in merged)) return;
+
+        if (key === 'boundariesSet') {
+            if (Array.isArray(updates.boundariesSet) && updates.boundariesSet.length > 0) {
+                merged.boundariesSet = [...merged.boundariesSet, ...updates.boundariesSet];
+            }
+        } else if (updates[key] !== undefined) {
+            merged[key] = updates[key];
+        }
+    });
+
+    return merged;
+}
+
+/**
  * Validate a scene object has required fields
  * @param {Scene} scene
  * @returns {boolean}

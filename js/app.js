@@ -4,9 +4,10 @@
  * Orchestrates the game: state management, event handling, service coordination.
  */
 
-import { createGameState, validateScene } from './contracts.js';
+import { createGameState, validateScene, mergeThreadUpdates } from './contracts.js';
 import { lessons } from './lessons.js';
 import { mockStoryService } from './services/mockStoryService.js';
+import { emitAiTelemetry } from './services/aiTelemetry.js';
 import {
     initRenderer,
     getElements,
@@ -19,6 +20,7 @@ import {
     getApiKey,
     hideLessonPopup,
     showChoicesLoading,
+    updateChoicesLoadingMessage,
     showError
 } from './renderer.js';
 
@@ -33,6 +35,34 @@ let settings = {
 };
 let storyService = mockStoryService;
 let geminiService = null;
+let isProcessing = false;
+
+/**
+ * Build loading message timers for long AI calls.
+ * @returns {number[]}
+ */
+function startLoadingThresholdTimers() {
+    const timerIds = [];
+    timerIds.push(
+        setTimeout(() => {
+            updateChoicesLoadingMessage('Still writing the next scene...');
+        }, 6000)
+    );
+    timerIds.push(
+        setTimeout(() => {
+            updateChoicesLoadingMessage('Taking longer than usual. Thanks for waiting...');
+        }, 12000)
+    );
+    return timerIds;
+}
+
+/**
+ * Clear active loading timers.
+ * @param {number[]} timerIds
+ */
+function clearLoadingThresholdTimers(timerIds) {
+    timerIds.forEach((id) => clearTimeout(id));
+}
 
 /**
  * Load Gemini service dynamically
@@ -101,32 +131,43 @@ function loadSettings() {
 }
 
 /**
+ * Safe localStorage write with quota detection
+ * @param {string} key
+ * @param {string} value
+ * @returns {boolean} true if write succeeded
+ */
+function safeSetItem(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (error) {
+        console.warn(`[App] localStorage write failed for '${key}':`, error.name);
+        if (error.name === 'QuotaExceededError') {
+            console.warn('[App] Storage quota exceeded');
+        }
+        return false;
+    }
+}
+
+/**
  * Save settings to localStorage
  */
 function saveSettings() {
-    try {
-        localStorage.setItem(
-            'sydney-story-settings',
-            JSON.stringify({
-                useMocks: settings.useMocks,
-                showLessons: settings.showLessons,
-                apiKey: settings.apiKey
-            })
-        );
-    } catch (error) {
-        console.warn('[App] Could not save settings:', error);
-    }
+    safeSetItem(
+        'sydney-story-settings',
+        JSON.stringify({
+            useMocks: settings.useMocks,
+            showLessons: settings.showLessons,
+            apiKey: settings.apiKey
+        })
+    );
 }
 
 /**
  * Save unlocked endings
  */
 function saveUnlockedEndings() {
-    try {
-        localStorage.setItem('sydney-story-endings', JSON.stringify(settings.unlockedEndings));
-    } catch (error) {
-        console.warn('[App] Could not save endings:', error);
-    }
+    safeSetItem('sydney-story-endings', JSON.stringify(settings.unlockedEndings));
 }
 
 /**
@@ -272,16 +313,15 @@ async function startGame() {
 /**
  * Handle a choice selection
  * @param {string} choiceId
+ * @returns {Promise<boolean>} true if scene was successfully applied, false on failure
  */
 async function handleChoice(choiceId) {
-    if (!gameState) {
-        console.error('[App] No game state');
-        return;
-    }
+    if (!gameState || isProcessing) return false;
+    isProcessing = true;
 
     console.log(`[App] Choice selected: ${choiceId}`);
 
-    // Record choice in history (sceneId, choiceId, and timestamp for tracking)
+    // Record choice in history
     gameState.history.push({
         sceneId: gameState.currentSceneId,
         choiceId: choiceId,
@@ -290,6 +330,7 @@ async function handleChoice(choiceId) {
 
     // Show loading state
     showChoicesLoading();
+    const loadingTimers = startLoadingThresholdTimers();
 
     try {
         // Get next scene
@@ -303,50 +344,94 @@ async function handleChoice(choiceId) {
             throw new Error('Invalid scene returned');
         }
 
-        // Update story threads if provided
-        if (nextScene.storyThreadUpdates) {
-            console.log('[App] Updating story threads:', nextScene.storyThreadUpdates);
-
-            // Merge updates into existing threads
-            Object.keys(nextScene.storyThreadUpdates).forEach(key => {
-                if (key === 'boundariesSet') {
-                    // Append new boundaries to existing array
-                    if (Array.isArray(nextScene.storyThreadUpdates.boundariesSet)) {
-                        gameState.storyThreads.boundariesSet.push(
-                            ...nextScene.storyThreadUpdates.boundariesSet
-                        );
-                    }
-                } else {
-                    // Direct assignment for other fields
-                    if (nextScene.storyThreadUpdates[key] !== undefined) {
-                        gameState.storyThreads[key] = nextScene.storyThreadUpdates[key];
-                    }
-                }
-            });
-
-            console.log('[App] Updated threads:', gameState.storyThreads);
-        }
-
-        // Update game state
-        gameState.currentSceneId = nextScene.sceneId;
-        gameState.sceneCount++;
-
-        // Track lesson
-        if (nextScene.lessonId && !gameState.lessonsEncountered.includes(nextScene.lessonId)) {
-            gameState.lessonsEncountered.push(nextScene.lessonId);
-        }
-
-        // Check for ending
-        if (nextScene.isEnding) {
-            handleEnding(nextScene);
-        } else {
-            // Render next scene
-            renderScene(nextScene, settings.showLessons);
-            updateProgress(gameState.sceneCount);
-        }
+        applyScene(nextScene);
+        return true;
     } catch (error) {
         console.error('[App] Failed to get next scene:', error);
-        showError('Something went wrong. Please try again.');
+
+        // Auto-fallback to mock service if Gemini failed
+        if (!gameState.useMocks && storyService !== mockStoryService) {
+            console.warn('[App] Gemini unavailable, continuing in mock recovery mode');
+            emitAiTelemetry('fallback_trigger', {
+                fromService: 'gemini',
+                toService: 'mock',
+                reason: error?.name || 'gemini_unavailable'
+            });
+            storyService = mockStoryService;
+            gameState.useMocks = true;
+
+            try {
+                const fallbackScene = await getFallbackScene(choiceId);
+                if (!validateScene(fallbackScene)) {
+                    throw new Error('Invalid fallback scene');
+                }
+                applyScene(fallbackScene);
+                return true;
+            } catch (fallbackError) {
+                console.error('[App] Mock fallback also failed:', fallbackError);
+                showError('Something went wrong. Please try again.');
+                return false;
+            }
+        } else {
+            showError('Something went wrong. Please try again.');
+            return false;
+        }
+    } finally {
+        clearLoadingThresholdTimers(loadingTimers);
+        isProcessing = false;
+    }
+}
+
+/**
+ * Get a fallback scene from mock service when Gemini fails mid-game.
+ * Handles incompatible scene IDs (Gemini IDs don't exist in mock graph).
+ * @param {string} choiceId
+ * @returns {Promise<import('./contracts.js').Scene>}
+ */
+async function getFallbackScene(choiceId) {
+    // Check if current scene ID exists in mock service
+    const mockScene = mockStoryService.getSceneById(gameState.currentSceneId);
+
+    if (mockScene) {
+        // Scene exists in mock graph — continue from it
+        return mockStoryService.getNextScene(gameState.currentSceneId, choiceId, gameState);
+    }
+
+    // Gemini scene ID not in mock graph — use recovery scene to keep playing
+    console.warn('[App] Scene ID incompatible with mock service, using recovery scene');
+    return mockStoryService.getRecoveryScene();
+}
+
+/**
+ * Apply a validated scene to game state and render it
+ * @param {import('./contracts.js').Scene} scene
+ */
+function applyScene(scene) {
+    // Merge story thread updates
+    if (scene.storyThreadUpdates) {
+        console.log('[App] Updating story threads:', scene.storyThreadUpdates);
+        gameState.storyThreads = mergeThreadUpdates(
+            gameState.storyThreads,
+            scene.storyThreadUpdates
+        );
+        console.log('[App] Updated threads:', gameState.storyThreads);
+    }
+
+    // Update game state
+    gameState.currentSceneId = scene.sceneId;
+    gameState.sceneCount++;
+
+    // Track lesson
+    if (scene.lessonId && !gameState.lessonsEncountered.includes(scene.lessonId)) {
+        gameState.lessonsEncountered.push(scene.lessonId);
+    }
+
+    // Check for ending
+    if (scene.isEnding) {
+        handleEnding(scene);
+    } else {
+        renderScene(scene, settings.showLessons);
+        updateProgress(gameState.sceneCount);
     }
 }
 
@@ -390,9 +475,14 @@ async function retryLastChoice() {
         return;
     }
 
-    const lastChoice = gameState.history[gameState.history.length - 1];
-    gameState.history.pop(); // Remove it so it can be re-added
-    await handleChoice(lastChoice.choiceId);
+    const lastEntry = gameState.history[gameState.history.length - 1];
+    const historyBackup = [...gameState.history];
+    gameState.history.pop();
+
+    const success = await handleChoice(lastEntry.choiceId);
+    if (!success) {
+        gameState.history = historyBackup;
+    }
 }
 
 /**

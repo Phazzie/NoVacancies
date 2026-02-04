@@ -3,7 +3,7 @@
  * Enables offline play by caching all static assets
  */
 
-const CACHE_NAME = 'sydney-story-v1';
+const CACHE_NAME = 'sydney-story-v2';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -20,7 +20,21 @@ const ASSETS_TO_CACHE = [
     '/icons/icon-512.png',
     '/images/hotel_room.png',
     '/images/sydney_laptop.png',
-    '/images/sydney_thinking.png'
+    '/images/sydney_thinking.png',
+    '/images/sydney_frustrated.png',
+    '/images/sydney_tired.png',
+    '/images/sydney_phone_anxious.png',
+    '/images/sydney_coffee_morning.png',
+    '/images/sydney_window_dawn.png',
+    '/images/oswaldo_sleeping.png',
+    '/images/oswaldo_awake.png',
+    '/images/the_door.png',
+    '/images/empty_room.png',
+    '/images/motel_exterior.png',
+    '/images/car_memory.png',
+    '/images/convenience_store.png',
+    '/images/sydney_oswaldo_tension.png',
+    '/images/trina_crashed.png'
 ];
 
 // Install event - cache all static assets

@@ -48,13 +48,48 @@ export function formatThreadState(threads) {
 - **Oswaldo's Awareness:** ${threads.oswaldoAwareness}/3 (${awarenessDesc})
 - **Exhaustion Level:** ${threads.exhaustionLevel}/5
 
-**Instructions:** Maintain consistency with these states. If Oswaldo was hostile, don't make him suddenly friendly without cause. If the money is resolved, don't reintroduce the problem.`;
+**Instructions:** Maintain consistency with these states. If Oswaldo was hostile, don't make him suddenly friendly without cause. If the money is resolved, don't reintroduce the problem. Preserve tone trajectory unless the player makes a clear pivoting choice.`;
+}
+
+/**
+ * Build a compact long-arc memory summary sampled from prior scenes.
+ * Keeps continuity alive beyond the last few raw turns.
+ * @param {string[]} previousScenes
+ * @param {number} cadence
+ * @returns {string}
+ */
+function buildLongArcSummary(previousScenes, cadence = 4) {
+    if (!Array.isArray(previousScenes) || previousScenes.length < cadence) return '';
+
+    const sampled = [];
+    for (let i = cadence - 1; i < previousScenes.length; i += cadence) {
+        sampled.push(previousScenes[i]);
+    }
+
+    const summaryLines = sampled.slice(-3).map((entry, index) => {
+        const compact = entry
+            .replace(/\s+/g, ' ')
+            .replace(/^\[Choice:\s*/i, 'Choice: ')
+            .trim()
+            .slice(0, 170);
+        return `${index + 1}. ${compact}${compact.length >= 170 ? '...' : ''}`;
+    });
+
+    if (summaryLines.length === 0) return '';
+
+    return `\n## LONG-ARC MEMORY (sampled every ~${cadence} scenes)\n${summaryLines.join('\n')}\n`;
 }
 
 /**
  * The main system prompt that sets up the AI storyteller
  */
 export const SYSTEM_PROMPT = `You are an AI storyteller for "No Vacancies," an interactive fiction game about invisible labor and emotional load-bearing in relationships.
+
+## PRIORITY ORDER (MOST IMPORTANT TO LEAST)
+1. Continuity with established facts and thread state
+2. Character consistency (no unearned personality reversals)
+3. Meaningful player agency and consequences
+4. Stylistic flair and novelty
 
 ## SETTING
 Daily-rate motel, $65/day, due by 11 AM. The story begins at 6:47 AM. Sydney has $47 and needs $18 in 4 hours. Nobody else is awake.
@@ -72,15 +107,19 @@ Daily-rate motel, $65/day, due by 11 AM. The story begins at 6:47 AM. Sydney has
 
 ## OSWALDO (Boyfriend)
 - Lives with Sydney, contributes nothing financially
+- **SELECTIVELY LAZY**: He will break his back to help a random junkie move a couch at 3 AM, but "can't" walk 5 feet to hand Sydney her charger.
+- **Hero to Strangers, Burden to Her**: He seeks validation from others by being helpful, while draining Sydney dry.
 - Sleeps until 2pm, then gets high, eats her food
 - **NEVER admits fault** — literally never says "I was wrong" or "my bad"
 - Rewrites history: "That's not what happened" / "I never said that"
 - Turns accusations around: "Why are you bringing up old stuff?"
-- The "won't" disguised as "can't" — could step up but never has to
+- The "won't" disguised as "can't" — shows he CAN step up, just not for her
 
-### Oswaldo Being Useless
+### Oswaldo Being Useless (To Sydney) VS Helpful (To Others)
 - Wakes at 2pm: "What'd you do today?"
 - "I help with the ENERGY around here"
+- **Example**: Rides his bike 5 miles to bring Dex a pack of smokes, but asks Sydney to DoorDash water because he's "too sore" to walk to the vending machine.
+- **Example**: Spends 3 hours fixing a neighbor's speaker wire, but hasn't fixed the motel toilet handle in 2 weeks.
 - Eats the last Hot Pocket she was saving
 - "Borrows" her charger, loses it, says "it's just a charger"
 - Invites people over without asking — they eat her food
@@ -197,6 +236,11 @@ Minimum 5 scenes before any ending. Ending must feel EARNED by player choices.
 8. **Consequence matters**: Choices should feel meaningful
 9. **Voice**: Second person ("You"), present tense, intimate
 10. **Ending signals**: After 8-15 scenes, steer toward an ending based on choice patterns
+11. **Continuity callbacks**: Reference at least one concrete detail from recent scenes or thread state
+12. **No abrupt reversals**: Character tone shifts must be earned by actions in-scene
+13. **Lessons discipline**: Prefer one clear lesson per scene. Use multiple only when the scene naturally demands it
+14. **Anti-repetition**: Avoid repeating the same conflict beat, phrasing, or punchline in back-to-back scenes
+15. **Choice distinctness**: Choices must represent different strategies, not near-paraphrases
 
 ## OUTPUT FORMAT
 You must respond with valid JSON matching this schema:
@@ -206,11 +250,27 @@ You must respond with valid JSON matching this schema:
     {"id": "choice_id_snake_case", "text": "What the player sees"},
     {"id": "another_choice", "text": "Another option"}
   ],
-  "lessonId": 1,  // Which lesson (1-17) this scene demonstrates, or null
+  "lessonId": 1,  // Which lesson (1-17) this scene demonstrates, or null (prefer null unless one lesson is clearly central)
   "imageKey": "hotel_room",  // One of: hotel_room, sydney_laptop, sydney_thinking, sydney_frustrated, sydney_tired, sydney_phone, sydney_coffee, sydney_window, oswaldo_sleeping, oswaldo_awake, the_door, empty_room, motel_exterior
   "isEnding": false,  // true if this is a final scene
   "endingType": null,  // "loop", "shift", "exit", "rare", or a custom phrase if isEnding is true
-  "mood": "tense"  // One of: neutral, tense, hopeful, dark, triumphant
+  "mood": "tense",  // One of: neutral, tense, hopeful, dark, triumphant
+  "storyThreadUpdates": {  // Optional: include ONLY fields changed in this scene
+    "oswaldoConflict": 1,
+    "boundariesSet": ["no guests without asking"],
+    "moneyResolved": true
+  }
+}
+
+Example when there are NO meaningful thread changes (omit field entirely):
+{
+  "sceneText": "...",
+  "choices": [{"id": "pause", "text": "Sit with it"}],
+  "lessonId": null,
+  "imageKey": "sydney_thinking",
+  "isEnding": false,
+  "endingType": null,
+  "mood": "dark"
 }`;
 
 /**
@@ -233,6 +293,8 @@ export function getContinuePrompt(previousScenes, lastChoice, sceneCount, sugges
     if (threads) {
         threadSection = formatThreadState(threads);
     }
+
+    const longArcSummary = buildLongArcSummary(previousScenes, 4);
 
     let endingGuidance = '';
 
@@ -259,16 +321,19 @@ export function getContinuePrompt(previousScenes, lastChoice, sceneCount, sugges
     return `## STORY SO FAR
 ${history}
 ${threadSection}
+${longArcSummary}
 
 ## PLAYER'S CHOICE
 The player chose: "${lastChoice}"
 
 ## YOUR TASK
 Continue the story based on this choice. Remember:
-- Keep it 150-300 words
+- Keep it 150-250 words
 - Provide 2-3 meaningful choices (unless this is an ending)
 - Weave in a lesson naturally if appropriate
 - Maintain dark humor as coping
+- Include one concrete callback to recent history or thread state
+- Include "storyThreadUpdates" with only changed thread fields (omit field if unchanged)
 - The choice should have consequences${endingGuidance}
 
 Respond with valid JSON only.`;
@@ -288,6 +353,7 @@ The scene must:
 - Show Oswaldo sleeping, Trina crashed on the floor
 - Convey Sydney's isolation - she's the only one awake, the only one who knows how close everything is to falling apart
 - End with 2-3 distinct choices for how Sydney approaches this morning
+- Final sentence must create immediate player agency tension ("What do you do right now?")
 
 Set the mood as TENSE. This scene demonstrates Lesson 1: Load-bearing beams get leaned on.
 
@@ -306,6 +372,7 @@ Previous output:
 ${invalidOutput.substring(0, 500)}...
 
 Please respond ONLY with valid JSON in this exact format:
+Do not use markdown code fences.
 {
   "sceneText": "string",
   "choices": [{"id": "string", "text": "string"}],
@@ -313,7 +380,8 @@ Please respond ONLY with valid JSON in this exact format:
   "imageKey": "string",
   "isEnding": boolean,
   "endingType": "string or null",
-  "mood": "string"
+  "mood": "string",
+  "storyThreadUpdates": object (optional; include only changed fields)
 }`;
 }
 
@@ -343,23 +411,34 @@ export function validateImageKey(imageKey) {
 export function suggestEndingFromHistory(history) {
     const choices = history.map((h) => h.choiceId.toLowerCase());
 
-    // Look for patterns
-    const exitPatterns = ['leave', 'exit', 'walk', 'door', 'go'];
-    const shiftPatterns = ['boundary', 'tell', 'confront', 'different'];
-    const rarePatterns = ['wait', 'silence', 'press', 'question'];
+    const tokenizeChoiceId = (id) => id.split(/[^a-z]+/).filter(Boolean);
+
+    // Weighted pattern evidence
+    const exitPatterns = ['leave', 'exit', 'walk', 'door', 'out'];
+    const shiftPatterns = ['boundary', 'tell', 'confront', 'different', 'assert'];
+    const rarePatterns = ['wait', 'silence', 'press', 'question', 'listen'];
+    const loopSignals = ['stay', 'quiet', 'accept', 'nothing', 'sit', 'same'];
 
     let exitScore = 0;
     let shiftScore = 0;
     let rareScore = 0;
 
-    choices.forEach((c) => {
-        if (exitPatterns.some((p) => c.includes(p))) exitScore++;
-        if (shiftPatterns.some((p) => c.includes(p))) shiftScore++;
-        if (rarePatterns.some((p) => c.includes(p))) rareScore++;
+    choices.forEach((choiceId) => {
+        const tokens = new Set(tokenizeChoiceId(choiceId));
+
+        if (exitPatterns.some((p) => tokens.has(p))) exitScore += 2;
+        if (shiftPatterns.some((p) => tokens.has(p))) shiftScore += 2;
+        if (rarePatterns.some((p) => tokens.has(p))) rareScore += 2;
+
+        // Negative evidence: loop-like choices dampen EXIT/SHIFT steering.
+        if (loopSignals.some((p) => tokens.has(p))) {
+            exitScore -= 1;
+            shiftScore -= 1;
+        }
     });
 
-    if (rareScore >= 3) return EndingTypes.RARE;
-    if (exitScore >= 2) return EndingTypes.EXIT;
-    if (shiftScore >= 2) return EndingTypes.SHIFT;
+    if (rareScore >= 6) return EndingTypes.RARE;
+    if (exitScore >= 4 && exitScore >= shiftScore + 1) return EndingTypes.EXIT;
+    if (shiftScore >= 4 && shiftScore >= exitScore) return EndingTypes.SHIFT;
     return EndingTypes.LOOP;
 }

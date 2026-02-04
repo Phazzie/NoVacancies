@@ -9,10 +9,12 @@ import {
     SYSTEM_PROMPT,
     getOpeningPrompt,
     getContinuePrompt,
+    getRecoveryPrompt,
     validateImageKey,
     suggestEndingFromHistory
 } from '../prompts.js';
 import { ImageKeys, Moods, SceneIds, validateScene, validateEndingType } from '../contracts.js';
+import { emitAiTelemetry } from './aiTelemetry.js';
 
 /**
  * Gemini API Configuration
@@ -20,6 +22,7 @@ import { ImageKeys, Moods, SceneIds, validateScene, validateEndingType } from '.
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 const PRIMARY_MODEL = 'gemini-3-pro-preview';
 const FALLBACK_MODEL = 'gemini-3-flash-preview';
+const REQUEST_TIMEOUT_MS = 15000;
 
 /**
  * Map API image keys to our internal keys
@@ -60,6 +63,7 @@ class GeminiStoryService {
         this.conversationHistory = [];
         this.sceneCount = 0;
         this.currentModel = PRIMARY_MODEL;
+        this.requestTimeoutMs = REQUEST_TIMEOUT_MS;
     }
 
     /**
@@ -96,7 +100,14 @@ class GeminiStoryService {
         this.reset();
 
         const prompt = getOpeningPrompt();
-        const response = await this.callGemini(prompt);
+        let response = await this.callGemini(prompt);
+
+        const openingQuality = this.evaluateResponseQuality(response, null, null);
+        if (!openingQuality.ok) {
+            console.warn('[GeminiService] Opening quality check failed, retrying once:', openingQuality.issues);
+            const repairPrompt = this.buildQualityRepairPrompt(prompt, response, openingQuality.issues);
+            response = await this.callGemini(repairPrompt);
+        }
 
         this.conversationHistory.push(response.sceneText);
         this.sceneCount = 1;
@@ -129,7 +140,14 @@ class GeminiStoryService {
             gameState.storyThreads
         );
 
-        const response = await this.callGemini(prompt);
+        let response = await this.callGemini(prompt);
+
+        const quality = this.evaluateResponseQuality(response, gameState, choiceText);
+        if (!quality.ok) {
+            console.warn('[GeminiService] Response quality check failed, retrying once:', quality.issues);
+            const repairPrompt = this.buildQualityRepairPrompt(prompt, response, quality.issues);
+            response = await this.callGemini(repairPrompt);
+        }
 
         this.conversationHistory.push(`[Choice: ${choiceText}]\n${response.sceneText}`);
         this.sceneCount++;
@@ -143,13 +161,16 @@ class GeminiStoryService {
     /**
      * Call the Gemini API
      * @param {string} userPrompt
+     * @param {number} parseRecoveryAttemptsRemaining
+     * @param {string} basePrompt
      * @returns {Promise<Object>}
      */
-    async callGemini(userPrompt) {
+    async callGemini(userPrompt, parseRecoveryAttemptsRemaining = 1, basePrompt = userPrompt) {
         if (!this.apiKey) {
             throw new Error('No API key set');
         }
 
+        const promptType = userPrompt === basePrompt ? 'primary' : 'recovery';
         const url = `${GEMINI_API_URL}/${this.currentModel}:generateContent?key=${this.apiKey}`;
 
         const requestBody = {
@@ -168,7 +189,7 @@ class GeminiStoryService {
                 responseSchema: {
                     type: 'object',
                     properties: {
-                        sceneText: { type: 'string' },
+                        sceneText: { type: 'string', minLength: 200, maxLength: 2600 },
                         choices: {
                             type: 'array',
                             items: {
@@ -230,16 +251,30 @@ class GeminiStoryService {
             ]
         };
 
+        const timeoutMs =
+            this.currentModel === PRIMARY_MODEL ? this.requestTimeoutMs : this.requestTimeoutMs + 5000;
+        const timeoutController = new AbortController();
+        let timeoutId = null;
+
         try {
+            emitAiTelemetry('request_start', {
+                model: this.currentModel,
+                promptType,
+                parseRecoveryAttemptsRemaining
+            });
+            emitAiTelemetry('model_used', { model: this.currentModel });
             console.log(`[GeminiService] Calling ${this.currentModel}...`);
+            timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                signal: timeoutController.signal
             });
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -248,8 +283,13 @@ class GeminiStoryService {
                 // Try fallback model if primary fails
                 if (this.currentModel === PRIMARY_MODEL) {
                     console.log('[GeminiService] Trying fallback model...');
+                    emitAiTelemetry('fallback_trigger', {
+                        fromModel: PRIMARY_MODEL,
+                        toModel: FALLBACK_MODEL,
+                        reason: `api_error_${response.status}`
+                    });
                     this.currentModel = FALLBACK_MODEL;
-                    return this.callGemini(userPrompt);
+                    return this.callGemini(userPrompt, parseRecoveryAttemptsRemaining, basePrompt);
                 }
 
                 throw new Error(`API error: ${response.status}`);
@@ -264,20 +304,207 @@ class GeminiStoryService {
                 throw new Error('No content in response');
             }
 
-            // Parse JSON from the response
-            return this.parseResponse(textContent);
+            try {
+                // Parse JSON from the response
+                const parsed = this.parseResponse(textContent);
+                emitAiTelemetry('final_success', { model: this.currentModel, promptType });
+                return parsed;
+            } catch (parseError) {
+                parseError.name = 'ParseError';
+
+                if (parseRecoveryAttemptsRemaining > 0) {
+                    console.warn('[GeminiService] Parse failed, attempting one JSON recovery call');
+                    emitAiTelemetry('parse_recovery_attempt', {
+                        model: this.currentModel,
+                        promptType,
+                        remainingBeforeRetry: parseRecoveryAttemptsRemaining
+                    });
+                    const recoveryPrompt = getRecoveryPrompt(textContent);
+                    return this.callGemini(recoveryPrompt, parseRecoveryAttemptsRemaining - 1, basePrompt);
+                }
+                throw parseError;
+            }
         } catch (error) {
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
             console.error('[GeminiService] Request failed:', error);
+
+            if (error.name === 'AbortError') {
+                const timeoutError = new Error('Gemini request timed out');
+                timeoutError.name = 'TimeoutError';
+                emitAiTelemetry('final_failure', {
+                    model: this.currentModel,
+                    promptType,
+                    reason: timeoutError.name
+                });
+                throw timeoutError;
+            }
+
+            // Parse failures: after one JSON-recovery retry on primary, try fallback model once.
+            if (error.name === 'ParseError') {
+                if (this.currentModel === PRIMARY_MODEL) {
+                    console.log('[GeminiService] Trying fallback model after parse failure...');
+                    emitAiTelemetry('fallback_trigger', {
+                        fromModel: PRIMARY_MODEL,
+                        toModel: FALLBACK_MODEL,
+                        reason: 'parse_failure'
+                    });
+                    this.currentModel = FALLBACK_MODEL;
+                    return this.callGemini(basePrompt, 1, basePrompt);
+                }
+                emitAiTelemetry('final_failure', {
+                    model: this.currentModel,
+                    promptType,
+                    reason: error.name
+                });
+                throw error;
+            }
 
             // Try fallback model
             if (this.currentModel === PRIMARY_MODEL) {
                 console.log('[GeminiService] Trying fallback model after error...');
+                emitAiTelemetry('fallback_trigger', {
+                    fromModel: PRIMARY_MODEL,
+                    toModel: FALLBACK_MODEL,
+                    reason: error.name || 'request_error'
+                });
                 this.currentModel = FALLBACK_MODEL;
-                return this.callGemini(userPrompt);
+                return this.callGemini(userPrompt, parseRecoveryAttemptsRemaining, basePrompt);
             }
 
+            emitAiTelemetry('final_failure', {
+                model: this.currentModel,
+                promptType,
+                reason: error.name || 'request_error'
+            });
             throw error;
         }
+    }
+
+    /**
+     * Determine whether choice texts are meaningfully distinct.
+     * @param {{text: string}[]} choices
+     * @returns {boolean}
+     */
+    hasDistinctChoices(choices) {
+        if (!Array.isArray(choices) || choices.length < 2) return true;
+
+        const STOP_WORDS = new Set([
+            'the', 'a', 'an', 'to', 'and', 'or', 'of', 'for', 'with', 'in', 'on', 'at', 'it', 'this', 'that',
+            'you', 'your', 'i', 'we', 'is', 'are', 'be', 'do', 'does', 'now', 'just'
+        ]);
+
+        const tokenize = (text) =>
+            (text || '')
+                .toLowerCase()
+                .split(/[^a-z]+/)
+                .filter((token) => token && !STOP_WORDS.has(token));
+
+        const sets = choices.map((choice) => new Set(tokenize(choice.text)));
+        for (let i = 0; i < sets.length; i++) {
+            for (let j = i + 1; j < sets.length; j++) {
+                const a = sets[i];
+                const b = sets[j];
+                const union = new Set([...a, ...b]);
+                if (union.size === 0) continue;
+
+                let overlap = 0;
+                a.forEach((token) => {
+                    if (b.has(token)) overlap++;
+                });
+                const jaccard = overlap / union.size;
+
+                if (jaccard >= 0.72) return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Build continuity anchors from state to validate callback references.
+     * @param {import('../contracts.js').GameState} gameState
+     * @param {string} lastChoiceText
+     * @returns {string[]}
+     */
+    getContinuityAnchors(gameState, lastChoiceText) {
+        if (!gameState) return [];
+
+        const anchors = ['sydney', 'oswaldo', 'trina', 'dex', 'room', 'rent', 'laptop'];
+        const threads = gameState.storyThreads;
+
+        if (threads) {
+            if (threads.moneyResolved) anchors.push('paid', 'money');
+            if (threads.carMentioned) anchors.push('car', 'krystal', 'insurance');
+            if (threads.trinaTension > 0) anchors.push('trina');
+            if (threads.oswaldoConflict !== 0 || threads.oswaldoAwareness > 0) anchors.push('oswaldo');
+            if (threads.exhaustionLevel > 2) anchors.push('tired', 'exhausted', 'burnout');
+            if (threads.boundariesSet.length > 0) {
+                anchors.push('boundary');
+                threads.boundariesSet.forEach((boundary) => {
+                    boundary
+                        .toLowerCase()
+                        .split(/[^a-z]+/)
+                        .filter(Boolean)
+                        .forEach((token) => anchors.push(token));
+                });
+            }
+        }
+
+        if (lastChoiceText) {
+            lastChoiceText
+                .toLowerCase()
+                .split(/[^a-z]+/)
+                .filter((token) => token.length > 3)
+                .forEach((token) => anchors.push(token));
+        }
+
+        return [...new Set(anchors)];
+    }
+
+    /**
+     * Evaluate semantic quality beyond JSON validity.
+     * @param {Object} response
+     * @param {import('../contracts.js').GameState|null} gameState
+     * @param {string|null} lastChoiceText
+     * @returns {{ok: boolean, issues: string[]}}
+     */
+    evaluateResponseQuality(response, gameState = null, lastChoiceText = null) {
+        const issues = [];
+
+        if (!response?.isEnding && !this.hasDistinctChoices(response?.choices || [])) {
+            issues.push('Choices are too similar; provide clearly different strategies.');
+        }
+
+        if (gameState && this.sceneCount >= 2) {
+            const sceneText = (response?.sceneText || '').toLowerCase();
+            const anchors = this.getContinuityAnchors(gameState, lastChoiceText);
+            if (anchors.length > 0 && !anchors.some((anchor) => sceneText.includes(anchor))) {
+                issues.push('Scene lacks a concrete callback to established continuity.');
+            }
+        }
+
+        return { ok: issues.length === 0, issues };
+    }
+
+    /**
+     * Build a targeted quality repair prompt.
+     * @param {string} originalPrompt
+     * @param {Object} response
+     * @param {string[]} issues
+     * @returns {string}
+     */
+    buildQualityRepairPrompt(originalPrompt, response, issues) {
+        return `${originalPrompt}
+
+QUALITY REVISION REQUIRED:
+- ${issues.join('\n- ')}
+
+Prior JSON (for reference):
+${JSON.stringify(response).slice(0, 900)}
+
+Return corrected JSON only.`;
     }
 
     /**
