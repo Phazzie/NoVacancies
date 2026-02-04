@@ -1006,6 +1006,152 @@ async function testPromptAndRecoveryQuality() {
             'quality issues include choice distinctness'
         );
     }
+
+    console.log('  Test 10.6: Continuity quality gate requires concrete callbacks');
+    {
+        let geminiService;
+        try {
+            const mod = await import('../js/services/geminiStoryService.js');
+            geminiService = mod.geminiStoryService;
+        } catch {
+            console.warn('  ⚠️  Could not import geminiStoryService, skipping continuity quality test');
+            return;
+        }
+
+        const state = createGameState();
+        state.storyThreads.moneyResolved = true;
+        state.storyThreads.carMentioned = true;
+        state.storyThreads.boundariesSet = ['no guests without asking'];
+
+        geminiService.sceneCount = 4;
+
+        const weakCallbackResponse = {
+            sceneText: 'The vending machine rattles in the hallway while a clock blinks 7:03.',
+            choices: [
+                { id: 'call_desk', text: 'Call the front desk' },
+                { id: 'wash_face', text: 'Wash your face and think' }
+            ],
+            isEnding: false
+        };
+
+        const quality = geminiService.evaluateResponseQuality(
+            weakCallbackResponse,
+            state,
+            'set a hard boundary with him'
+        );
+
+        assertEqual(quality.ok, false, 'continuity gate should fail when callbacks are missing');
+        assert(
+            quality.issues.some((issue) => issue.toLowerCase().includes('continuity')),
+            'quality issues include continuity callback requirement'
+        );
+    }
+
+    console.log('  Test 10.7: Semantic quality gate flags repetitive scene framing');
+    {
+        let geminiService;
+        try {
+            const mod = await import('../js/services/geminiStoryService.js');
+            geminiService = mod.geminiStoryService;
+        } catch {
+            console.warn('  ⚠️  Could not import geminiStoryService, skipping repetition quality test');
+            return;
+        }
+
+        geminiService.conversationHistory = [
+            '[Choice: wait]\nYou stare at the vibrating phone while the ice machine growls and motel neon leaks through the blinds. The unpaid room hangs over every breath while Oswaldo snores like he already won.'
+        ];
+
+        const repetitiveResponse = {
+            sceneText:
+                'You stare at the buzzing phone while the ice machine growls and neon leaks through the blinds. The unpaid room hangs over every breath as Oswaldo snores like he has already won.',
+            choices: [
+                { id: 'wake_oswaldo', text: 'Wake Oswaldo now' },
+                { id: 'go_to_bathroom', text: 'Go to the bathroom and regroup' }
+            ],
+            isEnding: false
+        };
+
+        const quality = geminiService.evaluateResponseQuality(
+            repetitiveResponse,
+            createGameState(),
+            'wait'
+        );
+
+        assertEqual(quality.ok, false, 'quality gate catches repetitive scene framing');
+        assert(
+            quality.issues.some((issue) => issue.toLowerCase().includes('repeats')),
+            'quality issues include repetition warning'
+        );
+    }
+
+    console.log('  Test 10.8: Ending inference favors explicit signals');
+    {
+        const exitHistory = [
+            { choiceId: 'walk_out_door' },
+            { choiceId: 'leave_room_now' }
+        ];
+        assertEqual(
+            suggestEndingFromHistory(exitHistory),
+            EndingTypes.EXIT,
+            'explicit leave/door tokens should steer EXIT'
+        );
+
+        const shiftHistory = [
+            { choiceId: 'set_boundary_now' },
+            { choiceId: 'assert_new_terms' }
+        ];
+        assertEqual(
+            suggestEndingFromHistory(shiftHistory),
+            EndingTypes.SHIFT,
+            'boundary/assert signals should steer SHIFT'
+        );
+
+        const rareHistory = [
+            { choiceId: 'listen_before_reacting' },
+            { choiceId: 'question_him_directly' },
+            { choiceId: 'hold_silence' }
+        ];
+        assertEqual(
+            suggestEndingFromHistory(rareHistory),
+            EndingTypes.RARE,
+            'listen/question/silence signals should steer RARE'
+        );
+    }
+
+    console.log('  Test 10.9: Choice-opening heuristic catches same-action options');
+    {
+        let geminiService;
+        try {
+            const mod = await import('../js/services/geminiStoryService.js');
+            geminiService = mod.geminiStoryService;
+        } catch {
+            console.warn('  ⚠️  Could not import geminiStoryService, skipping choice-opening test');
+            return;
+        }
+
+        geminiService.sceneCount = 3;
+        const response = {
+            sceneText: 'You breathe out slowly and watch the minute hand lurch forward.',
+            choices: [
+                { id: 'ask_oswaldo', text: 'Ask Oswaldo where the money went' },
+                { id: 'ask_trina', text: 'Ask Trina why she used your card' }
+            ],
+            isEnding: false
+        };
+
+        const quality = geminiService.evaluateResponseQuality(
+            response,
+            createGameState(),
+            'press for answers'
+        );
+
+        assertEqual(quality.ok, false, 'same-action openings are flagged');
+        assert(
+            quality.issues.some((issue) => issue.toLowerCase().includes('openings')),
+            'quality issues include opening-strategy distinction'
+        );
+    }
 }
 
 // ─── Runner ──────────────────────────────────────────────────────────

@@ -423,6 +423,85 @@ class GeminiStoryService {
     }
 
     /**
+     * Ensure options start from different strategic moves, not just word swaps.
+     * @param {{text: string}[]} choices
+     * @returns {boolean}
+     */
+    hasDistinctChoiceStarts(choices) {
+        if (!Array.isArray(choices) || choices.length < 2) return true;
+
+        const STOP_WORDS = new Set([
+            'the', 'a', 'an', 'to', 'and', 'or', 'of', 'for', 'with', 'in', 'on', 'at', 'it', 'this', 'that',
+            'you', 'your', 'i', 'we', 'is', 'are', 'be', 'do', 'does', 'now', 'just', 'then'
+        ]);
+
+        const leadingToken = (text) =>
+            (text || '')
+                .toLowerCase()
+                .split(/[^a-z]+/)
+                .find((token) => token && !STOP_WORDS.has(token)) || '';
+
+        const starts = new Set(choices.map((choice) => leadingToken(choice.text)).filter(Boolean));
+        return starts.size >= 2;
+    }
+
+    /**
+     * Normalize scene text for rough similarity comparisons.
+     * @param {string} text
+     * @returns {string[]}
+     */
+    normalizeSceneTokens(text) {
+        const STOP_WORDS = new Set([
+            'the', 'a', 'an', 'to', 'and', 'or', 'of', 'for', 'with', 'in', 'on', 'at', 'it', 'this', 'that',
+            'you', 'your', 'i', 'we', 'is', 'are', 'be', 'do', 'does', 'now', 'just', 'then', 'but'
+        ]);
+
+        return (text || '')
+            .toLowerCase()
+            .split(/[^a-z]+/)
+            .filter((token) => token.length > 2 && !STOP_WORDS.has(token));
+    }
+
+    /**
+     * Jaccard similarity between two token arrays.
+     * @param {string[]} aTokens
+     * @param {string[]} bTokens
+     * @returns {number}
+     */
+    tokenSimilarity(aTokens, bTokens) {
+        const a = new Set(aTokens);
+        const b = new Set(bTokens);
+        const union = new Set([...a, ...b]);
+        if (union.size === 0) return 0;
+
+        let overlap = 0;
+        a.forEach((token) => {
+            if (b.has(token)) overlap++;
+        });
+        return overlap / union.size;
+    }
+
+    /**
+     * Detect when a generated scene repeats the previous scene too closely.
+     * @param {string} sceneText
+     * @returns {boolean}
+     */
+    isRepetitiveScene(sceneText) {
+        if (!sceneText || this.conversationHistory.length === 0) return false;
+
+        const previousEntry = this.conversationHistory[this.conversationHistory.length - 1] || '';
+        const previousSceneText = previousEntry.replace(/^\[Choice:[^\n]*\]\n/, '').trim();
+        if (!previousSceneText) return false;
+
+        const currentTokens = this.normalizeSceneTokens(sceneText);
+        const previousTokens = this.normalizeSceneTokens(previousSceneText);
+        if (currentTokens.length < 20 || previousTokens.length < 20) return false;
+
+        const similarity = this.tokenSimilarity(currentTokens, previousTokens);
+        return similarity >= 0.8;
+    }
+
+    /**
      * Build continuity anchors from state to validate callback references.
      * @param {import('../contracts.js').GameState} gameState
      * @param {string} lastChoiceText
@@ -464,6 +543,46 @@ class GeminiStoryService {
     }
 
     /**
+     * Build stricter continuity anchors from non-default state and last choice.
+     * These anchors represent concrete callbacks we expect to see.
+     * @param {import('../contracts.js').StoryThreads} threads
+     * @param {string} lastChoiceText
+     * @returns {string[]}
+     */
+    getSpecificContinuityAnchors(threads, lastChoiceText) {
+        const anchors = [];
+
+        if (threads) {
+            if (threads.moneyResolved) anchors.push('paid', 'money', 'rent');
+            if (threads.carMentioned) anchors.push('car', 'krystal', 'insurance');
+            if (threads.trinaTension > 0) anchors.push('trina');
+            if (threads.oswaldoConflict !== 0 || threads.oswaldoAwareness > 0) anchors.push('oswaldo');
+            if (threads.exhaustionLevel > 2) anchors.push('tired', 'exhausted');
+
+            if (Array.isArray(threads.boundariesSet) && threads.boundariesSet.length > 0) {
+                anchors.push('boundary');
+                threads.boundariesSet.forEach((boundary) => {
+                    boundary
+                        .toLowerCase()
+                        .split(/[^a-z]+/)
+                        .filter((token) => token.length > 3)
+                        .forEach((token) => anchors.push(token));
+                });
+            }
+        }
+
+        if (lastChoiceText) {
+            lastChoiceText
+                .toLowerCase()
+                .split(/[^a-z]+/)
+                .filter((token) => token.length > 3)
+                .forEach((token) => anchors.push(token));
+        }
+
+        return [...new Set(anchors)];
+    }
+
+    /**
      * Evaluate semantic quality beyond JSON validity.
      * @param {Object} response
      * @param {import('../contracts.js').GameState|null} gameState
@@ -476,10 +595,20 @@ class GeminiStoryService {
         if (!response?.isEnding && !this.hasDistinctChoices(response?.choices || [])) {
             issues.push('Choices are too similar; provide clearly different strategies.');
         }
+        if (!response?.isEnding && !this.hasDistinctChoiceStarts(response?.choices || [])) {
+            issues.push('Choice openings are too similar; start choices with different actions.');
+        }
+
+        if (!response?.isEnding && this.isRepetitiveScene(response?.sceneText || '')) {
+            issues.push('Scene repeats previous narrative beats too closely; introduce forward movement.');
+        }
 
         if (gameState && this.sceneCount >= 2) {
             const sceneText = (response?.sceneText || '').toLowerCase();
-            const anchors = this.getContinuityAnchors(gameState, lastChoiceText);
+            const strictAnchors = this.getSpecificContinuityAnchors(gameState.storyThreads, lastChoiceText);
+            const fallbackAnchors = this.getContinuityAnchors(gameState, lastChoiceText);
+            const anchors = strictAnchors.length > 0 ? strictAnchors : fallbackAnchors;
+
             if (anchors.length > 0 && !anchors.some((anchor) => sceneText.includes(anchor))) {
                 issues.push('Scene lacks a concrete callback to established continuity.');
             }

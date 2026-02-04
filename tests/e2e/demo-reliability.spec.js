@@ -105,8 +105,9 @@ async function openAndStartInAiMode(page) {
 
     await page.click('#settings-back-btn');
     await expect(page.locator('#title-screen')).toHaveClass(/active/);
+    await expect(page.locator('#settings-screen')).not.toHaveClass(/active/);
 
-    await page.click('#start-btn');
+    await page.locator('#title-screen.active #start-btn').click({ timeout: 15000 });
     await expect(page.locator('#game-screen')).toHaveClass(/active/, { timeout: 15000 });
     await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
 }

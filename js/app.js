@@ -352,6 +352,7 @@ async function handleChoice(choiceId) {
         // Auto-fallback to mock service if Gemini failed
         if (!gameState.useMocks && storyService !== mockStoryService) {
             console.warn('[App] Gemini unavailable, continuing in mock recovery mode');
+            updateChoicesLoadingMessage('AI is unavailable. Switching to backup story mode...');
             emitAiTelemetry('fallback_trigger', {
                 fromService: 'gemini',
                 toService: 'mock',

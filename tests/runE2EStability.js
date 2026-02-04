@@ -8,7 +8,8 @@ import { spawn } from 'node:child_process';
 function runOnce(iteration) {
     return new Promise((resolve, reject) => {
         console.log(`\n[E2E Stability] Run ${iteration}/3 starting...`);
-        const command = 'npx playwright test tests/e2e/demo-reliability.spec.js --reporter=line';
+        const command =
+            'npx playwright test tests/e2e/demo-reliability.spec.js --reporter=line --retries=0';
         const child = spawn(command, {
             stdio: 'inherit',
             shell: true
