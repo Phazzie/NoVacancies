@@ -399,6 +399,8 @@ Located in [prompts.js:SYSTEM_PROMPT](js/prompts.js:23-180)
 **Lesson:** One sentence about what was learned.
 ```
 
+**NEVER DELETE existing changelog or lessons learned entries.** This file is append-only for historical sections. New entries go at the top of each section. Old entries stay forever — they provide context for future decisions.
+
 **This ensures:**
 - Future developers/AI agents have context
 - Decisions are documented
@@ -740,6 +742,148 @@ npm run lint      # Run ESLint
 
 ## Changelog
 
+> **NEVER DELETE entries from this section.** Append-only. New entries go at the top.
+
+### 2026-02-04 - AI Demo Reliability + Narrative Quality Pass
+**Fixed:**
+- ✅ Gemini parse-failure flow now preserves fallback-model resilience after recovery attempts in [geminiStoryService.js](js/services/geminiStoryService.js)
+- ✅ Deduplicated parse-recovery coverage by consolidating checks into Suite 2 in [integrationTest.js](tests/integrationTest.js)
+- ✅ Added bounded parse-failure model fallback test (primary -> recovery -> fallback) in [integrationTest.js](tests/integrationTest.js)
+- ✅ Added scene-text focus fallback for no-choice game states in [renderer.js](js/renderer.js)
+- ✅ Added renderer test coverage for no-choice focus fallback in [rendererTest.js](tests/rendererTest.js)
+
+**Prompt/Narrative improvements:**
+- ✅ Added explicit continuity callback guidance and “no abrupt reversals” rule in [prompts.js](js/prompts.js)
+- ✅ Refined `storyThreadUpdates` prompt contract wording to “optional, changed fields only” in [prompts.js](js/prompts.js)
+- ✅ Hardened ending inference tokenization to reduce false positives from substring matching in [prompts.js](js/prompts.js)
+
+**Verified:**
+- ✅ `npm test` passing (all suites green)
+- ✅ `npm run lint` passing
+
+**Lesson:** For AI demos, reliability and narrative quality improve most when prompt-level quality rules are paired with bounded fallback logic and explicit tests for failure-path behavior.
+
+---
+
+### 2026-02-04 - UI/UX Accessibility + Prompt Quality Hardening
+**Changed:**
+- ✅ Mobile zoom re-enabled by simplifying viewport meta in [index.html](index.html)
+- ✅ External API-key link hardened with `rel="noopener noreferrer"` in [index.html](index.html)
+- ✅ Scene text now preserves paragraph breaks via `white-space: pre-line` in [style.css](style.css)
+- ✅ Added keyboard-visible focus styling for buttons/inputs in [style.css](style.css)
+- ✅ Added focus management helpers in [renderer.js](js/renderer.js):
+  - Screen transitions focus primary actions (title/settings/ending)
+  - New scene choices auto-focus first choice
+  - Error state auto-focuses retry button and adds `role="alert"`
+
+**Prompt/Narrative Updates:**
+- ✅ Prompt schema now explicitly includes `storyThreadUpdates` in [prompts.js](js/prompts.js)
+- ✅ Continue prompt guidance aligned to 150-250 words (matching system prompt)
+- ✅ Ending heuristic tightened: removed generic `go` token from exit pattern matching
+- ✅ Recovery prompt schema includes `storyThreadUpdates`
+
+**Reliability Updates:**
+- ✅ Gemini parse failures now make one JSON-recovery retry before surfacing failure in [geminiStoryService.js](js/services/geminiStoryService.js)
+- ✅ Parse failures marked as `ParseError` to avoid repeated model-fallback loops after recovery retry
+
+**Testing:**
+- ✅ Extended [integrationTest.js](tests/integrationTest.js) with prompt/recovery suite:
+  - Prompt length consistency
+  - Prompt schema contract checks for `storyThreadUpdates`
+  - Neutral `go_*` choice ending-regression guard
+  - One-shot parse recovery retry behavior
+- ✅ Extended [rendererTest.js](tests/rendererTest.js) for:
+  - Retry-button focus behavior
+  - Choice focus + line-break rendering checks
+
+**Verified:**
+- ✅ `npm test` passing (smoke + thread + integration suites, 0 failures)
+- ✅ `npm run lint` passing (0 errors)
+
+**Lesson:** Accessibility and narrative consistency regressions are easiest to catch when prompt contracts and UX behavior are asserted in tests, not just documented in reviews.
+
+---
+
+### 2026-02-03 - Codex Review Regression Fixes (P1/P2/P3)
+**Fixed:**
+- ✅ **P1 (Critical):** Gemini→mock fallback now handles incompatible scene IDs — added `getFallbackScene()` in [app.js](js/app.js) that checks `getSceneById()` before calling `getNextScene()`, falls back to `getRecoveryScene()` when Gemini scene IDs don't exist in mock graph
+- ✅ **P2:** `handleChoice()` now returns boolean (true/false) so `retryLastChoice()` can detect failures — previously swallowed all errors internally, making retry detection impossible
+- ✅ **P3:** Fallback scene now validated via `validateScene()` before `applyScene()` — prevents corrupt fallback data from crashing renderer
+
+**Added:**
+- ✅ Suite 8: Fallback Regression tests in [integrationTest.js](tests/integrationTest.js) — 5 tests covering all three Codex findings
+  - Mock returns ending_loop for unknown Gemini scene IDs (confirms the bug existed)
+  - getSceneById returns undefined for Gemini-style IDs (confirms detection works)
+  - getFallbackScene logic uses recovery scene for incompatible IDs
+  - Compatible mock IDs still work normally through fallback path
+  - handleChoice returns boolean for retry detection
+
+**Verified:**
+- Tests: 126/126 passing (11 smoke + 3 thread + 112 integration)
+
+**Lesson:** External code review (Codex) caught a real production bug that tests alone missed — Gemini scene IDs like `scene_2_1738612345678` don't exist in the mock graph, so fallback silently ended the game. The fix required understanding both services' ID schemes.
+
+---
+
+### 2026-02-03 - Error Handling Hardening & Integration Tests
+**Changed:**
+- ✅ Extracted `mergeThreadUpdates()` to [contracts.js](js/contracts.js) — pure function, returns new object, whitelist-only keys, no mutation
+- ✅ Replaced inline thread merge logic in app.js with call to `mergeThreadUpdates()`
+- ✅ Added `isProcessing` race condition guard in `handleChoice()` — prevents concurrent API calls from rapid clicks
+- ✅ Auto-fallback to mock service when Gemini fails mid-game — no more stuck game state
+- ✅ Extracted `applyScene()` helper in app.js — DRY between normal and fallback paths
+- ✅ Fixed `retryLastChoice()` history desync — backup/restore on failure
+- ✅ Added `safeSetItem()` localStorage helper with QuotaExceededError detection
+- ✅ Service worker cache updated to all 17 images (v1 → v2)
+
+**Added:**
+- ✅ [tests/integrationTest.js](tests/integrationTest.js) — 7 suites, 109 assertions
+  - Thread merging (normal, array append, partial, unknown keys, null/undefined)
+  - JSON parsing recovery (clean, markdown, prose, unparseable)
+  - Service fallback (mock never throws, always available, validation gates)
+  - localStorage edge cases (corrupt JSON, missing keys, partial merge)
+  - Ending logic (pattern matching, custom validation, deduplication)
+  - Race conditions (flag prevents concurrent, flag resets after error)
+  - Thread state formatting (defaults, non-defaults, null handling)
+- ✅ [CODEX_REVIEW_PROMPT.txt](CODEX_REVIEW_PROMPT.txt) — WSL-ready code review prompt for Codex
+
+**Verified:**
+- Tests: 123/123 passing (11 smoke + 3 thread + 109 integration)
+- All existing tests still pass (no regressions)
+
+**Lesson:** Extracting embedded logic into pure functions (mergeThreadUpdates) enables real testing. The inline version in handleChoice was untestable in Node.js. One extraction + one import = 30 assertions on thread merging that were previously impossible.
+
+---
+
+### 2026-02-03 - Story Threads Integration Complete
+**Added:**
+- ✅ StoryThreads continuity tracking system (8 dimensions)
+  - [contracts.js:78-87](js/contracts.js#L78-L87) - StoryThreads typedef
+  - [contracts.js:136-147](js/contracts.js#L136-L147) - createStoryThreads() function
+  - [prompts.js:25-52](js/prompts.js#L25-L52) - formatThreadState() AI formatter
+  - [tests/threadTest.js](tests/threadTest.js) - Test suite (9 assertions)
+- ✅ Integration across 4 core files
+  - [contracts.js:44,124](js/contracts.js#L44) - GameState includes storyThreads
+  - [prompts.js:188-201](js/prompts.js#L188-L201) - getContinuePrompt() injects thread state
+  - [geminiStoryService.js:186-203](js/services/geminiStoryService.js#L186-L203) - responseSchema includes storyThreadUpdates
+  - [app.js:306-329](js/app.js#L306-L329) - handleChoice() merges thread updates
+- ✅ Git repository initialized with clean .gitignore
+- ✅ Watch mode added via nodemon for instant test feedback
+
+**Changed:**
+- Updated test script to run both smokeTest.js and threadTest.js
+- Scene typedef now includes optional storyThreadUpdates property
+
+**Verified:**
+- Tests: 14/14 passing (11 existing + 3 new thread tests)
+- ESLint: 0 errors, 0 warnings
+- Integration: All 6 phases complete, zero bugs
+- Gemini code review: Grade A (95/100)
+
+**Lesson:** Parallel AI agent coordination requires explicit contracts, clear boundaries, and validation scripts to prevent integration mismatches.
+
+---
+
 ### 2025-02-03 - Documentation Complete
 **Added:**
 - ✅ Created comprehensive project documentation: [claude.md](claude.md)
@@ -794,6 +938,8 @@ npm run lint      # Run ESLint
 
 ## Lessons Learned
 
+> **NEVER DELETE entries from this section.** Append-only. History matters.
+
 ### What Worked Well
 
 #### 1. Vanilla JS / No Build Step
@@ -847,6 +993,33 @@ npm run lint      # Run ESLint
 - Fun to say in code reviews
 
 **Example:** `renderScene()` only renders. State updates happen in `app.js`. Clean separation.
+
+---
+
+#### 5. Parallel AI Agent Coordination (Gemini + Claude)
+**Decision:** Split storyThreads work between two AI agents - Gemini for helpers, Claude for integration.
+
+**Why it worked:**
+- Clear division of labor (simple vs complex)
+- Explicit contracts defined upfront (StoryThreads typedef)
+- Contract-first development prevented mismatches
+- Pre-integration validation script caught issues early
+- Both agents worked simultaneously → 2x speed
+
+**Process:**
+1. Defined exact specifications (8 properties, types, ranges)
+2. Created pre-integration-check.js to validate contracts
+3. Gemini built pure functions (createStoryThreads, formatThreadState)
+4. Claude integrated into existing systems (service layer, state management)
+5. Cross-reviewed each other's work
+
+**Results:**
+- Zero integration bugs on first try
+- All 14 tests passed immediately
+- Gemini code: Grade A (95/100)
+- Total time: ~2 hours vs estimated 3+ hours solo
+
+**Would do again:** Yes, but requires discipline in contract definition and validation.
 
 ---
 

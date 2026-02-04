@@ -1,0 +1,537 @@
+You are performing a code review on a vanilla JavaScript PWA text-adventure game called "No Vacancies." The project uses ES6 modules with no build tools, no TypeScript, no frameworks. The AI provider is Google Gemini API.
+
+Your goal: find bugs, fragile code, and anything that could crash during a live demo to a friend. Prioritize by severity.
+
+## PROJECT LOCATION (WSL)
+
+/mnt/c/Users/latro/Downloads/t/sydney-story/
+
+## FILE TREE (read every file listed below)
+
+```
+sydney-story/
+├── index.html                              (258 lines)  — UI shell, all screens
+├── style.css                               (999 lines)  — Mobile-first styles
+├── manifest.json                           — PWA manifest
+├── service-worker.js                       (126 lines)  — Offline cache (17 images, all JS)
+├── package.json                            — Scripts: test, lint, serve
+│
+├── js/
+│   ├── app.js                              (440 lines)  — Main controller: state, events, game loop
+│   ├── contracts.js                        (240 lines)  — Type defs, validators, mergeThreadUpdates()
+│   ├── lessons.js                          (361 lines)  — 17 narrative lessons (pure data)
+│   ├── prompts.js                          (369 lines)  — AI prompt templates, formatThreadState()
+│   ├── renderer.js                         (508 lines)  — DOM manipulation, UI updates
+│   └── services/
+│       ├── geminiStoryService.js            (389 lines)  — Gemini API integration, JSON parsing
+│       └── mockStoryService.js             (1170 lines) — Static story with 44 scenes, 4 endings
+│
+├── tests/
+│   ├── smokeTest.js                        (187 lines)  — Contract & scene graph validation
+│   ├── threadTest.js                       (47 lines)   — StoryThreads creation & formatting
+│   └── integrationTest.js                  (425 lines)  — State merging, error recovery, endings
+│
+├── images/                                 — 17 pre-generated scene images (.png)
+├── icons/                                  — PWA icons (192px, 512px)
+├── claude.md                               — Full project documentation
+└── WU-BOB.md                              — Coding standards (Uncle Bob + Wu-Tang)
+```
+
+## MODULE RESPONSIBILITIES
+
+### app.js — Main Controller
+- `init()` — Initialize renderer, load settings, bind events, register service worker
+- `startGame()` — Create game state, select service (mock vs Gemini), load opening scene
+- `handleChoice(choiceId)` — Process player choice: call service, merge storyThreadUpdates, render scene. Has `isProcessing` race guard and auto-fallback to mock on Gemini failure.
+- `applyScene(scene)` — Apply validated scene to state, render. Extracted for DRY between normal and fallback paths.
+- `handleEnding(scene)` — Unlock ending in localStorage, calculate stats, render ending screen
+- `retryLastChoice()` — Re-attempt last choice with history backup/restore on failure
+- `loadSettings()` / `saveSettings()` — localStorage read/write with JSON parse
+- `safeSetItem(key, value)` — Quota-aware localStorage wrapper (returns boolean)
+- Global state: `gameState`, `settings`, `storyService`, `geminiService`, `isProcessing`
+
+### contracts.js — Data Contracts
+- Type definitions via JSDoc: Scene, GameState, StoryThreads, Choice, Lesson, Ending
+- `createGameState()` — Factory for fresh game state
+- `createStoryThreads()` — Factory for thread defaults (8 dimensions)
+- `mergeThreadUpdates(currentThreads, updates)` — Pure function: merge partial thread updates. Returns new object. Whitelist-only keys. Array append for boundariesSet.
+- `validateScene(scene)` — Required field check (sceneId, sceneText, choices, isEnding)
+- `validateEndingType(type)` — Accepts known types + custom 3-30 char lowercase phrases
+- Enums: EndingTypes, ImageKeys, Moods, SceneIds
+
+### prompts.js — AI Prompts
+- `SYSTEM_PROMPT` — Full context for Gemini (setting, characters, lessons, writing rules, JSON format)
+- `getContinuePrompt(scenes, choice, count, ending, threads)` — Builds prompt with last 5 scenes + thread state
+- `formatThreadState(threads)` — Human-readable thread state for AI consumption
+- `suggestEndingFromHistory(history)` — Pattern-match choice IDs to suggest ending type
+- `getOpeningPrompt()` — Opening scene prompt
+- `getRecoveryPrompt(invalidOutput)` — Retry prompt for malformed JSON
+
+### renderer.js — DOM Manipulation
+- `renderScene(scene, showLessons)` — Image, typewriter text, choices, lesson popup
+- `renderEnding(endingType, stats, unlockedEndings)` — Ending badge, stats, unlock display
+- `showError(message)` — Error with retry button in choices container
+- `showChoicesLoading()` — Loading indicator (replaces choice buttons)
+- `updateSettingsUI(settings)` — Sync settings screen to state
+- `imagePaths` — Map ImageKeys to file paths (13 entries)
+- `escapeHtml(text)` — XSS prevention via textContent trick
+
+### geminiStoryService.js — Gemini API
+- `callGemini(prompt)` — POST to Gemini API with responseSchema for structured JSON output
+- `parseResponse(text)` — 3-strategy JSON extraction: direct parse → markdown block → regex object match
+- `formatScene(response, sceneId)` — Map API response to Scene object with defaults and validation
+- `getNextScene(currentSceneId, choiceId, gameState)` — Passes storyThreads to getContinuePrompt
+- Model fallback: gemini-3-pro-preview → gemini-3-flash-preview
+- Temperature: 0.8, maxOutputTokens: 2048
+
+### mockStoryService.js — Static Story
+- 44 hand-written scenes with 4 endings (loop, shift, exit, rare)
+- `getNextScene()` never throws — falls back to ending_loop on invalid input
+- `isAvailable()` always returns true
+
+## REVIEW PRIORITIES (ordered by demo risk)
+
+### 1. ERROR HANDLING (HIGHEST PRIORITY)
+Read every try-catch block. For each one:
+- Does it catch the right error types?
+- Does it show a useful message to the user?
+- Can the game recover, or is it stuck?
+- Is there a fallback path?
+
+Specific areas:
+- `handleChoice()` catch block — does auto-fallback to mock work correctly?
+- `callGemini()` — model fallback logic (primary → fallback model)
+- `loadSettings()` — what happens with corrupted localStorage?
+- `startGame()` — what if both services fail?
+- `retryLastChoice()` — history backup/restore on failure
+
+### 2. STATE MANAGEMENT
+- `mergeThreadUpdates()` — is the whitelist approach correct? Any mutation risks?
+- `gameState` is a global mutable object — any concurrent access issues?
+- `isProcessing` flag — does it cover all code paths (including fallback)?
+- History array — can it grow unbounded? Memory concerns?
+- `applyScene()` — is it called with correct arguments in both normal and fallback paths?
+
+### 3. RACE CONDITIONS
+- Rapid clicks on choice buttons — is `isProcessing` sufficient?
+- `retryLastChoice()` + `handleChoice()` — can both fire simultaneously?
+- Service worker cache vs live code — version mismatch risks?
+- `showChoicesLoading()` replaces innerHTML — does this prevent clicks?
+
+### 4. localStorage ROBUSTNESS
+- `safeSetItem()` — does it handle all error types (QuotaExceeded, SecurityError, etc.)?
+- `loadSettings()` — try-catch around JSON.parse but what about partial/truncated JSON?
+- API key stored in plaintext — acceptable for prototype but flag it
+- No quota monitoring or cleanup strategy
+
+### 5. SECURITY
+- API key in localStorage — is it exposed to XSS?
+- `escapeHtml()` in renderer — is it bulletproof? Does it cover all injection vectors?
+- Scene text from AI rendered in DOM — any XSS via typewriter effect?
+- Gemini API key in URL query param — visible in network logs
+
+### 6. PWA CORRECTNESS
+- service-worker.js ASSETS_TO_CACHE — does it match actual files on disk?
+- Cache version string — is it updated when files change?
+- Offline gameplay — does mock service work fully offline?
+- manifest.json — correct icons, start_url, display mode?
+
+## OUTPUT FORMAT
+
+For each file, provide:
+
+```
+## [filename] — [overall grade A-F]
+
+### Critical (demo-breaking)
+- [line number]: [issue description]
+
+### Warning (could cause problems)
+- [line number]: [issue description]
+
+### Suggestion (improvement, not urgent)
+- [line number]: [issue description]
+```
+
+After all files, provide:
+
+```
+## OVERALL ASSESSMENT
+
+### Demo Readiness: [1-10 score]
+### Top 3 Things To Fix Before Demo:
+1. ...
+2. ...
+3. ...
+
+### Things That Work Well:
+- ...
+```
+
+## INSTRUCTIONS
+
+1. READ EVERY FILE listed above. Do not skip any.
+2. Check actual line numbers — don't guess.
+3. If you find something that would crash during a demo, mark it CRITICAL.
+4. Focus on BEHAVIOR, not style. This project follows Wu-Bob methodology (see WU-BOB.md).
+5. Don't suggest adding TypeScript, build tools, or frameworks — that's a project constraint.
+6. Don't suggest adding comments to code you didn't find issues with.
+7. Test your mental model: trace through a complete game flow (start → 5 choices → ending) and flag any point where it could break.
+8. Pay special attention to the Gemini API integration — that's the riskiest part for a demo.
+
+BEGIN REVIEW.
+
+
+
+• Ran git status --short
+  └  M .eslintrc.json
+     M .prettierrc                                                            
+    … +21 lines                                                               
+    ?? tests/integrationTest.js                                               
+    ?? tests/rendererTest.js                                                  
+
+
+• Ran git diff --stat
+  └  .eslintrc.json                  |   70 +-
+     .prettierrc                     |   22 +-                                
+    … +15 lines                                                               
+     tests/threadTest.js             |   94 +-                                
+• I'll inspect the js/app.js diff first, targeting the developer-identified   
+  commit to spot introduced bugs and filter out irrelevant unchanged files.   
+
+• Ran git diff -- js/app.js
+  └ diff --git a/js/app.js b/js/app.js                                        
+     /**
+
+
+
+• Ran git diff -- js/contracts.js
+  └ diff --git a/js/contracts.js b/js/contracts.js
+      * @param {Scene} scene
+
+• Explored                                                                    
+  └ Read contracts.js                                                         
+
+• Ran git diff -- js/prompts.js
+  └ diff --git a/js/prompts.js b/js/prompts.js                                
+
+
+• Ran git diff -- js/renderer.js
+  └ diff --git a/js/renderer.js b/js/renderer.js
+             await new Promise((resolve) => setTimeout(resolve, speed));      
+         }
+
+• Ran git diff -- service-worker.js
+  └ diff --git a/service-worker.js b/service-worker.js                        
+    index 1f05bba..2198782 100644                                             
+    … +239 lines                                                              
+    +    }                                                                    
+    +});                                                                      
+  asset paths in the code.
+
+• Explored
+• The list includes all 17 assets, so the service worker caching likely covers
+  all plus the initial load; I'll inspect the manifest differences to confirm.
+
+• Ran git diff -- manifest.json
+  └ diff --git a/manifest.json b/manifest.json                                
+    index 3b33435..57d1491 100644                                             
+    … +53 lines                                                               
+    +    "lang": "en-US"                                                      
+    +}                                                                        
+                                                                              
+  formatting noise. This will clarify if new story threads or features were   
+  genuinely added.
+
+• Ran git diff -w -- js/services/mockStoryService.js | sed -n '1,220p'        
+  └ (no output)                                                               
+                                                                              
+
+
+• Ran git diff -w -- js/app.js js/contracts.js js/renderer.js
+  │ service-worker.js tests/smokeTest.js tests/threadTest.js package.json     
+  │ eslint.config.js                                                          
+  └ diff --git a/js/app.js b/js/app.js                                        
+    index 5742567..fcea21c 100644                                             
+    … +357 lines                                                              
+                                                                              
+     // Install event - cache all static assets                               
+  test changes are only style or include new files affecting expected
+  behavior.
+
+• Ran git diff -w -- tests
+
+
+• Ran npm test
+  └
+    > sydney-story@1.0.0 test                                                 
+    … +91 lines                                                               
+    Scene not found: nonexistent_scene                                        
+    Scene not found: nonexistent_scene                                        
+                                                                              
+• I'm examining whether the retry logic now causes a new bug by losing history
+  entries when handleChoice early-returns due to an isProcessing guard, which 
+  was likely introduced recently and might lead to dropped history states on  
+  retries.                                                                    
+                                                                              
+  Analyzing fallback and retry edge cases                                     
+                                                                              
+  I confirmed the retry button can cause history loss if clicked rapidly due  
+  to the isProcessing guard now causing early returns without restoring       
+  history, making this a subtle regression likely triggered by quick double   
+  is referenced in package scripts but is present in the working tree, so     
+  likely not a commit omission.
+
+• Ran git show HEAD:js/app.js | nl -ba | sed -n '260,460p'
+  └    260            // Show game screen and render scene                    
+       261            showScreen('game');                                     
+    … +161 lines                                                              
+       423        getLessons: () => lessons                                   
+       424    };                                                              
+  the storyService to confirm its behavior in fallback scenarios.
+
+• Explored
+  currentTypewriter, ensuring any recent changes align with expected usage.   
+
+• Explored
+  └ Read renderer.js
+                                                                              
+• Noticed the typewriterEffect async call isn't awaited in renderScene,       
+  keys seem unchanged so far.
+
+• Explored
+  expectations and potential untested bugs as requested.
+
+• Explored
+  └ Read integrationTest.js
+                                                                              
+• I'm identifying a potential service worker path bug when the app is served  
+  from a subdirectory and noting that the fallback scenario uses mocks without
+  persisting mock mode and skips scene validation, which might risk invalid   
+  states despite assumed guarantees.                                          
+                                                                              
+  Analyzing fallback logic and cache consistency                              
+                                                                              
+
+
+• Explored
+  └ Search imageKey: '[^']*' in mockStoryService.js
+    Search imageKey in mockStoryService.js                                    
+                                                                              
+• Noticed that if Gemini API fails mid-game, fallback to mock service causes  
+  abrupt story jump to ending_loop due to scene ID mismatch, which may be a   
+  demo-breaking but recoverable issue worth flagging as a warning.            
+                                                                              
+  Confirming fallback causes immediate ending                                 
+  a jarring but expected outcome from current mock logic.
+
+• Explored
+  └ Read mockStoryService.js
+                                                                              
+• The AI fallback now uses a scene ID from the dynamic AI scene not in the    
+  mock graph, causing an unintended early game ending instead of retrying or  
+  recovering. This is a regression from before, where failures prompted       
+  retries without forced ending. Also, error swallowing in choice handling    
+  prevents proper rollback after fallback failures, possibly weakening        
+  recovery despite claims of backup restores. I'll flag this for priority     
+  review.                                                                     
+                                                                              
+  Analyzing retry and concurrency edge cases                                  
+                                                                              
+  Rapid retry clicks likely don't cause history corruption due to quick UI    
+  updates removing retry buttons, so concurrency issues seem unlikely in user 
+  flows. Programmatic retry could risk history loss but isn’t typical.        
+                                                                              
+  Flagging new AbortController compatibility risk                             
+                                                                              
+  Use of global AbortController in typewriter effect may crash in older       
+  browsers lacking it, posing a demo risk.                                    
+                                                                              
+  Noting fallback logic still allows abrupt ending                            
+                                                                              
+  Fallback to mock service on AI failure causes abrupt ending when dynamic    
+  scene ID missing in mock graph; this behavior is a regression and should be 
+  fixed for smoother recovery.                                                
+                                                                              
+  Identifying dead code in retry error handling                               
+                                                                              
+  retryLastChoice’s catch block never triggers because handleChoice swallows  
+  all errors, weakening rollback on failure but not causing major breakage.   
+                                                                              
+  Highlighting partial fix in thread update merge                             
+                                                                              
+  Merge function attempts to whitelist keys but still risks prototype         
+  pollution via "proto" keys due to improper key checks; vulnerability seems  
+  preexisting though.                                                         
+                                                                              
+  Confirming no major regression on service-worker caching and asset paths    
+                                                                              
+  Caching changes and asset paths appear consistent, unlikely to cause        
+  crashes.                                                                    
+                                                                              
+  Overall, abort compatibility and fallback abrupt end are key risks;         
+  concurrency and thread merge issues are low priority or preexisting.        
+                                                                              
+  Confirming no major new runtime bugs in typewriter and startGame            
+                                                                              
+
+
+• Ran npm run lint
+  └
+    > sydney-story@1.0.0 lint                                                 
+    … +6 lines                                                                
+    ✖ 1 problem (0 errors, 1 warning)                                         
+
+                                                                              
+• The unused catch variable warning is minor and not a bug, and potential     
+  fallback scene validation issues may not apply due to expected service      
+  behavior. Error swallowing in the retry logic means retry always resolves   
+  without restoring history, but this doesn’t cause crashes, just possibly no 
+  visible retry failure.                                                      
+                                                                              
+  Flagging fallback scene incompatibility causing abrupt demo end             
+                                                                              
+  A critical fallback bug causes the mock story service to receive invalid    
+  scene IDs after an AI scene failure, returning an ending scene that         
+  prematurely ends the demo on transient API hiccups. This breaks gameplay    
+  continuity and warrants high-priority fix.                                  
+                                                                              
+<< Code review finished >>                                                    
+                                                                              
+─ Worked for 5m 41s ──────────────────────────────────────────────────────────                                                                              
+• The added fallback behavior can prematurely terminate active AI playthroughs
+  whenever Gemini fails, because mock continuation is attempted from          
+  incompatible scene IDs. This is a functional regression in a high-risk      
+  error-handling path.                                                        
+                                                                              
+  Review comment:                                                             
+                                                                              
+  - [P1] Keep fallback from forcing immediate mock ending — /mnt/c/Users/     
+    latro/Downloads/t/sydney-story/js/app.js:326-327                          
+    The new Gemini→mock fallback path calls                                   
+    mockStoryService.getNextScene(gameState.currentSceneId, ...), but Gemini  
+    scene IDs are generated dynamically (e.g. scene_2_...) and do not exist in
+    instead of recovering gracefully, which is especially disruptive in a live
+    demo.
+
+
+  to fixing all these problems. also provide a letter grade for the project   
+  so far as well as offer some unsolicited feedback. are there any other      
+  problems  you suspect or didnt mention>
+
+                                                                              
+
+
+• Explored                                                                    
+  └ List ls -la                                                               
+    Read app.js                                                               
+
+• Ran git status --short
+  └  M .eslintrc.json                                                         
+     M .prettierrc                                                            
+    … +21 lines                                                               
+    ?? tests/integrationTest.js                                               
+    ?? tests/rendererTest.js                                                  
+                                                                              
+  additional possible problems.
+
+• Explored
+
+
+• Explored
+  └ List js
+    Search gemini|storyservice|service                                        
+  then examine the Gemini service's formatting scene for potential issues.    
+
+• Explored
+  └ Read geminiStoryService.js
+
+
+• Explored
+  └ Search getNextScene|ending_loop|sceneId in mockStoryService.js
+    Read mockStoryService.js                                                  
+
+
+• Explored
+  └ Search fallback|Gemini failed|mock service|retryLastChoice|handleChoice|  
+           ending_loop in js                                                  
+    Read app.js                                                               
+  included in the new file.
+
+• Explored
+  └ Read integrationTest.js
+                                                                              
+• I'm consolidating confirmed findings with suspected risks around error      
+  handling and fallback mocks, noting that retry catch blocks may be          
+  ineffective due to swallowed errors and fallback may cause one-time scene   
+  Inspecting package scripts
+
+
+
+• Ran npm test
+  └
+    > sydney-story@1.0.0 test
+    … +91 lines                                                               
+    Scene not found: nonexistent_scene                                        
+    Scene not found: nonexistent_scene                                        
+                                                                              
+• I'm noting fallback path may apply scenes without validation, risking issues
+  if mocks had invalid scenes, though current mocks are valid. Also,          
+  retryLastChoice duplicates history entries but likely harmless since        
+  failures prevent scene advances and errors are caught. Concern about        
+  fallback errors lacking retry failure recovery seems minor. Switching to    
+  mock mid-run may cause AI story history mismatches, possibly fixable with   
+  bridging scenes. I'll consider generating a findings file to track these    
+  suspicions.                                                                 
+                                                                              
+  Identifying gap in regression testing                                       
+                                                                              
+
+
+• Explored
+  └ Search showError|retry-btn|choices loading|error in renderer.js
+    Read renderer.js                                                          
+                                                                              
+• I'm planning to create a detailed markdown file named codexreview.md with   
+  dated findings and a step-by-step checklist, covering the main P1 issue plus
+  possible P2 suspects and an AI tool action plan.                            
+                                                                              
+  Detailing findings and checklist                                            
+                                                                              
+
+
+• Ran cat > codexreview.md <<'EOF'
+  └ (no output)
+
+• Explored
+  └ Read codexreview.md
+
+
+
+› continue
+  command finished before reporting completion.
+
+• Ran git status --short codexreview.md && wc -l codexreview.md
+  └ ?? codexreview.md
+    60 codexreview.md                                                         
+                                                                              
+• I'll provide a concise summary with the findings file path and note the     
+  verified existence, then check if the user wants any fixes or further tasks.                                                                              
+─ Worked for 8s ──────────────────────────────────────────────────────────────
+
+• Done — I verified the interrupted step completed successfully.
+                                                                              
+  - Created codexreview.md with:                                              
+      - Confirmed findings (including the P1 fallback regression)
+      - Additional suspected issues                                           
+      - A detailed step-by-step AI-fix checklist                              
+      - A project letter grade                                                
+      - Unsolicited feedback                                                  
+      - Direct answer to “any other problems you suspect”                     
+                                                                              
+  File is present and currently untracked in git: codexreview.md (60 lines).  
+ 
+ 
+› Implement {feature}
+ 
+  ? for shortcuts                                           93% context left  

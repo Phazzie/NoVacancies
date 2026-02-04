@@ -1,0 +1,222 @@
+You are implementing test suite for a JavaScript PWA game. Read the specification carefully.
+
+PROJECT CONTEXT:
+- File: sydney-story/tests/rendererTest.js
+- Framework: Vanilla JavaScript ES6 modules, no test framework
+- Environment: Browser (DOM available)
+- Existing files: js/renderer.js, js/contracts.js, js/lessons.js
+
+YOUR TASK:
+Implement tests/rendererTest.js following GEMINI_TEST_SPEC.md exactly.
+
+CRITICAL RULES:
+1. NO SHORTCUTS - Every assertion must verify actual behavior
+2. NO MOCKING - Test real DOM elements from index.html
+3. Use console.assert(condition, 'descriptive failure message')
+4. Clean up DOM after each test (remove added elements)
+5. Use real Scene/GameState objects from contracts.js
+6. Test edge cases (empty arrays, invalid data, special chars)
+7. Each test must have minimum 3 assertions
+8. Failed assertions must show expected vs actual values
+
+FORBIDDEN:
+❌ assert(true, 'passes') - This tests nothing
+❌ Assuming functions work without calling them
+❌ Skipping edge cases
+❌ Using typeof checks when you should test specific properties
+❌ Leaving test elements in DOM
+
+FILE TO CREATE: tests/rendererTest.js
+
+REQUIRED FUNCTIONS TO TEST:
+- renderScene(scene, showLessons) from js/renderer.js
+- updateSettingsUI(settings) from js/renderer.js
+- showError(message) from js/renderer.js
+- Image path mapping validation
+
+TEST SUITES (8 tests total):
+
+Suite 1: DOM Element Rendering
+- Test 1.1: renderScene() - Scene text display (3+ assertions)
+- Test 1.2: renderScene() - Choice buttons (5+ assertions)
+- Test 1.3: renderScene() - Image loading (3+ assertions)
+- Test 1.4: renderScene() - Lesson popup when enabled (3+ assertions)
+
+Suite 2: Settings & State Sync
+- Test 2.1: updateSettingsUI() - Mode toggle (5+ assertions)
+- Test 2.2: updateSettingsUI() - API key section visibility (3+ assertions)
+
+Suite 3: Error Handling
+- Test 3.1: showError() - Display (3+ assertions)
+- Test 3.2: renderScene() - Empty choices array (4+ assertions)
+
+Suite 4: Image Path Validation
+- Test 4.1: All ImageKeys have valid paths (4+ assertions)
+
+EXAMPLE TEST STRUCTURE:
+```javascript
+export function testSceneRendering() {
+    console.log('🎨 Testing Scene Rendering...\n');
+
+    // Test 1.1: Scene Text Display
+    console.log('Test 1.1: Scene text renders correctly');
+
+    // Setup
+    const scene = {
+        sceneId: 'test_1',
+        sceneText: 'You wake up in a motel room. The air smells stale.',
+        choices: [{id: 'a', text: 'Look around'}],
+        lessonId: null,
+        imageKey: 'hotel_room',
+        isEnding: false,
+        endingType: null,
+        mood: 'neutral'
+    };
+
+    // Action
+    renderScene(scene, false);
+
+    // Assertions
+    const textElement = document.querySelector('#scene-text');
+    console.assert(textElement !== null, '❌ #scene-text element not found');
+    console.assert(
+        textElement.textContent.includes('You wake up'),
+        `❌ Expected scene text to include "You wake up", got "${textElement.textContent}"`
+    );
+    console.assert(
+        textElement.textContent.length > 0,
+        '❌ Scene text should not be empty'
+    );
+
+    console.log('✅ Test 1.1 passed\n');
+
+    // Continue with Test 1.2, 1.3, 1.4...
+}
+```
+
+ASSERTION PATTERN:
+```javascript
+// ✅ GOOD - Tests actual behavior
+const element = document.querySelector('#target');
+console.assert(element !== null, '❌ Element not found');
+console.assert(element.textContent === 'Expected', `❌ Expected "Expected", got "${element.textContent}"`);
+console.assert(element.classList.contains('active'), '❌ Missing active class');
+
+// ❌ BAD - Assumes without testing
+console.assert(true, '✅ Probably works');
+console.assert(typeof element === 'object', '✅ Element exists'); // Too vague!
+```
+
+EDGE CASES TO TEST:
+- Scene with HTML/script tags in text (XSS prevention)
+- Empty choices array
+- Invalid imageKey
+- Very long scene text (500+ chars)
+- Special characters in text (&, <, >, ", ')
+- Missing DOM elements
+- Null/undefined values
+
+FILE STRUCTURE:
+```javascript
+/**
+ * Renderer Test Suite
+ * Tests DOM manipulation and UI updates
+ */
+
+import { renderScene, updateSettingsUI, showError, getElements, initRenderer } from '../js/renderer.js';
+import { createGameState, ImageKeys } from '../js/contracts.js';
+import { lessons } from '../js/lessons.js';
+
+// Check environment
+if (typeof document === 'undefined') {
+    console.error('❌ Tests must run in browser environment');
+    process.exit(1);
+}
+
+// Initialize renderer
+initRenderer();
+
+export function testSceneRendering() { /* ... */ }
+export function testSettingsUI() { /* ... */ }
+export function testErrorHandling() { /* ... */ }
+export function testImagePaths() { /* ... */ }
+
+export function runAllRendererTests() {
+    console.log('========================================');
+    console.log('RENDERER TEST SUITE');
+    console.log('========================================\n');
+
+    let passed = 0;
+    let failed = 0;
+
+    try {
+        testSceneRendering();
+        passed++;
+    } catch (e) {
+        console.error('❌ Scene rendering failed:', e);
+        failed++;
+    }
+
+    try {
+        testSettingsUI();
+        passed++;
+    } catch (e) {
+        console.error('❌ Settings UI failed:', e);
+        failed++;
+    }
+
+    try {
+        testErrorHandling();
+        passed++;
+    } catch (e) {
+        console.error('❌ Error handling failed:', e);
+        failed++;
+    }
+
+    try {
+        testImagePaths();
+        passed++;
+    } catch (e) {
+        console.error('❌ Image paths failed:', e);
+        failed++;
+    }
+
+    console.log('\n========================================');
+    console.log(`RENDERER TESTS: ${passed} passed, ${failed} failed`);
+    console.log('========================================\n');
+
+    return failed === 0;
+}
+
+// Auto-run
+if (typeof window !== 'undefined') {
+    runAllRendererTests();
+}
+```
+
+DELIVERABLE CHECKLIST:
+- [ ] File: tests/rendererTest.js
+- [ ] All 8 tests implemented
+- [ ] Minimum 25 total assertions
+- [ ] Tests run in browser console
+- [ ] No assert(true) placeholders
+- [ ] DOM cleanup after each test
+- [ ] Edge cases tested
+- [ ] Export runAllRendererTests()
+
+HOW TO TEST YOUR IMPLEMENTATION:
+1. Open sydney-story/index.html in Chrome/Firefox
+2. Open DevTools Console (F12)
+3. Run: `import('./tests/rendererTest.js').then(m => m.runAllRendererTests())`
+4. Verify: All tests pass, no errors
+5. Check: DOM is clean (no leftover test elements)
+
+ESTIMATED TIME: 55 minutes
+- Suite 1: 25 min
+- Suite 2: 15 min
+- Suite 3: 10 min
+- Suite 4: 5 min
+
+READ GEMINI_TEST_SPEC.md for complete details on each test.
+
+BEGIN IMPLEMENTATION NOW. Return only the complete tests/rendererTest.js file.
