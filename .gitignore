@@ -33,3 +33,8 @@ coverage/
 # Temporary files
 *.tmp
 .cache/
+
+# Playwright local browser/cache artifacts
+.playwright-browsers/
+test-results/
+test_output.txt

@@ -165,7 +165,7 @@ Sydney doesn't just "pay bills." She manages:
 ## SPECIFIC MEMORIES/HISTORY
 - **The "Incident"**: 3 months ago, Sydney let Oswaldo take her car to "run an errand." He let a girl named Krystal drive it. She totaled it. Oswaldo called Sydney from the scene, worried about how Krystal was feeling. Sydney is still paying the insurance premium. Oswaldo: "Krystal was going through something."
 - **Why Trina is here**: Sydney let her crash "for one night" during a storm. Oswaldo likes having an audience.
-- **The Laptop**: A battered ThinkPad. The only thing generating revenue. Oswaldo calls it "your obsession."
+- **The Multi-Phone Setup**: 3-5 burner smartphones with pop sockets. That's the revenue engine. Oswaldo calls it "your obsession."
 
 ## DARK HUMOR EXAMPLES
 - Oswaldo wakes at 2pm: "What'd you do today?"
@@ -211,8 +211,16 @@ ${formatLessonsForPrompt()}
 Every scene should have ONE specific sensory detail:
 - The hum of the ice machine
 - The smell of stale cigarettes and cold pizza
-- The blue glow of her laptop in the dark
+- The blue glow of 3-5 phone screens in the dark
 - The weight of the phone in her hand
+
+## VISUAL GUARDRAILS (FOR IMAGE KEY CHOICE)
+- Never depict Oswaldo's face or bare skin in any image.
+- If using 'oswaldo_sleeping' or 'oswaldo_awake', frame from behind, partial silhouette, or with clothing/blankets fully covering skin.
+- Sydney visual continuity: 44, brunette, asymmetric bob, blue eyes, conventionally attractive.
+- When depicting work/setup moments, show Sydney with 3-5 phones in her hands/lap, each with pop sockets (not a laptop).
+- Keep framing intimate and grounded to motel reality (tight interiors, harsh practical light, dawn neon spill).
+- Prefer Sydney-centered image keys unless a scene explicitly requires Oswaldo's presence.
 
 ## ENDINGS
 You may create custom endings as poetic 1-3 word phrases. Examples:
@@ -252,6 +260,7 @@ You must respond with valid JSON matching this schema:
   ],
   "lessonId": 1,  // Which lesson (1-17) this scene demonstrates, or null (prefer null unless one lesson is clearly central)
   "imageKey": "hotel_room",  // One of: hotel_room, sydney_laptop, sydney_thinking, sydney_frustrated, sydney_tired, sydney_phone, sydney_coffee, sydney_window, oswaldo_sleeping, oswaldo_awake, the_door, empty_room, motel_exterior
+                           // Visual constraint: never show Oswaldo face/skin. For 'sydney_laptop' key, depict Sydney using 3-5 smartphones with pop sockets.
   "isEnding": false,  // true if this is a final scene
   "endingType": null,  // "loop", "shift", "exit", "rare", or a custom phrase if isEnding is true
   "mood": "tense",  // One of: neutral, tense, hopeful, dark, triumphant
@@ -333,6 +342,7 @@ Continue the story based on this choice. Remember:
 - Weave in a lesson naturally if appropriate
 - Maintain dark humor as coping
 - Include one concrete callback to recent history or thread state
+- Avoid repeating the previous scene's exact framing or rhythm
 - Include "storyThreadUpdates" with only changed thread fields (omit field if unchanged)
 - The choice should have consequences${endingGuidance}
 

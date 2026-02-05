@@ -3,6 +3,30 @@
 Date: 2026-02-04  
 Project: `sydney-story`
 
+## Current Status Snapshot (2026-02-04)
+
+### Completed in this branch
+
+- [x] `npm run lint` passes.
+- [x] `npm test` passes (smoke + thread + integration + renderer node).
+- [x] Full pipeline passed 3 consecutive runs (`npm test` x3).
+- [x] Input validation hardening is in place:
+  - API key format validation (`js/services/geminiStoryService.js`, `js/app.js`)
+  - Choice ID normalization + uniqueness (`js/services/geminiStoryService.js`)
+  - Invalid UI choice ID rejection (`js/app.js`)
+- [x] AI quality/error-handling coverage added:
+  - bounded parse-recovery/fallback tests
+  - continuity/anti-repetition/choice-distinctness tests
+  - timeout and malformed-output tests
+
+### Still required to call demo “complete”
+
+- [ ] Run Playwright reliability suite on a machine that can:
+  - install Chromium for Playwright
+  - bind localhost port for the e2e static server
+- [ ] Execute manual AI demo QA pass (real API key, fallback behavior, ending flow, mobile sanity).
+- [ ] Final go/no-go signoff update in `codexreview.md`.
+
 ## 1) Definition of Done (Friend Demo with AI Mode)
 
 Use this as the release gate. Every item must be checked before demoing.

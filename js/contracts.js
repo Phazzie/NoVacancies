@@ -40,7 +40,7 @@
 /**
  * @typedef {Object} GameState
  * @property {string} currentSceneId - ID of the current scene
- * @property {Array<{sceneId: string, choiceId: string, timestamp: number}>} history - All previous choices
+ * @property {Array<{sceneId: string, choiceId: string, choiceText?: string, timestamp: number}>} history - All previous choices
  * @property {number[]} lessonsEncountered - Array of lesson IDs encountered
  * @property {StoryThreads} storyThreads - Continuity tracking for narrative consistency
  * @property {string} [apiKey] - Gemini API key if using real AI
@@ -213,6 +213,56 @@ export function validateChoice(choice) {
     if (!choice) return false;
     if (typeof choice.id !== 'string') return false;
     if (typeof choice.text !== 'string') return false;
+    return true;
+}
+
+/**
+ * @typedef {Object} PlaythroughRecap
+ * @property {number} version - Schema version for forward compatibility
+ * @property {string} generatedAt - ISO timestamp when recap was generated
+ * @property {'mock'|'ai'} mode - Story mode used for this run
+ * @property {string} endingType - Ending type reached by the player
+ * @property {string} endingTitle - Display title for this ending
+ * @property {{sceneCount:number, choiceCount:number, lessonsCount:number, durationMs:number}} stats
+ * @property {{count:number, total:number, list:string[]}} unlocked
+ * @property {Array<{sceneId:string, choiceId:string, choiceText:string, timestamp:number}>} keyChoices
+ * @property {{[key:string]:unknown}} threadDeltas - Changed continuity values only
+ * @property {string} text - Plain text export payload for copy/download
+ */
+
+/**
+ * Validate playthrough recap payload shape.
+ * @param {PlaythroughRecap} recap
+ * @returns {boolean}
+ */
+export function validatePlaythroughRecap(recap) {
+    if (!recap || typeof recap !== 'object') return false;
+    if (typeof recap.version !== 'number') return false;
+    if (typeof recap.generatedAt !== 'string' || Number.isNaN(Date.parse(recap.generatedAt))) return false;
+    if (recap.mode !== 'mock' && recap.mode !== 'ai') return false;
+    if (typeof recap.endingType !== 'string' || recap.endingType.length === 0) return false;
+    if (typeof recap.endingTitle !== 'string' || recap.endingTitle.length === 0) return false;
+    if (!recap.stats || typeof recap.stats !== 'object') return false;
+    if (!Number.isInteger(recap.stats.sceneCount) || recap.stats.sceneCount < 0) return false;
+    if (!Number.isInteger(recap.stats.choiceCount) || recap.stats.choiceCount < 0) return false;
+    if (!Number.isInteger(recap.stats.lessonsCount) || recap.stats.lessonsCount < 0) return false;
+    if (!Number.isInteger(recap.stats.durationMs) || recap.stats.durationMs < 0) return false;
+    if (!recap.unlocked || typeof recap.unlocked !== 'object') return false;
+    if (!Number.isInteger(recap.unlocked.count) || recap.unlocked.count < 0) return false;
+    if (!Number.isInteger(recap.unlocked.total) || recap.unlocked.total < 0) return false;
+    if (!Array.isArray(recap.unlocked.list)) return false;
+    if (!Array.isArray(recap.keyChoices)) return false;
+    if (!recap.keyChoices.every((entry) =>
+        entry &&
+        typeof entry.sceneId === 'string' &&
+        typeof entry.choiceId === 'string' &&
+        typeof entry.choiceText === 'string' &&
+        Number.isInteger(entry.timestamp)
+    )) return false;
+    if (!recap.threadDeltas || typeof recap.threadDeltas !== 'object' || Array.isArray(recap.threadDeltas)) {
+        return false;
+    }
+    if (typeof recap.text !== 'string' || recap.text.trim().length === 0) return false;
     return true;
 }
 

@@ -7,7 +7,7 @@
  * - Ghostface: Aggressive assertions, no mercy for edge cases.
  */
 
-import { renderScene, updateSettingsUI, showError, getElements, initRenderer, imagePaths, hideLessonPopup } from '../js/renderer.js';
+import { renderScene, renderEnding, updateSettingsUI, showError, getElements, initRenderer, imagePaths, hideLessonPopup } from '../js/renderer.js';
 import { ImageKeys, validateScene } from '../js/contracts.js';
 import { lessons } from '../js/lessons.js';
 
@@ -245,6 +245,38 @@ function testAssetIntegrity() {
     console.log('✅ Passed');
 }
 
+
+function testEndingRecapUiScaffold() {
+    console.log('Test: Ending Recap UI Scaffold');
+    const recapPanel = document.getElementById('ending-recap-panel');
+    const recapText = document.getElementById('ending-recap-text');
+    const copyButton = document.getElementById('copy-recap-btn');
+    const downloadButton = document.getElementById('download-recap-btn');
+
+    assert(recapPanel, 'Ending recap panel should exist');
+    assert(recapText, 'Ending recap text container should exist');
+    assert(copyButton, 'Copy recap button should exist');
+    assert(downloadButton, 'Download recap button should exist');
+    console.log('Passed');
+}
+
+function testRenderEndingRecapText() {
+    console.log('Test: Render Ending Recap Text');
+    const recap = { text: 'Recap export line 1\nRecap export line 2' };
+    renderEnding(
+        'loop',
+        { sceneCount: 4, lessonsCount: 2, duration: 9000 },
+        ['loop'],
+        recap
+    );
+
+    assert(
+        elements.endingRecapText.textContent.includes('Recap export line 1'),
+        'Ending recap text should be rendered when recap is provided'
+    );
+    console.log('Passed');
+}
+
 // --- RUNNER (The Master of Ceremonies) ---
 
 export async function runAllRendererTests() {
@@ -262,7 +294,9 @@ export async function runAllRendererTests() {
         testErrorDisplay,
         testChoiceFocusAndLineBreaks,
         testSceneTextFocusWhenNoChoices,
-        testAssetIntegrity
+        testAssetIntegrity,
+        testEndingRecapUiScaffold,
+        testRenderEndingRecapText
     ];
 
     let passed = 0;

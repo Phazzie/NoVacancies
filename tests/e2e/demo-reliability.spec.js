@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 const GEMINI_ROUTE_GLOB = '**/v1beta/models/*:generateContent**';
+const TELEMETRY_STAGE_SET = new Set([
+    'request_start',
+    'model_used',
+    'parse_recovery_attempt',
+    'fallback_trigger',
+    'final_success',
+    'final_failure'
+]);
 
 function createSceneResponse(sceneText, choices, overrides = {}) {
     return {
@@ -91,7 +99,8 @@ async function configureGeminiRoute(page, options = {}) {
 
 async function openAndStartInAiMode(page) {
     await page.goto('/');
-    await expect(page.locator('#start-btn')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#title-screen')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('#title-screen #start-btn')).toBeVisible({ timeout: 15000 });
 
     await page.click('#settings-btn');
     await expect(page.locator('#settings-screen')).toHaveClass(/active/);
@@ -100,8 +109,14 @@ async function openAndStartInAiMode(page) {
     await expect(page.locator('#mode-ai')).toHaveClass(/active/);
 
     const apiKeyInput = page.locator('#api-key-input');
-    await apiKeyInput.fill('AIza-demo-key-for-e2e');
+    await apiKeyInput.fill('AIza_demo_key_for_e2e_testing_12345');
     await apiKeyInput.blur();
+    await expect.poll(async () => page.evaluate(() => window.sydneyStory?.getSettings?.().apiKeySet)).toBe(
+        true
+    );
+    await expect
+        .poll(async () => page.evaluate(() => Object.hasOwn(window.sydneyStory?.getSettings?.(), 'apiKey')))
+        .toBe(false);
 
     await page.click('#settings-back-btn');
     await expect(page.locator('#title-screen')).toHaveClass(/active/);
@@ -111,6 +126,25 @@ async function openAndStartInAiMode(page) {
     await expect(page.locator('#game-screen')).toHaveClass(/active/, { timeout: 15000 });
     await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
 }
+
+test('Startup resilience: corrupt persisted settings do not block entering game', async ({ page }) => {
+    await page.addInitScript(() => {
+        localStorage.setItem('sydney-story-settings', '{broken-json');
+        localStorage.setItem('sydney-story-endings', '{broken-json');
+        sessionStorage.setItem('sydney-story-api-key-session', 'bad-key');
+    });
+
+    await page.goto('/');
+    await expect(page.locator('#title-screen')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('#title-screen #start-btn')).toBeVisible({ timeout: 15000 });
+    await expect.poll(async () => page.evaluate(() => window.sydneyStory?.getSettings?.().apiKeySet)).toBe(
+        false
+    );
+
+    await page.locator('#title-screen.active #start-btn').click({ timeout: 15000 });
+    await expect(page.locator('#game-screen')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
+});
 
 async function chooseFirstOptionAndWaitForTransition(page) {
     const sceneText = page.locator('#scene-text');
@@ -126,6 +160,24 @@ async function chooseFirstOptionAndWaitForTransition(page) {
             return { current, changed: current !== previousText && current.length > 24 };
         })
         .toMatchObject({ changed: true });
+}
+
+function assertTelemetryContract(entries, requiredStages = []) {
+    expect(Array.isArray(entries)).toBe(true);
+    expect(entries.length).toBeGreaterThan(0);
+
+    for (const entry of entries) {
+        expect(typeof entry.stage).toBe('string');
+        expect(TELEMETRY_STAGE_SET.has(entry.stage)).toBe(true);
+        expect(typeof entry.timestamp).toBe('string');
+        expect(Number.isNaN(Date.parse(entry.timestamp))).toBe(false);
+        expect(typeof entry.payload).toBe('object');
+        expect(entry.payload).not.toBeNull();
+    }
+
+    for (const stage of requiredStages) {
+        expect(entries.some((entry) => entry.stage === stage)).toBe(true);
+    }
 }
 
 test('AI mode smoke flow: 2 choices with loading + transitions and no dead-end UI', async ({
@@ -174,4 +226,119 @@ test('AI fallback flow: mid-run failure continues gracefully without blank/dead-
     const stages = telemetry.map((entry) => entry.stage);
     expect(stages).toContain('fallback_trigger');
     expect(stages).toContain('final_failure');
+});
+
+test('Telemetry contract: AI pipeline entries keep required schema', async ({ page }) => {
+    await configureGeminiRoute(page, { failAfterSuccesses: null, networkDelayMs: 200 });
+    await openAndStartInAiMode(page);
+    await chooseFirstOptionAndWaitForTransition(page);
+
+    const telemetry = await page.evaluate(() => window.__sydneyAiTelemetry || []);
+    assertTelemetryContract(telemetry, ['request_start', 'model_used', 'final_success']);
+});
+
+test('Retry flow: after Gemini+fallback failure, retry remains interactive and recovers', async ({
+    page
+}) => {
+    await configureGeminiRoute(page, { failAfterSuccesses: 2, networkDelayMs: 250 });
+    await openAndStartInAiMode(page);
+    await chooseFirstOptionAndWaitForTransition(page);
+
+    await page.evaluate(async () => {
+        const module = await import('/js/services/mockStoryService.js');
+        const service = module.mockStoryService;
+        const originalRecovery = service.getRecoveryScene.bind(service);
+
+        service.getRecoveryScene = async () => {
+            throw new Error('Forced recovery failure from E2E');
+        };
+
+        window.__e2eRestoreMockRecovery = () => {
+            service.getRecoveryScene = originalRecovery;
+        };
+    });
+
+    try {
+        await page.locator('.choice-btn').first().click();
+        await expect(page.locator('.loading-indicator')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#retry-btn')).toBeVisible({ timeout: 20000 });
+
+        await page.evaluate(() => window.__e2eRestoreMockRecovery?.());
+        await page.locator('#retry-btn').click();
+
+        await expect
+            .poll(
+                async () =>
+                    page.evaluate(() => {
+                        const endingActive = document
+                            .getElementById('ending-screen')
+                            ?.classList.contains('active');
+                        const visibleChoices = document.querySelectorAll(
+                            '#choices-container .choice-btn'
+                        ).length;
+                        const retryVisible = !!document.querySelector('#retry-btn');
+                        return (endingActive || visibleChoices > 0) && !retryVisible;
+                    }),
+                { timeout: 15000 }
+            )
+            .toBe(true);
+    } finally {
+        await page.evaluate(() => window.__e2eRestoreMockRecovery?.());
+    }
+});
+
+test('Storage quota failure: app remains playable when localStorage writes fail', async ({ page }) => {
+    await page.addInitScript(() => {
+        const originalSetItem = Storage.prototype.setItem;
+
+        Storage.prototype.setItem = function setItemWithQuotaGuard(key, value) {
+            if (
+                this === localStorage &&
+                (key === 'sydney-story-settings' || key === 'sydney-story-endings')
+            ) {
+                throw new DOMException('Quota exceeded', 'QuotaExceededError');
+            }
+
+            return originalSetItem.call(this, key, value);
+        };
+    });
+
+    await page.goto('/');
+    await expect(page.locator('#title-screen')).toHaveClass(/active/, { timeout: 15000 });
+    await page.locator('#title-screen.active #start-btn').click({ timeout: 15000 });
+    await expect(page.locator('#game-screen')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.error-message')).toHaveCount(0);
+});
+
+test.describe('Service worker compatibility smoke', () => {
+    test.use({ serviceWorkers: 'allow' });
+
+    test('Service worker registers and game still starts', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.locator('#title-screen')).toHaveClass(/active/, { timeout: 15000 });
+
+        await expect
+            .poll(
+                async () =>
+                    page.evaluate(async () => {
+                        if (!('serviceWorker' in navigator)) return 'unsupported';
+                        const registration = await navigator.serviceWorker.getRegistration();
+                        return registration ? 'registered' : 'pending';
+                    }),
+                { timeout: 20000 }
+            )
+            .toBe('registered');
+
+        await page.locator('#title-screen.active #start-btn').click({ timeout: 15000 });
+        await expect(page.locator('#game-screen')).toHaveClass(/active/, { timeout: 15000 });
+        await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
+    });
+});
+
+test('Ending recap controls are present in ending screen markup', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#copy-recap-btn')).toHaveCount(1);
+    await expect(page.locator('#download-recap-btn')).toHaveCount(1);
+    await expect(page.locator('#ending-recap-text')).toHaveCount(1);
 });

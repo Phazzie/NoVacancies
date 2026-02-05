@@ -4,10 +4,16 @@
  * Orchestrates the game: state management, event handling, service coordination.
  */
 
-import { createGameState, validateScene, mergeThreadUpdates } from './contracts.js';
+import {
+    createGameState,
+    validateScene,
+    mergeThreadUpdates,
+    validatePlaythroughRecap
+} from './contracts.js';
 import { lessons } from './lessons.js';
 import { mockStoryService } from './services/mockStoryService.js';
 import { emitAiTelemetry } from './services/aiTelemetry.js';
+import { buildPlaythroughRecap } from './services/playthroughRecap.js';
 import {
     initRenderer,
     getElements,
@@ -28,14 +34,82 @@ import {
  * App State
  */
 let gameState = null;
-let settings = {
+const settings = {
     useMocks: true,
     showLessons: true,
-    apiKey: ''
+    apiKey: '',
+    unlockedEndings: []
 };
 let storyService = mockStoryService;
 let geminiService = null;
 let isProcessing = false;
+let currentRecap = null;
+const SETTINGS_STORAGE_KEY = 'sydney-story-settings';
+const ENDINGS_STORAGE_KEY = 'sydney-story-endings';
+const API_KEY_SESSION_KEY = 'sydney-story-api-key-session';
+const API_KEY_PATTERN = /^AIza[A-Za-z0-9_-]{20,120}$/;
+
+/**
+ * Normalize and validate a Gemini API key.
+ * @param {string} value
+ * @returns {string} normalized key or empty string if invalid
+ */
+function normalizeApiKey(value) {
+    const normalized = typeof value === 'string' ? value.trim() : '';
+    return API_KEY_PATTERN.test(normalized) ? normalized : '';
+}
+
+/**
+ * Safely read a localStorage item.
+ * @param {string} key
+ * @returns {string|null}
+ */
+function safeGetItem(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch (error) {
+        console.warn(`[App] localStorage read failed for '${key}':`, error.name);
+        return null;
+    }
+}
+
+/**
+ * Persist API key to sessionStorage only (not localStorage).
+ * @param {string} apiKey
+ */
+function saveSessionApiKey(apiKey) {
+    try {
+        if (apiKey) {
+            sessionStorage.setItem(API_KEY_SESSION_KEY, apiKey);
+        } else {
+            sessionStorage.removeItem(API_KEY_SESSION_KEY);
+        }
+    } catch (error) {
+        console.warn('[App] sessionStorage write failed for API key:', error.name);
+    }
+}
+
+/**
+ * Load API key from sessionStorage.
+ * @returns {string}
+ */
+function loadSessionApiKey() {
+    try {
+        return sessionStorage.getItem(API_KEY_SESSION_KEY) || '';
+    } catch (error) {
+        console.warn('[App] sessionStorage read failed for API key:', error.name);
+        return '';
+    }
+}
+
+/**
+ * Validate choice IDs to prevent malformed or hostile input from UI tampering.
+ * @param {string} choiceId
+ * @returns {boolean}
+ */
+function isValidChoiceId(choiceId) {
+    return typeof choiceId === 'string' && /^[a-z0-9_-]{1,80}$/i.test(choiceId);
+}
 
 /**
  * Build loading message timers for long AI calls.
@@ -111,23 +185,38 @@ async function init() {
  * Load settings from localStorage
  */
 function loadSettings() {
-    try {
-        const saved = localStorage.getItem('sydney-story-settings');
-        if (saved) {
+    const saved = safeGetItem(SETTINGS_STORAGE_KEY);
+    if (saved) {
+        try {
             const parsed = JSON.parse(saved);
-            settings = { ...settings, ...parsed };
+            settings.useMocks = typeof parsed.useMocks === 'boolean' ? parsed.useMocks : settings.useMocks;
+            settings.showLessons =
+                typeof parsed.showLessons === 'boolean' ? parsed.showLessons : settings.showLessons;
+        } catch (error) {
+            console.warn('[App] Could not parse saved settings:', error);
         }
-
-        // Load unlocked endings
-        const endings = localStorage.getItem('sydney-story-endings');
-        if (endings) {
-            settings.unlockedEndings = JSON.parse(endings);
-        } else {
-            settings.unlockedEndings = [];
-        }
-    } catch (error) {
-        console.warn('[App] Could not load settings:', error);
     }
+
+    settings.apiKey = normalizeApiKey(loadSessionApiKey());
+    settings.unlockedEndings = [];
+
+    // Load unlocked endings
+    const endings = safeGetItem(ENDINGS_STORAGE_KEY);
+    if (endings) {
+        try {
+            const parsedEndings = JSON.parse(endings);
+            if (Array.isArray(parsedEndings)) {
+                settings.unlockedEndings = parsedEndings.filter(
+                    (ending) => typeof ending === 'string' && ending.trim().length > 0
+                );
+            }
+        } catch (error) {
+            console.warn('[App] Could not parse saved endings:', error);
+        }
+    }
+
+    // Remove legacy API key persistence if present.
+    saveSettings();
 }
 
 /**
@@ -154,11 +243,10 @@ function safeSetItem(key, value) {
  */
 function saveSettings() {
     safeSetItem(
-        'sydney-story-settings',
+        SETTINGS_STORAGE_KEY,
         JSON.stringify({
             useMocks: settings.useMocks,
-            showLessons: settings.showLessons,
-            apiKey: settings.apiKey
+            showLessons: settings.showLessons
         })
     );
 }
@@ -167,7 +255,7 @@ function saveSettings() {
  * Save unlocked endings
  */
 function saveUnlockedEndings() {
-    safeSetItem('sydney-story-endings', JSON.stringify(settings.unlockedEndings));
+    safeSetItem(ENDINGS_STORAGE_KEY, JSON.stringify(settings.unlockedEndings));
 }
 
 /**
@@ -212,16 +300,19 @@ function bindEvents() {
 
     els.apiKeyInput?.addEventListener('change', () => {
         const key = getApiKey();
-        
-        // Basic validation
-        if (key && !key.startsWith('AIza')) {
-            console.warn('[App] API key may be invalid - expected format: AIza...');
+        const normalizedKey = normalizeApiKey(key);
+
+        if (key && !normalizedKey) {
+            console.warn('[App] API key appears invalid.');
             els.apiKeyInput.classList.add('invalid');
+            settings.apiKey = '';
+            saveSessionApiKey('');
         } else {
             els.apiKeyInput.classList.remove('invalid');
+            settings.apiKey = normalizedKey;
+            saveSessionApiKey(normalizedKey);
         }
-        
-        settings.apiKey = key;
+
         saveSettings();
     });
 
@@ -234,7 +325,8 @@ function bindEvents() {
         const choiceBtn = e.target.closest('.choice-btn');
         if (choiceBtn) {
             const choiceId = choiceBtn.dataset.choiceId;
-            await handleChoice(choiceId);
+            const choiceText = (choiceBtn.textContent || '').trim();
+            await handleChoice(choiceId, choiceText);
         }
 
         // Retry button
@@ -251,6 +343,8 @@ function bindEvents() {
     els.mainMenuBtn?.addEventListener('click', () => {
         showScreen('title');
     });
+    els.copyRecapBtn?.addEventListener('click', copyCurrentRecap);
+    els.downloadRecapBtn?.addEventListener('click', downloadCurrentRecap);
 }
 
 /**
@@ -258,6 +352,7 @@ function bindEvents() {
  */
 async function startGame() {
     console.log('[App] Starting new game...');
+    currentRecap = null;
 
     // Create fresh game state
     gameState = createGameState();
@@ -272,9 +367,14 @@ async function startGame() {
         // Try to use Gemini service
         const gemini = await loadGeminiService();
         if (gemini && settings.apiKey) {
-            gemini.setApiKey(settings.apiKey);
-            storyService = gemini;
-            console.log('[App] Using Gemini story service');
+            if (gemini.setApiKey(settings.apiKey)) {
+                storyService = gemini;
+                console.log('[App] Using Gemini story service');
+            } else {
+                console.warn('[App] Invalid API key; falling back to mock mode');
+                storyService = mockStoryService;
+                gameState.useMocks = true;
+            }
         } else {
             console.warn('[App] No API key or Gemini unavailable, falling back to mocks');
             storyService = mockStoryService;
@@ -313,10 +413,16 @@ async function startGame() {
 /**
  * Handle a choice selection
  * @param {string} choiceId
+ * @param {string} [choiceText]
  * @returns {Promise<boolean>} true if scene was successfully applied, false on failure
  */
-async function handleChoice(choiceId) {
+async function handleChoice(choiceId, choiceText = '') {
     if (!gameState || isProcessing) return false;
+    if (!isValidChoiceId(choiceId)) {
+        console.warn('[App] Rejected invalid choice ID:', choiceId);
+        showError('Invalid choice input. Please try again.');
+        return false;
+    }
     isProcessing = true;
 
     console.log(`[App] Choice selected: ${choiceId}`);
@@ -325,6 +431,7 @@ async function handleChoice(choiceId) {
     gameState.history.push({
         sceneId: gameState.currentSceneId,
         choiceId: choiceId,
+        choiceText: typeof choiceText === 'string' ? choiceText : '',
         timestamp: Date.now()
     });
 
@@ -457,14 +564,75 @@ function handleEnding(endingScene) {
         duration: duration
     };
 
+    const builtRecap = buildPlaythroughRecap({
+        gameState,
+        endingScene,
+        unlockedEndings: settings.unlockedEndings,
+        now: Date.now()
+    });
+    currentRecap = validatePlaythroughRecap(builtRecap)
+        ? builtRecap
+        : {
+              text: 'Recap unavailable for this run.'
+          };
+
     // First render the final scene briefly
     renderScene(endingScene, settings.showLessons);
 
     // Then show ending screen after a delay
     setTimeout(() => {
-        renderEnding(endingScene.endingType, stats, settings.unlockedEndings);
+        renderEnding(endingScene.endingType, stats, settings.unlockedEndings, currentRecap);
         showScreen('ending');
     }, 3000);
+}
+
+async function copyCurrentRecap() {
+    if (!currentRecap?.text) {
+        return;
+    }
+
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(currentRecap.text);
+            return;
+        }
+    } catch (error) {
+        console.warn('[App] Clipboard API failed, falling back to legacy copy:', error?.name);
+    }
+
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = currentRecap.text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+    } catch (error) {
+        console.warn('[App] Legacy copy failed:', error?.name || error);
+    }
+}
+
+function downloadCurrentRecap() {
+    if (!currentRecap?.text) {
+        return;
+    }
+
+    const blob = new Blob([currentRecap.text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    try {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `no-vacancies-recap-${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } finally {
+        URL.revokeObjectURL(url);
+    }
 }
 
 /**
@@ -480,7 +648,7 @@ async function retryLastChoice() {
     const historyBackup = [...gameState.history];
     gameState.history.pop();
 
-    const success = await handleChoice(lastEntry.choiceId);
+    const success = await handleChoice(lastEntry.choiceId, lastEntry.choiceText || '');
     if (!success) {
         gameState.history = historyBackup;
     }
@@ -510,6 +678,11 @@ if (document.readyState === 'loading') {
 // Export for debugging
 window.sydneyStory = {
     getState: () => gameState,
-    getSettings: () => settings,
+    getSettings: () => ({
+        useMocks: settings.useMocks,
+        showLessons: settings.showLessons,
+        unlockedEndings: [...settings.unlockedEndings],
+        apiKeySet: !!settings.apiKey
+    }),
     getLessons: () => lessons
 };

@@ -23,6 +23,43 @@ const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 const PRIMARY_MODEL = 'gemini-3-pro-preview';
 const FALLBACK_MODEL = 'gemini-3-flash-preview';
 const REQUEST_TIMEOUT_MS = 15000;
+const GEMINI_API_KEY_PATTERN = /^AIza[A-Za-z0-9_-]{20,120}$/;
+const CHOICE_ID_PATTERN = /^[a-z0-9_-]{1,80}$/i;
+
+/**
+ * Normalize externally generated choice IDs to app-safe IDs.
+ * @param {unknown} rawId
+ * @param {number} index
+ * @param {Set<string>} usedIds
+ * @returns {string}
+ */
+function normalizeChoiceId(rawId, index, usedIds) {
+    const normalized =
+        typeof rawId === 'string'
+            ? rawId
+                  .trim()
+                  .toLowerCase()
+                  .replace(/[^a-z0-9_-]+/g, '_')
+                  .replace(/^_+|_+$/g, '')
+                  .slice(0, 80)
+            : '';
+    let candidate = CHOICE_ID_PATTERN.test(normalized) ? normalized : `choice_${index + 1}`;
+
+    if (!usedIds.has(candidate)) {
+        usedIds.add(candidate);
+        return candidate;
+    }
+
+    const baseCandidate = candidate;
+    let suffix = 2;
+    while (usedIds.has(candidate)) {
+        const suffixText = `_${suffix}`;
+        candidate = `${baseCandidate.slice(0, 80 - suffixText.length)}${suffixText}`;
+        suffix += 1;
+    }
+    usedIds.add(candidate);
+    return candidate;
+}
 
 /**
  * Map API image keys to our internal keys
@@ -69,10 +106,24 @@ class GeminiStoryService {
     /**
      * Set the API key
      * @param {string} apiKey
+     * @returns {boolean}
      */
     setApiKey(apiKey) {
-        this.apiKey = apiKey;
+        const normalizedKey = typeof apiKey === 'string' ? apiKey.trim() : '';
+        if (!GEMINI_API_KEY_PATTERN.test(normalizedKey)) {
+            this.apiKey = null;
+            emitAiTelemetry('final_failure', {
+                model: this.currentModel,
+                promptType: 'config',
+                reason: 'invalid_api_key'
+            });
+            console.warn('[GeminiService] Invalid API key format; AI mode unavailable');
+            return false;
+        }
+
+        this.apiKey = normalizedKey;
         console.log('[GeminiService] API key set');
+        return true;
     }
 
     /**
@@ -692,17 +743,18 @@ Return corrected JSON only.`;
         const mood = moodMap[response.mood] || Moods.NEUTRAL;
 
         // Map ending type
-        // Map ending type
         let endingType = null;
         if (response.isEnding) {
             endingType = validateEndingType(response.endingType);
         }
 
         // Format choices
+        const usedChoiceIds = new Set();
         const choices = (response.choices || []).map((c, i) => ({
-            id: c.id || `choice_${i}`,
+            id: normalizeChoiceId(c.id, i, usedChoiceIds),
             text: c.text || 'Continue...'
         }));
+        this.lastChoices = choices;
 
         const scene = {
             sceneId: sceneId,

@@ -102,6 +102,10 @@ const elements = {
     scenesCount: null,
     lessonsCount: null,
     timePlayed: null,
+    endingRecapPanel: null,
+    endingRecapText: null,
+    copyRecapBtn: null,
+    downloadRecapBtn: null,
     playAgainBtn: null,
     mainMenuBtn: null
 };
@@ -151,6 +155,10 @@ export function initRenderer() {
     elements.scenesCount = document.getElementById('scenes-count');
     elements.lessonsCount = document.getElementById('lessons-count');
     elements.timePlayed = document.getElementById('time-played');
+    elements.endingRecapPanel = document.getElementById('ending-recap-panel');
+    elements.endingRecapText = document.getElementById('ending-recap-text');
+    elements.copyRecapBtn = document.getElementById('copy-recap-btn');
+    elements.downloadRecapBtn = document.getElementById('download-recap-btn');
     elements.playAgainBtn = document.getElementById('play-again-btn');
     elements.mainMenuBtn = document.getElementById('main-menu-btn');
 
@@ -379,8 +387,9 @@ function formatEndingTitle(endingType) {
  * @param {string} endingType - 'loop' | 'shift' | 'exit' | 'rare' | custom phrase
  * @param {Object} stats - { sceneCount, lessonsCount, duration }
  * @param {string[]} unlockedEndings - Array of ending types unlocked
+ * @param {import('./contracts.js').PlaythroughRecap|null} recap - Optional recap payload
  */
-export function renderEnding(endingType, stats, unlockedEndings) {
+export function renderEnding(endingType, stats, unlockedEndings, recap = null) {
     // Check if it's a known ending or custom
     const config = endingConfig[endingType] || {
         // Default config for custom endings
@@ -417,6 +426,11 @@ export function renderEnding(endingType, stats, unlockedEndings) {
 
     if (elements.timePlayed) {
         elements.timePlayed.textContent = formatDuration(stats.duration || 0);
+    }
+
+    if (elements.endingRecapText) {
+        elements.endingRecapText.textContent =
+            recap?.text || 'Recap unavailable for this run.';
     }
 
     // Update ending badges

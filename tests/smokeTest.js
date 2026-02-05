@@ -22,9 +22,9 @@ import {
 let passed = 0;
 let failed = 0;
 
-function test(name, fn) {
+async function test(name, fn) {
     try {
-        fn();
+        await fn();
         console.log(`✅ ${name}`);
         passed++;
     } catch (e) {
@@ -45,15 +45,15 @@ async function runTests() {
     // ========================================
     console.log('--- Contract Validation ---');
 
-    test('validateScene rejects null', () => {
+    await test('validateScene rejects null', () => {
         assert(validateScene(null) === false);
     });
 
-    test('validateScene rejects missing sceneId', () => {
+    await test('validateScene rejects missing sceneId', () => {
         assert(validateScene({ sceneText: 'hi', choices: [], isEnding: false }) === false);
     });
 
-    test('validateScene accepts valid scene', () => {
+    await test('validateScene accepts valid scene', () => {
         const valid = {
             sceneId: 'test',
             sceneText: 'Test scene',
@@ -64,15 +64,15 @@ async function runTests() {
         assert(validateScene(valid) === true);
     });
 
-    test('validateChoice rejects null', () => {
+    await test('validateChoice rejects null', () => {
         assert(validateChoice(null) === false);
     });
 
-    test('validateChoice accepts valid choice', () => {
+    await test('validateChoice accepts valid choice', () => {
         assert(validateChoice({ id: 'test', text: 'Test' }) === true);
     });
 
-    test('createGameState returns valid state', () => {
+    await test('createGameState returns valid state', () => {
         const state = createGameState();
         assert(state.currentSceneId === 'opening');
         assert(Array.isArray(state.history));
@@ -84,14 +84,14 @@ async function runTests() {
     // ========================================
     console.log('\n--- Story Service ---');
 
-    test('getOpeningScene returns valid scene', async () => {
+    await test('getOpeningScene returns valid scene', async () => {
         const scene = await mockStoryService.getOpeningScene();
         assert(validateScene(scene), 'Opening scene invalid');
         assert(scene.sceneId === 'opening', 'Should be opening scene');
         assert(scene.choices.length > 0, 'Opening should have choices');
     });
 
-    test('All scenes have valid structure', () => {
+    await test('All scenes have valid structure', () => {
         const allIds = mockStoryService.getAllSceneIds();
         for (const id of allIds) {
             const scene = mockStoryService.getSceneById(id);
@@ -104,7 +104,7 @@ async function runTests() {
     // ========================================
     console.log('\n--- Scene Graph ---');
 
-    test('All nextSceneId references exist', () => {
+    await test('All nextSceneId references exist', () => {
         const allIds = mockStoryService.getAllSceneIds();
         const idSet = new Set(allIds);
         const broken = [];
@@ -121,7 +121,7 @@ async function runTests() {
         assert(broken.length === 0, `Broken links: ${broken.join(', ')}`);
     });
 
-    test('All 4 ending types exist', () => {
+    await test('All 4 ending types exist', () => {
         const allIds = mockStoryService.getAllSceneIds();
         const endingTypes = new Set();
 

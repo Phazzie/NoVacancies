@@ -12,6 +12,7 @@ import {
     createStoryThreads,
     mergeThreadUpdates,
     validateScene,
+    validatePlaythroughRecap,
     validateEndingType,
     EndingTypes
 } from '../js/contracts.js';
@@ -78,6 +79,14 @@ function assertDoesNotThrow(fn, message) {
 }
 
 // ─── Suite 1: Thread Merging ─────────────────────────────────────────
+
+async function loadGeminiService() {
+    const mod = await import('../js/services/geminiStoryService.js');
+    if (!mod?.geminiStoryService) {
+        throw new Error('geminiStoryService export missing');
+    }
+    return mod.geminiStoryService;
+}
 
 function testThreadMerging() {
     console.log('  Test 1.1: Normal merge — primitives update, others unchanged');
@@ -186,14 +195,7 @@ async function testErrorRecovery() {
     // We test the parseResponse logic by importing the service.
     // GeminiStoryService.parseResponse is called on the singleton.
 
-    let geminiService;
-    try {
-        const mod = await import('../js/services/geminiStoryService.js');
-        geminiService = mod.geminiStoryService;
-    } catch {
-        console.warn('  ⚠️  Could not import geminiStoryService, skipping parse tests');
-        return;
-    }
+    const geminiService = await loadGeminiService();
 
     const validScene = {
         sceneText: 'Test scene text.',
@@ -204,6 +206,18 @@ async function testErrorRecovery() {
         endingType: null,
         mood: 'tense'
     };
+
+    console.log('  Test 2.0: setApiKey enforces expected key format');
+    {
+        geminiService.reset();
+        const invalidResult = geminiService.setApiKey('test-api-key');
+        assertEqual(invalidResult, false, 'invalid key is rejected');
+        assertEqual(geminiService.isAvailable(), false, 'service unavailable after invalid key');
+
+        const validResult = geminiService.setApiKey('AIza_demo_key_for_tests_1234567890');
+        assertEqual(validResult, true, 'valid key is accepted');
+        assertEqual(geminiService.isAvailable(), true, 'service available after valid key');
+    }
 
     console.log('  Test 2.1: Clean JSON parses correctly');
     {
@@ -249,7 +263,7 @@ async function testErrorRecovery() {
         let callCount = 0;
 
         geminiService.reset();
-        geminiService.setApiKey('test-api-key');
+        geminiService.setApiKey('AIza_demo_key_for_tests_1234567890');
 
         globalThis.fetch = async (_url, options) => {
             const body = JSON.parse(options.body);
@@ -295,7 +309,7 @@ async function testErrorRecovery() {
         let threw = false;
 
         geminiService.reset();
-        geminiService.setApiKey('test-api-key');
+        geminiService.setApiKey('AIza_demo_key_for_tests_1234567890');
 
         globalThis.fetch = async (url, options) => {
             const body = JSON.parse(options.body);
@@ -345,7 +359,7 @@ async function testErrorRecovery() {
         const modelHits = [];
 
         geminiService.reset();
-        geminiService.setApiKey('test-api-key');
+        geminiService.setApiKey('AIza_demo_key_for_tests_1234567890');
 
         globalThis.fetch = async (url, options) => {
             const body = JSON.parse(options.body);
@@ -396,7 +410,7 @@ async function testErrorRecovery() {
         let caughtName = null;
 
         geminiService.reset();
-        geminiService.setApiKey('test-api-key');
+        geminiService.setApiKey('AIza_demo_key_for_tests_1234567890');
         geminiService.requestTimeoutMs = 20;
 
         globalThis.fetch = (_url, options = {}) =>
@@ -419,6 +433,34 @@ async function testErrorRecovery() {
         }
 
         assertEqual(caughtName, 'TimeoutError', 'timeout surfaces as TimeoutError');
+    }
+
+    console.log('  Test 2.9: formatScene normalizes choice IDs to safe, unique values');
+    {
+        const formatted = geminiService.formatScene(
+            {
+                sceneText: 'Choice normalization test scene.',
+                choices: [
+                    { id: '../DROP TABLE users;', text: 'First option' },
+                    { id: '../DROP TABLE users;', text: 'Second option' },
+                    { id: '', text: 'Third option' }
+                ],
+                isEnding: false
+            },
+            'scene_choice_normalization'
+        );
+
+        const ids = formatted.choices.map((choice) => choice.id);
+        assertEqual(ids.length, 3, 'all choices are preserved');
+        assertEqual(new Set(ids).size, 3, 'normalized ids are unique');
+        ids.forEach((id) => {
+            assert(/^[a-z0-9_-]{1,80}$/i.test(id), `choice id '${id}' matches app-safe format`);
+        });
+        assertEqual(
+            geminiService.lastChoices[0].id,
+            formatted.choices[0].id,
+            'lastChoices is aligned with normalized IDs used by renderer'
+        );
     }
 }
 
@@ -933,14 +975,7 @@ async function testPromptAndRecoveryQuality() {
 
     console.log('  Test 10.4: AI thread updates flow through parse -> format -> merge');
     {
-        let geminiService;
-        try {
-            const mod = await import('../js/services/geminiStoryService.js');
-            geminiService = mod.geminiStoryService;
-        } catch {
-            console.warn('  ⚠️  Could not import geminiStoryService, skipping continuity-flow test');
-            return;
-        }
+        const geminiService = await loadGeminiService();
 
         const responseText = JSON.stringify({
             sceneText: 'You take a breath and draw a line in the sand.',
@@ -976,14 +1011,7 @@ async function testPromptAndRecoveryQuality() {
 
     console.log('  Test 10.5: Semantic quality gate flags near-duplicate choices');
     {
-        let geminiService;
-        try {
-            const mod = await import('../js/services/geminiStoryService.js');
-            geminiService = mod.geminiStoryService;
-        } catch {
-            console.warn('  ⚠️  Could not import geminiStoryService, skipping semantic quality-gate test');
-            return;
-        }
+        const geminiService = await loadGeminiService();
 
         const lowQualityResponse = {
             sceneText: 'You hear the hallway ice machine and keep your eyes on the clock.',
@@ -1009,14 +1037,7 @@ async function testPromptAndRecoveryQuality() {
 
     console.log('  Test 10.6: Continuity quality gate requires concrete callbacks');
     {
-        let geminiService;
-        try {
-            const mod = await import('../js/services/geminiStoryService.js');
-            geminiService = mod.geminiStoryService;
-        } catch {
-            console.warn('  ⚠️  Could not import geminiStoryService, skipping continuity quality test');
-            return;
-        }
+        const geminiService = await loadGeminiService();
 
         const state = createGameState();
         state.storyThreads.moneyResolved = true;
@@ -1049,14 +1070,7 @@ async function testPromptAndRecoveryQuality() {
 
     console.log('  Test 10.7: Semantic quality gate flags repetitive scene framing');
     {
-        let geminiService;
-        try {
-            const mod = await import('../js/services/geminiStoryService.js');
-            geminiService = mod.geminiStoryService;
-        } catch {
-            console.warn('  ⚠️  Could not import geminiStoryService, skipping repetition quality test');
-            return;
-        }
+        const geminiService = await loadGeminiService();
 
         geminiService.conversationHistory = [
             '[Choice: wait]\nYou stare at the vibrating phone while the ice machine growls and motel neon leaks through the blinds. The unpaid room hangs over every breath while Oswaldo snores like he already won.'
@@ -1121,14 +1135,7 @@ async function testPromptAndRecoveryQuality() {
 
     console.log('  Test 10.9: Choice-opening heuristic catches same-action options');
     {
-        let geminiService;
-        try {
-            const mod = await import('../js/services/geminiStoryService.js');
-            geminiService = mod.geminiStoryService;
-        } catch {
-            console.warn('  ⚠️  Could not import geminiStoryService, skipping choice-opening test');
-            return;
-        }
+        const geminiService = await loadGeminiService();
 
         geminiService.sceneCount = 3;
         const response = {
@@ -1154,6 +1161,110 @@ async function testPromptAndRecoveryQuality() {
     }
 }
 
+// --- Suite 11: Playthrough Recap Contract and Builder ---
+
+async function testPlaythroughRecapFeature() {
+    const recapModule = await import('../js/services/playthroughRecap.js');
+    const { buildPlaythroughRecap, buildPlaythroughRecapMock, formatPlaythroughRecapText } = recapModule;
+
+    console.log('  Test 11.1: mock recap builder returns contract-valid payload');
+    {
+        const state = createGameState();
+        state.useMocks = true;
+        state.sceneCount = 6;
+        state.history = [
+            { sceneId: 'opening', choiceId: 'open_laptop', timestamp: 1000, choiceText: 'Open laptop' },
+            { sceneId: 'work_early', choiceId: 'set_boundary', timestamp: 2000, choiceText: 'Set boundary' }
+        ];
+        state.lessonsEncountered = [1, 5];
+        state.storyThreads.oswaldoConflict = 1;
+        state.storyThreads.boundariesSet = ['no guests today'];
+        state.startTime = 1000;
+
+        const recap = buildPlaythroughRecap({
+            gameState: state,
+            endingScene: { endingType: 'shift' },
+            unlockedEndings: ['loop', 'shift'],
+            now: 7000
+        });
+
+        assertEqual(validatePlaythroughRecap(recap), true, 'recap passes contract validation');
+        assertEqual(recap.mode, 'mock', 'mode is derived from game state');
+        assertEqual(recap.stats.choiceCount, 2, 'choice count matches history size');
+        assertEqual(recap.unlocked.count, 2, 'unlocked ending count is accurate');
+    }
+
+    console.log('  Test 11.2: recap text formatter is deterministic');
+    {
+        const recapA = {
+            version: 1,
+            generatedAt: '2026-02-05T00:00:00.000Z',
+            mode: 'mock',
+            endingType: 'loop',
+            endingTitle: 'The Loop',
+            stats: { sceneCount: 5, choiceCount: 4, lessonsCount: 2, durationMs: 4000 },
+            unlocked: { count: 1, total: 4, list: ['loop'] },
+            keyChoices: [
+                { sceneId: 'opening', choiceId: 'wait', choiceText: 'Wait and listen', timestamp: 1000 }
+            ],
+            threadDeltas: { oswaldoConflict: { from: 0, to: 1 } },
+            text: 'placeholder'
+        };
+
+        const text1 = formatPlaythroughRecapText(recapA);
+        const text2 = formatPlaythroughRecapText(recapA);
+
+        assertEqual(text1, text2, 'same recap input always yields the same export text');
+        assert(text1.includes('Ending: The Loop'), 'text includes ending title');
+        assert(text1.includes('Scenes: 5'), 'text includes scene count');
+    }
+
+    console.log('  Test 11.3: recap export omits sensitive values');
+    {
+        const state = createGameState();
+        state.apiKey = 'AIza_secret_key_should_not_leak_1234567890';
+        state.history = [{ sceneId: 'opening', choiceId: 'open_laptop', timestamp: 1000 }];
+        state.sceneCount = 2;
+        state.startTime = 0;
+
+        const recap = buildPlaythroughRecap({
+            gameState: state,
+            endingScene: { endingType: 'loop' },
+            unlockedEndings: ['loop'],
+            now: 2000
+        });
+
+        const payload = `${JSON.stringify(recap)}\n${recap.text}`;
+        assertEqual(payload.includes('AIza'), false, 'API key patterns are not present in recap output');
+        assertEqual(payload.includes('sydney-story-api-key-session'), false, 'storage key names are absent');
+    }
+
+    console.log('  Test 11.4: mock and real recap builders preserve contract');
+    {
+        const state = createGameState();
+        state.sceneCount = 3;
+        state.history = [{ sceneId: 'opening', choiceId: 'wait', timestamp: 1000 }];
+        state.startTime = 1000;
+
+        const realRecap = buildPlaythroughRecap({
+            gameState: state,
+            endingScene: { endingType: 'loop' },
+            unlockedEndings: ['loop'],
+            now: 3000
+        });
+        const mockRecap = buildPlaythroughRecapMock({
+            gameState: state,
+            endingScene: { endingType: 'loop' },
+            unlockedEndings: ['loop'],
+            now: 3000
+        });
+
+        assertEqual(validatePlaythroughRecap(realRecap), true, 'real builder recap is valid');
+        assertEqual(validatePlaythroughRecap(mockRecap), true, 'mock builder recap is valid');
+        assertEqual(realRecap.generatedAt, mockRecap.generatedAt, 'both builders honor deterministic timestamp input');
+    }
+}
+
 // ─── Runner ──────────────────────────────────────────────────────────
 
 async function runAllIntegrationTests() {
@@ -1171,7 +1282,8 @@ async function runAllIntegrationTests() {
         { name: 'Thread State Formatting', fn: testFormatThreadState },
         { name: 'Prompt Constraint Consistency', fn: testPromptConstraints },
         { name: 'Fallback Regression (Codex P1/P2/P3)', fn: testFallbackRegression },
-        { name: 'Prompt Quality + Parse Recovery', fn: testPromptAndRecoveryQuality }
+        { name: 'Prompt Quality + Parse Recovery', fn: testPromptAndRecoveryQuality },
+        { name: 'Playthrough Recap Contract + Builder', fn: testPlaythroughRecapFeature }
     ];
 
     for (const suite of suites) {
