@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 const GEMINI_ROUTE_GLOB = '**/v1beta/models/*:generateContent**';
 const TELEMETRY_STAGE_SET = new Set([
@@ -125,6 +126,34 @@ async function openAndStartInAiMode(page) {
     await page.locator('#title-screen.active #start-btn').click({ timeout: 15000 });
     await expect(page.locator('#game-screen')).toHaveClass(/active/, { timeout: 15000 });
     await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
+}
+
+async function openAndStartInMockMode(page) {
+    await page.goto('/');
+    await expect(page.locator('#title-screen')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('#title-screen #start-btn')).toBeVisible({ timeout: 15000 });
+    await page.locator('#title-screen.active #start-btn').click({ timeout: 15000 });
+    await expect(page.locator('#game-screen')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
+}
+
+async function playFastPathToEnding(page) {
+    await openAndStartInMockMode(page);
+
+    // opening -> work_early
+    await page.locator('.choice-btn').nth(0).click();
+    await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
+
+    // work_early -> stay_quiet_loop
+    await page.locator('.choice-btn').nth(1).click();
+    await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
+
+    // stay_quiet_loop -> ending_loop
+    await page.locator('.choice-btn').nth(0).click();
+    await expect(page.locator('#ending-screen')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('#ending-recap-text')).not.toContainText('Recap will appear here.', {
+        timeout: 15000
+    });
 }
 
 test('Startup resilience: corrupt persisted settings do not block entering game', async ({ page }) => {
@@ -341,4 +370,45 @@ test('Ending recap controls are present in ending screen markup', async ({ page 
     await expect(page.locator('#copy-recap-btn')).toHaveCount(1);
     await expect(page.locator('#download-recap-btn')).toHaveCount(1);
     await expect(page.locator('#ending-recap-text')).toHaveCount(1);
+});
+
+test('Ending recap copy button writes recap text to clipboard', async ({ page }) => {
+    await page.addInitScript(() => {
+        window.__copiedRecapText = null;
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: {
+                writeText: async (text) => {
+                    window.__copiedRecapText = text;
+                }
+            }
+        });
+    });
+
+    await playFastPathToEnding(page);
+
+    const recapText = await page.locator('#ending-recap-text').innerText();
+    await page.locator('#copy-recap-btn').click();
+
+    await expect
+        .poll(async () => page.evaluate(() => window.__copiedRecapText), { timeout: 5000 })
+        .toBe(recapText);
+});
+
+test('Ending recap download button exports txt with recap content', async ({ page }, testInfo) => {
+    await playFastPathToEnding(page);
+
+    const recapText = await page.locator('#ending-recap-text').innerText();
+
+    const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        page.locator('#download-recap-btn').click()
+    ]);
+
+    expect(download.suggestedFilename()).toMatch(/^no-vacancies-recap-\d+\.txt$/);
+
+    const outputPath = testInfo.outputPath('playthrough-recap.txt');
+    await download.saveAs(outputPath);
+    const downloadedText = await readFile(outputPath, 'utf8');
+    expect(downloadedText).toBe(recapText);
 });
