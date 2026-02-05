@@ -7,7 +7,17 @@
  * - Ghostface: Aggressive assertions, no mercy for edge cases.
  */
 
-import { renderScene, renderEnding, updateSettingsUI, showError, getElements, initRenderer, imagePaths, hideLessonPopup } from '../js/renderer.js';
+import {
+    renderScene,
+    renderEnding,
+    renderEndingContinueButton,
+    updateSettingsUI,
+    showError,
+    getElements,
+    initRenderer,
+    imagePaths,
+    hideLessonPopup
+} from '../js/renderer.js';
 import { ImageKeys, validateScene } from '../js/contracts.js';
 import { lessons } from '../js/lessons.js';
 
@@ -125,8 +135,10 @@ async function testLessonPopup() {
     console.log('Test: Lesson Popup');
     resetDOM();
     const lessonId = 5;
-    renderScene(createTestScene({ lessonId }), true);
-    await wait(100);
+    const renderComplete = renderScene(createTestScene({ lessonId, sceneText: 'Short text.' }), true);
+
+    assert(elements.lessonPopup.classList.contains('hidden'), '❌ Popup should stay hidden during typing');
+    await renderComplete;
 
     assert(!elements.lessonPopup.classList.contains('hidden'), '❌ Popup failed to show');
     assert(elements.lessonTitle.textContent === lessons.find(l=>l.id===5).title, '❌ Wrong lesson title');
@@ -260,6 +272,18 @@ function testEndingRecapUiScaffold() {
     console.log('Passed');
 }
 
+function testEndingContinueButtonRender() {
+    console.log('Test: Ending Continue Button');
+    resetDOM();
+
+    renderEndingContinueButton();
+
+    const button = document.getElementById('view-recap-btn');
+    assert(button, '❌ Continue-to-recap button should render');
+    assert(button.textContent.includes('View Recap'), '❌ Continue button label mismatch');
+    console.log('✅ Passed');
+}
+
 function testRenderEndingRecapText() {
     console.log('Test: Render Ending Recap Text');
     const recap = { text: 'Recap export line 1\nRecap export line 2' };
@@ -296,7 +320,8 @@ export async function runAllRendererTests() {
         testSceneTextFocusWhenNoChoices,
         testAssetIntegrity,
         testEndingRecapUiScaffold,
-        testRenderEndingRecapText
+        testRenderEndingRecapText,
+        testEndingContinueButtonRender
     ];
 
     let passed = 0;

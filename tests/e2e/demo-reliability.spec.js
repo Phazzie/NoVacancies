@@ -108,6 +108,8 @@ async function openAndStartInAiMode(page) {
 
     await page.click('#mode-ai');
     await expect(page.locator('#mode-ai')).toHaveClass(/active/);
+    await page.click('#lessons-on');
+    await expect(page.locator('#lessons-on')).toHaveClass(/active/);
 
     const apiKeyInput = page.locator('#api-key-input');
     await apiKeyInput.fill('AIza_demo_key_for_e2e_testing_12345');
@@ -150,6 +152,9 @@ async function playFastPathToEnding(page) {
 
     // stay_quiet_loop -> ending_loop
     await page.locator('.choice-btn').nth(0).click();
+    await expect(page.locator('#ending-screen')).not.toHaveClass(/active/);
+    await expect(page.locator('#view-recap-btn')).toBeVisible({ timeout: 45000 });
+    await page.locator('#view-recap-btn').click();
     await expect(page.locator('#ending-screen')).toHaveClass(/active/, { timeout: 15000 });
     await expect(page.locator('#ending-recap-text')).not.toContainText('Recap will appear here.', {
         timeout: 15000
@@ -230,6 +235,21 @@ test('AI mode smoke flow: 2 choices with loading + transitions and no dead-end U
     expect(stages).toContain('final_success');
 });
 
+test('Lesson insight appears only after scene text finishes typing', async ({ page }) => {
+    await configureGeminiRoute(page, { failAfterSuccesses: null, networkDelayMs: 250 });
+    await openAndStartInAiMode(page);
+
+    const lessonPopup = page.locator('#lesson-popup');
+
+    await expect(lessonPopup).toHaveClass(/hidden/);
+    await expect
+        .poll(async () => {
+            const className = (await lessonPopup.getAttribute('class')) || '';
+            return !className.includes('hidden');
+        }, { timeout: 20000 })
+        .toBe(true);
+});
+
 test('AI fallback flow: mid-run failure continues gracefully without blank/dead-end state', async ({
     page
 }) => {
@@ -305,10 +325,18 @@ test('Retry flow: after Gemini+fallback failure, retry remains interactive and r
                         const visibleChoices = document.querySelectorAll(
                             '#choices-container .choice-btn'
                         ).length;
+                        const recapReady = !!document.querySelector('#view-recap-btn');
+                        const loadingVisible = !!document.querySelector('.loading-indicator');
+                        const sceneTextLength =
+                            document.getElementById('scene-text')?.textContent?.trim().length || 0;
                         const retryVisible = !!document.querySelector('#retry-btn');
-                        return (endingActive || visibleChoices > 0) && !retryVisible;
+                        return (
+                            (endingActive || visibleChoices > 0 || recapReady || sceneTextLength > 24) &&
+                            !retryVisible &&
+                            !loadingVisible
+                        );
                     }),
-                { timeout: 15000 }
+                { timeout: 45000 }
             )
             .toBe(true);
     } finally {

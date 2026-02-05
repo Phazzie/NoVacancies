@@ -20,6 +20,7 @@ import {
     showScreen,
     renderScene,
     renderEnding,
+    renderEndingContinueButton,
     updateProgress,
     updateSettingsUI,
     toggleApiKeyVisibility,
@@ -44,6 +45,7 @@ let storyService = mockStoryService;
 let geminiService = null;
 let isProcessing = false;
 let currentRecap = null;
+let pendingEndingPayload = null;
 const SETTINGS_STORAGE_KEY = 'sydney-story-settings';
 const ENDINGS_STORAGE_KEY = 'sydney-story-endings';
 const API_KEY_SESSION_KEY = 'sydney-story-api-key-session';
@@ -322,16 +324,23 @@ function bindEvents() {
 
     // Game screen - choice selection (event delegation)
     els.choicesContainer?.addEventListener('click', async (e) => {
-        const choiceBtn = e.target.closest('.choice-btn');
-        if (choiceBtn) {
-            const choiceId = choiceBtn.dataset.choiceId;
-            const choiceText = (choiceBtn.textContent || '').trim();
-            await handleChoice(choiceId, choiceText);
+        const recapButton = e.target.closest('#view-recap-btn');
+        if (recapButton) {
+            showEndingRecapScreen();
+            return;
         }
 
         // Retry button
         if (e.target.id === 'retry-btn') {
             await retryLastChoice();
+            return;
+        }
+
+        const choiceBtn = e.target.closest('.choice-btn');
+        if (choiceBtn) {
+            const choiceId = choiceBtn.dataset.choiceId;
+            const choiceText = (choiceBtn.textContent || '').trim();
+            await handleChoice(choiceId, choiceText);
         }
     });
 
@@ -353,6 +362,7 @@ function bindEvents() {
 async function startGame() {
     console.log('[App] Starting new game...');
     currentRecap = null;
+    pendingEndingPayload = null;
 
     // Create fresh game state
     gameState = createGameState();
@@ -576,14 +586,41 @@ function handleEnding(endingScene) {
               text: 'Recap unavailable for this run.'
           };
 
-    // First render the final scene briefly
-    renderScene(endingScene, settings.showLessons);
+    pendingEndingPayload = {
+        endingType: endingScene.endingType,
+        stats,
+        unlockedEndings: [...settings.unlockedEndings],
+        recap: currentRecap,
+        sceneId: endingScene.sceneId
+    };
 
-    // Then show ending screen after a delay
-    setTimeout(() => {
-        renderEnding(endingScene.endingType, stats, settings.unlockedEndings, currentRecap);
-        showScreen('ending');
-    }, 3000);
+    // Render the ending scene text first, then allow user-controlled recap transition.
+    const renderComplete = renderScene(endingScene, settings.showLessons);
+    Promise.resolve(renderComplete)
+        .then((finished) => {
+            if (!finished || !pendingEndingPayload) return;
+            if (pendingEndingPayload.sceneId !== endingScene.sceneId) return;
+            renderEndingContinueButton();
+        })
+        .catch((error) => {
+            console.warn('[App] Ending scene render completion check failed:', error?.name || error);
+            if (pendingEndingPayload?.sceneId === endingScene.sceneId) {
+                renderEndingContinueButton();
+            }
+        });
+}
+
+function showEndingRecapScreen() {
+    if (!pendingEndingPayload) return;
+
+    renderEnding(
+        pendingEndingPayload.endingType,
+        pendingEndingPayload.stats,
+        pendingEndingPayload.unlockedEndings,
+        pendingEndingPayload.recap
+    );
+    showScreen('ending');
+    pendingEndingPayload = null;
 }
 
 async function copyCurrentRecap() {

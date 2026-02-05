@@ -20,3 +20,6 @@
 ### Fixed
 
 - **Testing:** Fixed smoke tests to align with new Oswaldo character and image keys. All tests passing.
+- **Ending UX:** Endings no longer auto-jump to recap mid-typewriter. Players now click `View Recap` after ending text completes.
+- **Lesson Timing:** Lesson insight popup now appears only after scene text has finished typing.
+- **Regression Coverage:** Added renderer + e2e checks for delayed lesson display and recap transition/copy/download flow.

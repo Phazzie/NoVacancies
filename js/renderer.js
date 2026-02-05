@@ -255,11 +255,12 @@ export function showScreen(screenName) {
  * Render a scene to the game screen
  * @param {import('./contracts.js').Scene} scene
  * @param {boolean} showLessons - Whether to show lesson popups
+ * @returns {Promise<boolean>} true when typing finished, false if aborted
  */
 export function renderScene(scene, showLessons = true) {
     if (!scene) {
         console.error('[Renderer] No scene to render');
-        return;
+        return Promise.resolve(false);
     }
 
     // Update image
@@ -272,6 +273,11 @@ export function renderScene(scene, showLessons = true) {
         };
     }
 
+    // Hide lesson popup while text animates; reveal only after typing completes.
+    hideLessonPopup();
+
+    let typingComplete = Promise.resolve(true);
+
     // Update scene text
     if (elements.sceneText) {
         // Clear previous content
@@ -282,25 +288,39 @@ export function renderScene(scene, showLessons = true) {
         if (elements.currentTypewriterController) {
             elements.currentTypewriterController.abort();
         }
-        elements.currentTypewriterController = new AbortController();
-        typewriterEffect(elements.sceneText, text, 20, elements.currentTypewriterController.signal);
+        const controller = new AbortController();
+        elements.currentTypewriterController = controller;
+        typingComplete = typewriterEffect(
+            elements.sceneText,
+            text,
+            20,
+            elements.currentTypewriterController.signal
+        ).then((finished) => finished && !controller.signal.aborted);
         elements.sceneText.scrollTop = 0;
-    }
-
-    // Handle lesson popup
-    if (scene.lessonId && showLessons) {
-        const lesson = getLessonById(scene.lessonId);
-        if (lesson) {
-            showLessonPopup(lesson);
-        }
-    } else {
-        hideLessonPopup();
     }
 
     // Render choices
     renderChoices(scene.choices, scene.isEnding);
 
     console.log(`[Renderer] Rendered scene: ${scene.sceneId}`);
+
+    return typingComplete.then((finished) => {
+        if (!finished) {
+            return false;
+        }
+
+        // Handle lesson popup only after text has finished rendering.
+        if (scene.lessonId && showLessons) {
+            const lesson = getLessonById(scene.lessonId);
+            if (lesson) {
+                showLessonPopup(lesson);
+                return true;
+            }
+        }
+
+        hideLessonPopup();
+        return true;
+    });
 }
 
 /**
@@ -554,6 +574,22 @@ export function showError(message) {
 }
 
 /**
+ * Show a continue button after an ending scene has fully rendered.
+ */
+export function renderEndingContinueButton() {
+    if (!elements.choicesContainer) return;
+
+    elements.choicesContainer.innerHTML = `
+        <button id="view-recap-btn" class="btn btn-primary" type="button">
+            <span class="btn-text">View Recap</span>
+        </button>
+    `;
+
+    const continueButton = document.getElementById('view-recap-btn');
+    focusElement(continueButton);
+}
+
+/**
  * Format duration in mm:ss
  * @param {number} ms - Duration in milliseconds
  * @returns {string}
@@ -581,12 +617,14 @@ function escapeHtml(text) {
  * @param {HTMLElement} element
  * @param {string} text
  * @param {number} speed - ms per character
+ * @returns {Promise<boolean>} true when finished, false when aborted
  */
 export async function typewriterEffect(element, text, speed = 20, signal = null) {
     element.textContent = '';
     for (let i = 0; i < text.length; i++) {
-        if (signal?.aborted) return;
+        if (signal?.aborted) return false;
         element.textContent += text[i];
         await new Promise((resolve) => setTimeout(resolve, speed));
     }
+    return true;
 }
