@@ -11,6 +11,14 @@ Execution mode:
 
 Replace Gemini integration with xAI Grok while preserving playability, bounded recovery behavior, and test confidence.
 
+## Outage Policy (Explicit, Designed Behavior)
+
+Provider-down behavior is a design decision, not an accident:
+1. Production default: degrade to mock playability mode when Grok is unavailable.
+2. If product intentionally chooses hard-stop mode, set `AI_OUTAGE_MODE=hard_fail` explicitly and test that UX path.
+3. Recovery loops remain bounded in all modes (no infinite retries).
+4. Every environment must declare outage mode; missing setting fails closed at startup/config-load time.
+
 Model policy:
 - Text generation: `grok-4-1-fast-reasoning` (always)
 - Image generation: `grok-imagine-image`
@@ -118,6 +126,8 @@ Single internal contract used by routes/actions/endpoints:
 - `nextScene(...) -> Scene`
 - `generateImage(...) -> { url | b64 }`
 - provider-agnostic typed errors (timeout, parse, rate-limit, auth, provider-down)
+- idempotency input key for retriable writes/calls (`requestId`)
+- explicit retry classification (`retryable: true|false`)
 
 Implementation targets:
 - `src/lib/server/ai/provider.interface.ts`
@@ -138,10 +148,16 @@ Centralize in one policy file:
 - image model id
 - timeout, retry, backoff
 - `max_output_tokens` default and hard cap
+- outage mode (`mock_fallback|hard_fail`)
 
 Initial recommendation:
 - `max_output_tokens` default: 1800
 - hard cap: 3200
+- request timeout: 20s
+- retries: 2 max
+- backoff: 400ms then 1200ms with jitter
+- retryable classes only: timeout, 429, transient 5xx
+- non-retryable classes: auth, schema contract violation, content guardrail rejection
 
 Rationale: high enough for rich scenes, low enough to control latency/cost variance.
 
@@ -173,6 +189,7 @@ Exit gate:
 
 Contract:
 - Define provider interface and typed error model.
+- Define typed config loader contract (`loadAiConfig(): AiConfig`) with fail-closed validation.
 
 Probe:
 - Create lightweight health probe command for provider client wiring only.
@@ -180,6 +197,7 @@ Probe:
 Tests:
 - Contract tests ensure mock and grok adapters conform identically.
 - Verify no secrets leak in logs/errors.
+- Verify config loader fails closed on missing/invalid env combinations.
 
 Mock implementation:
 - Wire existing mock story behavior into new provider interface.
@@ -193,10 +211,11 @@ Exit gate:
 ## Phase 2: xAI Connectivity Probe
 
 Contract:
-- Add startup/self-test probe schema (`modelAvailable`, `authValid`, `latencyMs`).
+- Add probe endpoint schema (`modelAvailable`, `authValid`, `latencyMs`, `provider`, `model`).
 
 Probe:
-- Check key auth and model availability for:
+- Probe is exposed as server endpoint (for CI/ops/cron), not tied to process startup.
+- Check auth and model availability for:
   - `grok-4-1-fast-reasoning`
   - `grok-imagine-image`
 
@@ -207,7 +226,7 @@ Mock implementation:
 - Probe mock responses for offline CI.
 
 Actual implementation:
-- Real probe in server-only module, disabled in client builds.
+- Real probe in server-only module + controlled caller (CI job / ops cron / on-demand admin call).
 
 Exit gate:
 - Probe passes in preview env with configured secrets.
@@ -218,13 +237,14 @@ Contract:
 - Enforce strict `Scene` schema validation prior to apply/render.
 
 Probe:
-- One-step generation smoke with deterministic test prompt.
+- One-step generation smoke with schema/invariant assertions (not exact output text).
 
 Tests:
 - Parse recovery remains bounded.
 - Retry/backoff bounded.
 - Fallback transition keeps game playable.
 - Regression tests for malformed output handling.
+- Story sanity validators pass (no apology loops, no contradictory thread updates, choices remain meaningfully distinct).
 
 Mock implementation:
 - Keep mock provider selectable via feature flag.
@@ -289,8 +309,17 @@ Use explicit flags during cutover:
 2. `ENABLE_GROK_IMAGES=true|false`
 3. `ENABLE_PROVIDER_PROBE=true|false`
 4. `ENABLE_GROK_TEXT=true|false` (recommended for staged text cutover)
+5. `AI_OUTAGE_MODE=mock_fallback|hard_fail`
 
 Remove or lock flags after stabilization to avoid long-term drift.
+
+## Config Validation Contract
+
+All AI runtime settings must come from one typed loader:
+1. Single source: `loadAiConfig()` returns normalized `AiConfig`.
+2. Loader validates env combinations and fails closed on invalid state.
+3. Runtime/modules consume only `AiConfig` (not raw `process.env` reads).
+4. Unit tests cover valid configs and expected startup failures.
 
 ## Vercel Environment Variables (Server-Side Only)
 
@@ -300,25 +329,77 @@ Expected:
 3. `GROK_TEXT_MODEL` (default `grok-4-1-fast-reasoning`)
 4. `GROK_IMAGE_MODEL` (default `grok-imagine-image`)
 5. `AI_MAX_OUTPUT_TOKENS` (default `1800`)
+6. `AI_OUTAGE_MODE` (`mock_fallback` default)
 
 Rules:
 - Never expose secret vars as public env.
 - Never log raw key values.
 
+## Observability Contract (Required)
+
+Emit structured events for every provider request/response lifecycle:
+1. `requestId`
+2. `provider`
+3. `model`
+4. `route` (`opening|next|image|probe`)
+5. `latencyMs`
+6. `retryCount`
+7. `parseAttempts`
+8. `errorType` (typed bucket, never raw secrets)
+9. `contextTruncated` (boolean)
+10. `tokenUsage` where available
+
+Operational requirements:
+1. Correlate all retries via same `requestId`.
+2. Redact API keys/tokens/authorization headers before log emission.
+3. Add unit tests that prove secrets are redacted from logs and thrown error payloads.
+
 ## Risk Register
 
 1. Model naming/version drift in provider console.
 2. Latency/cost spikes if output token caps are too high.
-3. Provider outage causing hard failure (known accepted risk per product decision).
+3. Outage mode misconfiguration (`hard_fail` accidentally enabled).
 4. Hidden schema drift if parser guards are too permissive.
 5. Prompt/image guardrails regressing during adapter swap.
+6. Env/feature-flag drift causing preview/prod behavior mismatch.
+7. Semantic degradation that still passes schema validation.
+8. Image URL expiry/CORS/payload bloat causing intermittent broken visuals.
 
 ## Mitigations
 
 1. Keep probe step mandatory before enabling provider in production.
 2. Keep strict scene validator and bounded retries.
-3. Keep mock provider for dev/test even if not used as prod fallback.
+3. Keep mock provider first-class with contract parity tests in every phase.
 4. Add explicit tests for image/content guardrails and no-secret logging.
+5. Use a single typed config loader and fail closed on invalid env/flag sets.
+6. Add semantic sanity validator tests in integration suite.
+7. Define image delivery strategy before launch (proxy/cache/store policy).
+
+## Story Sanity Validator Set (Schema-Pass Is Not Enough)
+
+Add a post-parse sanity layer before scene apply/render:
+1. Choice distinctness: options are not paraphrases of each other.
+2. Thread coherence: updates cannot contradict current state without transition context.
+3. No apology loops: repetitive self-referential filler is rejected/regenerated within bounded retries.
+4. Actionability: scene ends with clear pressure and playable choices.
+5. Guardrail continuity: content/image constraints are preserved.
+
+Test requirement:
+1. Add fixtures that intentionally pass schema but fail narrative sanity.
+2. Assert bounded recovery behavior when sanity checks fail.
+
+## Image Delivery Decision (Must Be Set Before Production)
+
+Pick one and lock it in config/docs:
+1. Proxy-and-cache image responses server-side (preferred for expiry/CORS control).
+2. Direct URL pass-through with TTL refresh logic.
+3. Persist base64/object storage and serve stable URLs.
+
+Decision must include:
+1. Caching strategy
+2. Expiry handling
+3. Payload size limits
+4. Fallback image behavior
 
 ## Review/Critique/Revise Loop (Required Each Phase)
 
@@ -349,4 +430,68 @@ This restores app operability while preserving migration artifacts for retry.
    - `npm run lint`
    - `npm test`
    - `npm run test:e2e` (or explicit environment block note)
-6. Changelog and lessons docs are updated with final cutover behavior and risks.
+6. Mock provider parity suite passes (rollback path proven, not assumed).
+7. Changelog and lessons docs are updated with final cutover behavior and risks.
+
+## Autonomous Execution Prompt (Rewritten)
+
+Use this prompt for cloud/local Codex execution:
+
+```md
+Execute the full Grok provider migration autonomously on a new branch.
+
+Branch:
+- Create `feat/grok-pre-sveltekit` if SvelteKit is still in-flight.
+- If SvelteKit branch is already stable, execute there and keep seam-compatible commits.
+
+Mission:
+- Replace Gemini provider path with Grok while preserving playability and bounded recovery.
+- Keep provider integration seam-first and framework-agnostic for safe porting/cherry-pick.
+
+Model policy:
+- Text: `grok-4-1-fast-reasoning`
+- Image: `grok-imagine-image`
+
+Outage policy (required):
+- Default `AI_OUTAGE_MODE=mock_fallback`.
+- If `hard_fail` is used, treat as explicit product policy and test UX for it.
+
+Required implementation outcomes:
+1. Provider seam + typed error model + idempotent requestId support.
+2. Single typed config loader (`loadAiConfig`) with fail-closed validation.
+3. Probe endpoint (`/api/ai/probe`) with CI/ops caller; no startup-probe assumption.
+4. Grok text adapter with strict schema + narrative sanity validators + bounded recovery.
+5. Grok image adapter with chosen image delivery policy (proxy/cache/store decision implemented).
+6. Structured observability with required fields (`requestId`, latency, retries, parseAttempts, errorType, provider/model, truncation, tokenUsage when available).
+7. Secret redaction enforcement in logs/errors with tests.
+8. Mock parity continuously tested as rollback guarantee.
+
+Test-first and gates per phase:
+- `npm run lint`
+- `npm test`
+- `npm run test:e2e` when renderer/e2e paths changed
+- Avoid deterministic-output assertions; assert schema/invariants/behavior.
+
+Execution constraints:
+- Commit per phase, push per passed phase.
+- Ignore unrelated files unless they block touched files.
+- Do not pause unless stop conditions hit:
+  - invariant conflict
+  - schema/backward-compat break risk
+  - unexpected external edits in touched files
+
+Mandatory RCR questions each phase:
+1. What would a group of haters say about the work I just did?
+2. Which part is most likely to fail silently?
+3. What did we assume without proof?
+4. Which test would fail first if we are wrong?
+
+Final handoff must include:
+- What was implemented by phase
+- Commands run and pass/fail
+- Docs Updated
+- Risks Introduced
+- Assumptions Made
+- Rollback Note
+- Commits and pushed refs
+```
