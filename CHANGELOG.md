@@ -28,6 +28,11 @@
 - **Feature Flag Operations:** Added runtime feature-flag normalization plus localStorage/query override support so `narrativeContextV2` and `transitionBridges` can be toggled without code edits.
 - **Lesson Nullability:** Updated Gemini structured response schema so `lessonId` can be `null` (matching prompt and contract intent).
 - **Tests:** Expanded integration coverage with T1-T4 narrative-upgrade gates (prompt assets, context contract/budget, transition-only-on-jump behavior, telemetry redaction).
+- **Auth Bypass Control:** Added non-production `AI_AUTH_BYPASS` handling so auth failures can intentionally route through mock fallback during local/preview debugging while remaining blocked in production.
+- **Opening Fallback Parity:** Added opening-scene fallback in runtime start flow so first-turn AI failures degrade to playable mock mode instead of hard-stopping.
+- **Provider Prompt Context:** Updated Grok provider prompt construction to include `NarrativeContext` sections (recent prose, lesson history, thread/boundary lines, transition bridge) for stronger continuity.
+- **Image Reliability Hardening:** Added timeout/retry handling and guardrail enforcement to Grok image generation path, plus typed route error status mapping.
+- **E2E Reliability Expansion:** Added endpoint coverage for image guardrail rejection and AI-mode opening request playability.
 - **E2E Regression:** Added Playwright coverage proving transition bridges are requested in the same turn as a detected thread jump, and aligned telemetry stage contract assertions with current AI instrumentation.
 - **Prompt Regression:** Added coverage that enforces prompt instructions to label `lessonId` only after scene writing (system + legacy + context prompt paths).
 - **Prompt Depth:** Expanded lesson payload in `SYSTEM_PROMPT` formatting to include per-lesson emotional stakes, common triggers, and unconventional angle (in addition to title/quote/insight).

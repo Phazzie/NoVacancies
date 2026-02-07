@@ -10,6 +10,7 @@ export interface AiConfig {
 	enableGrokText: boolean;
 	enableGrokImages: boolean;
 	enableProviderProbe: boolean;
+	aiAuthBypass: boolean;
 	outageMode: AiOutageMode;
 	xaiApiKey: string;
 	grokTextModel: string;
@@ -50,14 +51,25 @@ function isProdLikeEnv(env: Record<string, string | undefined>): boolean {
 	return env.NODE_ENV === 'production';
 }
 
+function isStrictProduction(env: Record<string, string | undefined>): boolean {
+	const vercelEnv = env.VERCEL_ENV?.toLowerCase();
+	if (vercelEnv === 'production') return true;
+	return env.NODE_ENV === 'production' && vercelEnv !== 'preview';
+}
+
 export function loadAiConfig(env: Record<string, string | undefined> = runtimeEnv): AiConfig {
 	const provider = parseProvider(env.AI_PROVIDER);
 	const prodLike = isProdLikeEnv(env);
+	const strictProduction = isStrictProduction(env);
 	const defaultOutageMode: AiOutageMode = 'mock_fallback';
 	const parsedOutageMode = parseOutageMode(env.AI_OUTAGE_MODE);
+	const aiAuthBypass = parseBoolean(env.AI_AUTH_BYPASS, false);
 
 	if (prodLike && !parsedOutageMode) {
 		throw new Error('AI_OUTAGE_MODE must be set in preview/production');
+	}
+	if (strictProduction && aiAuthBypass) {
+		throw new Error('AI_AUTH_BYPASS is not allowed in production');
 	}
 
 	const outageMode = parsedOutageMode ?? defaultOutageMode;
@@ -77,6 +89,7 @@ export function loadAiConfig(env: Record<string, string | undefined> = runtimeEn
 		enableGrokText,
 		enableGrokImages,
 		enableProviderProbe,
+		aiAuthBypass,
 		outageMode,
 		xaiApiKey,
 		grokTextModel: (env.GROK_TEXT_MODEL ?? 'grok-4-1-fast-reasoning').trim(),

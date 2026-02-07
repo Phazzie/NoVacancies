@@ -429,6 +429,47 @@ Before phase close, answer:
 
 If critique reveals risk, revise before closing phase.
 
+## Immediate Hardening Delta (Post-Review)
+
+These items come from the latest code review and should be treated as required reliability closure.
+
+### D1: Safe Temporary Auth Bypass (Non-Prod Only)
+- Add `AI_AUTH_BYPASS=true|false` config.
+- Permit bypass only in local/preview and reject in production.
+- Emit telemetry when bypass path is used.
+- Keep `auth` hard-fail behavior when bypass is off.
+
+### D2: Opening Scene Fallback Parity
+- Ensure `startGame()` has the same fallback behavior as mid-story scene generation.
+- If AI opening fails in AI mode and outage policy is fallback, switch to mock and remain playable.
+
+### D3: NarrativeContext Consumption in Provider Prompt
+- Ensure provider prompt explicitly includes:
+  - recent scene prose
+  - lesson history lines
+  - thread narrative lines
+  - boundary narrative lines
+  - transition bridge content (when present)
+- Validate this path with test coverage (not just schema validity).
+
+### D4: Image Path Reliability Hardening
+- Add bounded timeout + retry/backoff parity for image calls.
+- Enforce image guardrail rejection before provider call.
+- Map typed errors to meaningful route status codes (`422`, `503`, `504`, etc.).
+
+### D5: Regression Coverage Expansion
+- Keep route-shell tests, plus explicit tests for:
+  - guardrail rejection behavior
+  - opening request playability under AI-mode payload shape
+  - provider probe gate behavior
+- Keep live provider e2e opt-in only.
+
+### D6: Remaining Improvements (Next Iteration)
+- Split lint coverage for legacy `js/` and migration `src/`.
+- Centralize retry policy for text + image in one shared utility.
+- Add request-correlation IDs through route -> provider telemetry.
+- Add adapter contract fixtures that mock and grok must both pass.
+
 Required phase artifact:
 1. `Phase Review Note` with:
    - issues found
@@ -537,3 +578,11 @@ Key critiques addressed in this revision:
    - Added single typed `loadAiConfig()` contract with fail-closed validation.
 7. Rollback realism:
    - Added mock parity gate in Definition of Done.
+
+## Current Execution Caveat (Environment)
+
+1. In this environment, Playwright may fail to launch Chromium with missing system libs (`libnspr4.so`) even when browser binaries exist.
+2. If encountered, run:
+   - `npx playwright install-deps chromium`
+   - then `PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers npm run test:e2e`
+3. Treat this as environment setup, not app-regression, unless failures persist after deps install.

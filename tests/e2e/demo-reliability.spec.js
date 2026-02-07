@@ -65,6 +65,31 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		expect([200, 403]).toContain(response.status());
 	});
 
+	test('image endpoint enforces guardrails before provider call', async ({ request }) => {
+		const blocked = await request.post('/api/image', {
+			data: {
+				prompt: 'Close portrait of Oswaldo face with bare skin'
+			}
+		});
+		expect(blocked.status()).toBe(422);
+		const body = await blocked.json();
+		expect(String(body.error || '')).toMatch(/guardrail/i);
+	});
+
+	test('story opening remains playable for AI-mode request payload shape', async ({ request }) => {
+		const response = await request.post('/api/story/opening', {
+			data: {
+				useMocks: false,
+				featureFlags: { narrativeContextV2: true, transitionBridges: true }
+			}
+		});
+		expect(response.ok()).toBeTruthy();
+		const body = await response.json();
+		expect(typeof body.scene?.sceneText).toBe('string');
+		expect(Array.isArray(body.scene?.choices)).toBeTruthy();
+		expect(body.scene.choices.length).toBeGreaterThan(0);
+	});
+
 	test('route shells render', async ({ page }) => {
 		await page.goto('/');
 		await expectPathname(page, '/');

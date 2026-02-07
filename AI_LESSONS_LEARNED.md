@@ -73,3 +73,18 @@
 - commit only explicit file lists
 - maintain local ignore rules (`.git/info/exclude`) for personal artifacts instead of polluting tracked ignores
 - never include unrelated files in phase commits, even when tests are passing
+
+## 14. First-Turn Reliability Must Match Mid-Turn Reliability
+
+**Insight:** A robust fallback path in `handleChoice()` is not enough if `startGame()` can still hard-fail on the very first provider call.
+**Lesson:** Apply identical fallback semantics to opening-scene generation so playability invariants hold from turn zero.
+
+## 15. Auth Bypass Can Be Useful, But It Must Be Contained
+
+**Insight:** Temporary auth bypass speeds local debugging, but if it leaks into production it can mask broken secrets and delay incident detection.
+**Lesson:** Gate bypass behind explicit env, block it in production, and emit telemetry whenever bypass is used.
+
+## 16. Provider Prompts Need the Same Narrative Context as Runtime
+
+**Insight:** Building `NarrativeContext` but not injecting it into provider prompts silently degrades continuity while all schema checks still pass.
+**Lesson:** Enforce context-to-prompt wiring tests so continuity assets are always consumed by the active provider path.

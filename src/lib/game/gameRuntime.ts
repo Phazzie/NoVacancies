@@ -218,12 +218,29 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		});
 
 		const openingService = useMocks ? fallbackStoryService : storyService;
-		const openingScene = await openingService.getOpeningScene({
-			useMocks,
-			featureFlags: effectiveFlags
-		});
-		if (!validateScene(openingScene)) {
-			throw new Error('Story service returned invalid opening scene');
+		let openingScene: Scene;
+		try {
+			openingScene = await openingService.getOpeningScene({
+				useMocks,
+				featureFlags: effectiveFlags
+			});
+			if (!validateScene(openingScene)) {
+				throw new Error('Story service returned invalid opening scene');
+			}
+		} catch (error) {
+			if (!useMocks) {
+				const fallbackOpening = await fallbackStoryService.getOpeningScene({
+					useMocks: true,
+					featureFlags: effectiveFlags
+				});
+				if (!validateScene(fallbackOpening)) {
+					throw new Error('Fallback story service returned invalid opening scene');
+				}
+				openingScene = fallbackOpening;
+				gameState.useMocks = true;
+			} else {
+				throw error;
+			}
 		}
 
 		gameState.currentSceneId = openingScene.sceneId;

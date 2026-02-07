@@ -1,4 +1,10 @@
-import { validateScene, validateEndingType, type Scene, type StoryThreads } from '$lib/contracts';
+import {
+	validateScene,
+	validateEndingType,
+	type NarrativeContext,
+	type Scene,
+	type StoryThreads
+} from '$lib/contracts';
 import type { AiConfig } from '$lib/server/ai/config';
 import { evaluateStorySanity } from '$lib/server/ai/sanity';
 import {
@@ -112,9 +118,50 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 	return normalized;
 }
 
+function formatNarrativeContext(context: NarrativeContext | null | undefined): string {
+	if (!context) return '';
+
+	const recentProse = context.recentSceneProse
+		.map(
+			(scene, index) =>
+				`${index + 1}. [${scene.sceneId}] via "${scene.viaChoiceText || 'N/A'}": ${scene.text}`
+		)
+		.join('\n');
+
+	const olderSummaries = context.olderSceneSummaries
+		.map((summary, index) => `${index + 1}. ${summary}`)
+		.join('\n');
+
+	const threadLines = context.threadNarrativeLines.map((line, index) => `${index + 1}. ${line}`).join('\n');
+	const lessonLines = context.lessonHistoryLines.map((line, index) => `${index + 1}. ${line}`).join('\n');
+	const boundaryLines = context.boundaryNarrativeLines
+		.map((line, index) => `${index + 1}. ${line}`)
+		.join('\n');
+	const transitionBridge = context.transitionBridge
+		? `Thread shift keys: ${context.transitionBridge.keys.join(', ')}\n${context.transitionBridge.lines.join('\n')}`
+		: 'none';
+
+	return `Narrative Context:
+- arcPosition=${context.arcPosition}
+- sceneCount=${context.sceneCount}
+- lastChoiceText="${context.lastChoiceText}"
+- transitionBridge=${transitionBridge}
+- threadNarrativeLines:
+${threadLines || 'none'}
+- boundaryNarrativeLines:
+${boundaryLines || 'none'}
+- lessonHistoryLines:
+${lessonLines || 'none'}
+- recentSceneProse:
+${recentProse || 'none'}
+- olderSceneSummaries:
+${olderSummaries || 'none'}`;
+}
+
 function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
 	const lastChoice = input.gameState.history[input.gameState.history.length - 1];
 	const threads = input.gameState.storyThreads;
+	const contextBlock = formatNarrativeContext(input.narrativeContext);
 
 	const commonRules = `Return ONLY JSON with keys:
 sceneText, choices (2-3 items), lessonId (number or null), imageKey, isEnding, endingType, mood, storyThreadUpdates.
@@ -139,6 +186,8 @@ Thread state:
 - moneyResolved=${threads.moneyResolved}
 - sydneyRealization=${threads.sydneyRealization}
 - exhaustionLevel=${threads.exhaustionLevel}
+
+${contextBlock}
 
 Maintain coherence with prior context and produce playable next choices.`;
 }
@@ -276,41 +325,94 @@ export class GrokAiProvider implements AiProvider {
 				retryable: false
 			});
 		}
-
-		const response = await this.fetchImpl(XAI_IMAGE_URL, {
-			method: 'POST',
-			headers: {
-				'content-type': 'application/json',
-				authorization: `Bearer ${this.config.xaiApiKey}`
-			},
-			body: JSON.stringify({
-				model: this.config.grokImageModel,
-				prompt: input.prompt
-			})
-		});
-
-		if (!response.ok) {
-			throw new AiProviderError(`xAI image request failed (${response.status})`, {
-				code: isRetryableStatus(response.status) ? 'provider_down' : 'auth',
-				retryable: isRetryableStatus(response.status),
-				status: response.status
+		const lowerPrompt = input.prompt.toLowerCase();
+		if (/oswaldo/.test(lowerPrompt) && /(face|bare skin|shirtless|nude|naked|skin exposed)/.test(lowerPrompt)) {
+			throw new AiProviderError('Image prompt violates Oswaldo guardrail', {
+				code: 'guardrail',
+				retryable: false,
+				status: 422
 			});
 		}
-
-		const payload = (await response.json()) as {
-			data?: Array<{ url?: string; b64_json?: string }>;
-		};
-		const image = payload.data?.[0];
-		if (!image) {
-			throw new AiProviderError('xAI image response missing data', {
+		if (!input.prompt.trim()) {
+			throw new AiProviderError('Image prompt is empty', {
 				code: 'invalid_response',
-				retryable: false
+				retryable: false,
+				status: 400
 			});
 		}
-		return {
-			url: typeof image.url === 'string' ? image.url : undefined,
-			b64: typeof image.b64_json === 'string' ? image.b64_json : undefined
-		};
+
+		let attempt = 0;
+		const maxAttempts = this.config.maxRetries + 1;
+		let lastError: unknown = null;
+
+		while (attempt < maxAttempts) {
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
+			try {
+				const response = await this.fetchImpl(XAI_IMAGE_URL, {
+					method: 'POST',
+					headers: {
+						'content-type': 'application/json',
+						authorization: `Bearer ${this.config.xaiApiKey}`
+					},
+					body: JSON.stringify({
+						model: this.config.grokImageModel,
+						prompt: input.prompt
+					}),
+					signal: controller.signal
+				});
+
+				if (!response.ok) {
+					const status = response.status;
+					throw new AiProviderError(`xAI image request failed (${status})`, {
+						code: status === 401 || status === 403 ? 'auth' : status === 429 ? 'rate_limit' : 'provider_down',
+						retryable: isRetryableStatus(status),
+						status
+					});
+				}
+
+				const payload = (await response.json()) as {
+					data?: Array<{ url?: string; b64_json?: string }>;
+				};
+				const image = payload.data?.[0];
+				if (!image || (!image.url && !image.b64_json)) {
+					throw new AiProviderError('xAI image response missing data', {
+						code: 'invalid_response',
+						retryable: false
+					});
+				}
+
+				return {
+					url: typeof image.url === 'string' ? image.url : undefined,
+					b64: typeof image.b64_json === 'string' ? image.b64_json : undefined
+				};
+			} catch (error) {
+				lastError = error;
+				const retryable =
+					error instanceof AiProviderError
+						? error.retryable
+						: error instanceof Error && error.name === 'AbortError';
+				if (!retryable || attempt >= maxAttempts - 1) break;
+				const backoff = this.config.retryBackoffMs[Math.min(attempt, this.config.retryBackoffMs.length - 1)];
+				await sleep(backoff);
+			} finally {
+				clearTimeout(timeout);
+			}
+			attempt += 1;
+		}
+
+		if (lastError instanceof AiProviderError) throw lastError;
+		if (lastError instanceof Error && lastError.name === 'AbortError') {
+			throw new AiProviderError('xAI image request timed out', {
+				code: 'timeout',
+				retryable: true,
+				status: 504
+			});
+		}
+		throw new AiProviderError('xAI image request failed', {
+			code: 'unknown',
+			retryable: false
+		});
 	}
 
 	async probe(): Promise<ProviderProbeResult> {
