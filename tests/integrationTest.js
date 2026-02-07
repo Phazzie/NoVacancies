@@ -842,6 +842,32 @@ function testPromptConstraints() {
             'SYSTEM_PROMPT includes respect-is-in-collections voice anchor'
         );
     }
+
+    console.log('  Test 8.3: Prompts require lesson labeling after scene writing');
+    {
+        const contextPrompt = getContinuePromptFromContext(
+            buildNarrativeContext(createGameState(), { lastChoiceText: 'wait' }),
+            null
+        );
+        const continuePrompt = getContinuePrompt(
+            ['You stare at the blinking clock and keep your voice level.'],
+            'wait',
+            2
+        );
+
+        assert(
+            SYSTEM_PROMPT.includes('Write the scene first. Then label lessonId after the writing is done.'),
+            'SYSTEM_PROMPT explicitly enforces write-first lesson labeling order'
+        );
+        assert(
+            contextPrompt.includes('Write scene first, then set lessonId'),
+            'context continue prompt enforces write-first lesson labeling order'
+        );
+        assert(
+            continuePrompt.includes('Write naturally first, then assign lessonId'),
+            'legacy continue prompt enforces write-first lesson labeling order'
+        );
+    }
 }
 
 function testNarrativeUpgradePhaseGates() {
