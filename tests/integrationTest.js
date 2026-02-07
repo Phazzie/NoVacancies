@@ -11,19 +11,30 @@ import {
     createGameState,
     createStoryThreads,
     mergeThreadUpdates,
+    validateNarrativeContext,
     validateScene,
     validatePlaythroughRecap,
     validateEndingType,
     EndingTypes
 } from '../js/contracts.js';
 import {
+    BOUNDARY_TRANSLATIONS,
+    LESSON_HISTORY_TRANSLATIONS,
+    NARRATIVE_CONTEXT_CHAR_BUDGET,
     SYSTEM_PROMPT,
+    buildNarrativeContext,
+    detectThreadTransitions,
     getContinuePrompt,
+    getContinuePromptFromContext,
     getRecoveryPrompt,
     suggestEndingFromHistory,
+    translateBoundaries,
+    translateLessonHistory,
+    translateThreadStateNarrative,
     formatThreadState
 } from '../js/prompts.js';
 import { mockStoryService } from '../js/services/mockStoryService.js';
+import { emitAiTelemetry } from '../js/services/aiTelemetry.js';
 
 // ─── Assertion Helpers ───────────────────────────────────────────────
 
@@ -817,6 +828,153 @@ function testPromptConstraints() {
             'continue prompt no longer includes conflicting 150-300 range'
         );
     }
+
+    console.log('  Test 8.2: System prompt includes voice ceiling anchors');
+    {
+        assert(
+            SYSTEM_PROMPT.includes('He will ride five miles for strangers and five inches for nobody in this room.'),
+            'SYSTEM_PROMPT includes five-miles/five-inches voice anchor'
+        );
+        assert(
+            SYSTEM_PROMPT.includes('The bill got paid, but respect is still in collections.'),
+            'SYSTEM_PROMPT includes respect-is-in-collections voice anchor'
+        );
+    }
+}
+
+function testNarrativeUpgradePhaseGates() {
+    console.log('  Test 8.3 (T1.1): SYSTEM_PROMPT includes Trina behavior examples');
+    {
+        assert(
+            SYSTEM_PROMPT.includes('Wakes up every hour for snack cakes and drops wrappers on the floor like confetti'),
+            'SYSTEM_PROMPT includes snack-cake Trina behavior'
+        );
+        assert(
+            SYSTEM_PROMPT.includes('Catfishes people for quick cash'),
+            'SYSTEM_PROMPT includes catfish behavior example'
+        );
+        assert(
+            SYSTEM_PROMPT.includes('Hit six hundred off Sydney\'s referral hustle'),
+            'SYSTEM_PROMPT includes referral/casino behavior example'
+        );
+    }
+
+    console.log('  Test 8.4 (T1.2): Thread-state Trina translations stay general');
+    {
+        const lines = translateThreadStateNarrative({
+            ...createStoryThreads(),
+            trinaTension: 2
+        }).join(' ').toLowerCase();
+
+        assert(!lines.includes('facebook dating'), 'Trina tension narrative does not hard-code facebook dating');
+        assert(!lines.includes('six hundred'), 'Trina tension narrative does not hard-code casino amount');
+        assert(!lines.includes('doordash'), 'Trina tension narrative does not hard-code event-level details');
+    }
+
+    console.log('  Test 8.5 (T1.3): Boundary translation map resolves known boundaries');
+    {
+        const lines = translateBoundaries([
+            'no guests without asking',
+            'no lending money to Dex',
+            'custom unknown boundary'
+        ]);
+        assert(lines.includes(BOUNDARY_TRANSLATIONS['no guests without asking']), 'known boundary: no guests');
+        assert(lines.includes(BOUNDARY_TRANSLATIONS['no lending money to dex']), 'known boundary: no lending to Dex');
+        assert(
+            lines.some((line) => line.includes('Boundary set: custom unknown boundary')),
+            'unknown boundary gets deterministic fallback line'
+        );
+    }
+
+    console.log('  Test 8.6 (T1.4): Lesson-history translation map includes all 17 lessons');
+    {
+        const lessonKeys = Object.keys(LESSON_HISTORY_TRANSLATIONS).map(Number).sort((a, b) => a - b);
+        assertEqual(lessonKeys.length, 17, 'lesson history map has 17 entries');
+        assertEqual(lessonKeys[0], 1, 'lesson history starts at 1');
+        assertEqual(lessonKeys[16], 17, 'lesson history ends at 17');
+
+        const lines = translateLessonHistory([1, 5, 17]);
+        assertEqual(lines.length, 3, 'translateLessonHistory returns one line per unique lesson');
+        assert(lines.every((line) => typeof line === 'string' && line.length > 10), 'lesson history lines are populated');
+    }
+
+    console.log('  Test 8.7 (T1.5): Utility unresolved-money line is concise');
+    {
+        const unresolved = translateThreadStateNarrative({
+            ...createStoryThreads(),
+            moneyResolved: false
+        }).join(' ');
+        assert(unresolved.includes('Still eighteen short. The clock does not care.'), 'uses concise unresolved-money line');
+    }
+
+    console.log('  Test 8.8 (T2.1/T2.2): NarrativeContext contract and builder are valid');
+    {
+        const state = createGameState();
+        state.sceneCount = 6;
+        state.lessonsEncountered = [1, 5, 8];
+        state.storyThreads = {
+            ...createStoryThreads(),
+            oswaldoConflict: 1,
+            trinaTension: 2,
+            boundariesSet: ['no guests without asking']
+        };
+        state.sceneLog = [
+            { sceneId: 'opening', sceneText: 'Opening scene text', viaChoiceText: '' },
+            { sceneId: 's2', sceneText: 'Second scene text', viaChoiceText: 'Wake Oswaldo' },
+            { sceneId: 's3', sceneText: 'Third scene text with consequence', viaChoiceText: 'Set a boundary' }
+        ];
+
+        const context = buildNarrativeContext(state, { lastChoiceText: 'Set a boundary' });
+        assertEqual(validateNarrativeContext(context), true, 'context validates against contract');
+        assertEqual(context.recentSceneProse.length, 2, 'builder keeps last 2 full scenes');
+        assert(context.olderSceneSummaries.length >= 1, 'builder includes older scene summary');
+        assertEqual(context.meta.budgetChars, NARRATIVE_CONTEXT_CHAR_BUDGET, 'context uses canonical budget');
+    }
+
+    console.log('  Test 8.9 (T2.4): Context budget truncates deterministically under hard cap');
+    {
+        const state = createGameState();
+        state.sceneCount = 9;
+        state.sceneLog = Array.from({ length: 10 }, (_, index) => ({
+            sceneId: `scene_${index}`,
+            sceneText: `Scene ${index} ` + 'x'.repeat(600),
+            viaChoiceText: `choice_${index}`
+        }));
+
+        const context = buildNarrativeContext(state, { lastChoiceText: 'wait', maxChars: 1200 });
+        assertEqual(context.meta.truncated, true, 'context marks truncation');
+        assert(context.meta.droppedOlderSummaries > 0 || context.meta.droppedRecentProse > 0, 'some context was dropped');
+        assert(context.meta.contextChars <= 1200, 'context fits hard cap');
+    }
+
+    console.log('  Test 8.10 (T2.3): Context prompt path includes narrative context sections');
+    {
+        const state = createGameState();
+        state.sceneCount = 4;
+        state.sceneLog = [
+            { sceneId: 'opening', sceneText: 'Open text', viaChoiceText: '' },
+            { sceneId: 's2', sceneText: 'Second scene', viaChoiceText: 'wait' }
+        ];
+        const context = buildNarrativeContext(state, { lastChoiceText: 'wait' });
+        const prompt = getContinuePromptFromContext(context, null);
+
+        assert(prompt.includes('## NARRATIVE CONTEXT'), 'context prompt includes narrative context header');
+        assert(prompt.includes('## RECENT PROSE'), 'context prompt includes recent prose section');
+        assert(prompt.includes('## PLAYER\'S CHOICE'), 'context prompt includes player choice section');
+    }
+
+    console.log('  Test 8.11 (T3.1/T3.2): Transition bridges only appear on detected jumps');
+    {
+        const previous = createStoryThreads();
+        const current = { ...createStoryThreads(), oswaldoConflict: 2 };
+        const jumped = detectThreadTransitions(previous, current);
+        assert(jumped.lines.length > 0, 'transition jump produces bridge line');
+        assert(jumped.keys.includes('oswaldoConflict'), 'transition key includes changed thread');
+
+        const stable = detectThreadTransitions(current, current);
+        assertEqual(stable.lines.length, 0, 'stable state produces no bridge line');
+        assertEqual(stable.keys.length, 0, 'stable state produces no changed keys');
+    }
 }
 
 // ─── Suite 9: Codex Regression — Gemini→Mock Fallback ────────────────
@@ -1296,6 +1454,34 @@ async function testPlaythroughRecapFeature() {
     }
 }
 
+function testTelemetrySanitization() {
+    console.log('  Test 12.1 (T4.1): telemetry emits stable context metrics');
+    {
+        const event = emitAiTelemetry('context_built', {
+            contextChars: 4000,
+            budgetChars: 5200,
+            truncated: false
+        });
+
+        assertEqual(event.stage, 'context_built', 'telemetry stage is preserved');
+        assertEqual(event.payload.contextChars, 4000, 'telemetry payload includes contextChars');
+        assertEqual(event.payload.budgetChars, 5200, 'telemetry payload includes budgetChars');
+    }
+
+    console.log('  Test 12.2 (T4.2): telemetry redacts sensitive payload values');
+    {
+        const event = emitAiTelemetry('context_built', {
+            apiKey: 'AIza_sensitive_value_12345678901234567890',
+            nested: {
+                secretToken: 'super-secret-token'
+            }
+        });
+
+        assertEqual(event.payload.apiKey, '[REDACTED]', 'apiKey is redacted');
+        assertEqual(event.payload.nested.secretToken, '[REDACTED]', 'nested secret is redacted');
+    }
+}
+
 // ─── Runner ──────────────────────────────────────────────────────────
 
 async function runAllIntegrationTests() {
@@ -1312,9 +1498,11 @@ async function runAllIntegrationTests() {
         { name: 'Race Conditions', fn: testRaceConditions },
         { name: 'Thread State Formatting', fn: testFormatThreadState },
         { name: 'Prompt Constraint Consistency', fn: testPromptConstraints },
+        { name: 'Narrative Upgrade Gates', fn: testNarrativeUpgradePhaseGates },
         { name: 'Fallback Regression (Codex P1/P2/P3)', fn: testFallbackRegression },
         { name: 'Prompt Quality + Parse Recovery', fn: testPromptAndRecoveryQuality },
-        { name: 'Playthrough Recap Contract + Builder', fn: testPlaythroughRecapFeature }
+        { name: 'Playthrough Recap Contract + Builder', fn: testPlaythroughRecapFeature },
+        { name: 'Telemetry Sanitization', fn: testTelemetrySanitization }
     ];
 
     for (const suite of suites) {

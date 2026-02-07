@@ -70,6 +70,25 @@ If these files change, update the paired docs/tests in the same task:
    - `npm run test:e2e` when e2e-related paths change (or clearly report environment block)
 5. Report evidence, not assumptions (commands run + pass/fail summary).
 
+## Autonomy Defaults (Execution Contract)
+
+- Canonical active implementation plan: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`.
+- Execution cadence defaults:
+  - commit per phase
+  - push per passed phase
+  - ignore unrelated files unless they block touched files
+- Test gates per phase:
+  - `npm run lint`
+  - `npm test`
+  - `npm run test:e2e` when renderer/e2e paths change
+- Mandatory Review/Critique/Revise loop per phase.
+- Mandatory critique question in every phase:
+  - `What would a group of haters say about the work I just did?`
+- Existing stop conditions still apply:
+  - requirements conflict with invariants
+  - schema/backward-compat break risk
+  - unexpected external edits during active work
+
 ### Confidence Protocol
 
 - Do not claim "done" or "fixed" without fresh command evidence.
