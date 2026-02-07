@@ -54,3 +54,17 @@
 
 **Insight:** Hardcoded feature flags force code edits and redeploys for tuning and rollback decisions.
 **Lesson:** Normalize flags at runtime and allow safe overrides through controlled inputs (persistent storage and explicit query keys).
+
+## 12. Unsolicited Process Critique: We Still Mix Delivery with Discovery
+
+**What haters would say:** "You keep proving fixes in tests, but you still do too much discovery while shipping. That's how scope creep sneaks in."
+**Lesson:** Freeze scope per phase up front, and track every "nice-to-have" separately so implementation commits stay purpose-pure.
+
+## 13. Unsolicited Process Critique: Worktree Noise Hides Real Risk
+
+**What haters would say:** "Your branch always has unrelated local files, so nobody can tell what actually changed for the feature."
+**Lesson:** Keep local noise out of feature diffs:
+- use `git status --short` before every commit
+- commit only explicit file lists
+- maintain local ignore rules (`.git/info/exclude`) for personal artifacts instead of polluting tracked ignores
+- never include unrelated files in phase commits, even when tests are passing
