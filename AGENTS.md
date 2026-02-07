@@ -73,6 +73,9 @@ If these files change, update the paired docs/tests in the same task:
 ## Autonomy Defaults (Execution Contract)
 
 - Canonical active implementation plan: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`.
+- On `feat/sveltekit-migration`, active migration docs are:
+  - `docs/SVELTEKIT_MIGRATION_PLAN.md`
+  - `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md` (follow-up only, post-SvelteKit)
 - Execution cadence defaults:
   - commit per phase
   - push per passed phase

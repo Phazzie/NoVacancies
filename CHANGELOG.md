@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased] - 2026-02-07
+
+### Changed
+
+- **Framework Migration:** Added SvelteKit TypeScript scaffold with split routes (`/`, `/settings`, `/play`, `/ending`) and shared layout navigation.
+- **Gameplay Runtime Port:** Added typed `src/lib` game/runtime/service modules to support mock-mode playthrough in SvelteKit while preserving scene/state contracts and fallback-safe behavior.
+- **PWA Preservation:** Added SvelteKit static manifest/service worker pathing and client-side registration helper under `src/lib/client/pwa.ts`.
+- **Build Pipeline:** Switched project scripts to Vite/SvelteKit (`dev`, `build`, `preview`, `check`) and updated config files (`svelte.config.js`, `vite.config.ts`, `tsconfig.json`).
+- **E2E Migration:** Reworked primary Playwright reliability spec for route-based SvelteKit flow and mock playthrough ending verification.
+- **Docs:** Added migration execution docs (`docs/SVELTEKIT_MIGRATION_PLAN.md`, `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md`) and refreshed `README.md` run/test/build guidance.
+
 ## [Unreleased] - 2026-02-05
 
 ### Changed

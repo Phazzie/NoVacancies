@@ -25,6 +25,11 @@
 **Insight:** General style directives ("be gritty", "dark humor") help, but specific high-quality exemplar lines set a clearer target for model tone.
 **Lesson:** Keep 1-3 canonical "voice ceiling" lines in the system prompt so generation quality regresses less over long playthroughs and prompt edits.
 
+## 6. Separate Framework Migration From Provider Migration
+
+**Insight:** Moving UI/runtime framework and swapping AI providers in the same phase multiplies unknowns and slows debugging.
+**Lesson:** Keep framework migration mock-first, lock test gates, then switch providers against a stable contract seam.
+
 ## 6. Generalize State, Specialize Character Examples
 
 **Insight:** If thread-state translations include concrete incidents, the model can treat those incidents as already happened facts and drift continuity.

@@ -1,62 +1,52 @@
 # No Vacancies
 
-Interactive fiction app focused on narrative continuity, reliability, and graceful fallback between AI and mock story services.
+No Vacancies is an interactive narrative game about invisible labor and relationship load-bearing.
+
+## Current Stack
+
+- Framework: SvelteKit (TypeScript)
+- Deployment target: Vercel
+- Story runtime: Mock story service (SvelteKit migration phase)
+- PWA assets: `static/manifest.json`, `static/service-worker.js`
 
 ## Run
 
-- Dev server (no cache): `npm run dev`
-- Static serve: `npm run serve`
-
-## Test Gates
-
-- Lint: `npm run lint`
-- Core tests: `npm test`
-- E2E tests: `npm run test:e2e`
-- Stability loop (optional): `npm run test:e2e:stable`
-
-Notes:
-- `tests/e2e/gemini-live.spec.js` is opt-in and skipped unless explicitly enabled.
-- Standard `npm test` is deterministic and does not require live network APIs.
-
-## Runtime Feature Flags
-
-Two runtime flags control narrative-upgrade behavior:
-
-- `narrativeContextV2`
-- `transitionBridges`
-
-Default state: both enabled.
-
-### Override via URL query params
-
-Use while loading the app:
-
-- `?ffNarrativeContextV2=false`
-- `?ffTransitionBridges=false`
-
-Accepted values: `true|false`, `1|0`, `on|off`, `yes|no`, `enabled|disabled`.
-
-### Override via browser console
-
-```js
-window.sydneyStory.getFeatureFlags();
-window.sydneyStory.setFeatureFlags({ narrativeContextV2: false });
-window.sydneyStory.setFeatureFlags({ transitionBridges: false });
-window.sydneyStory.clearFeatureFlags();
+```bash
+npm install
+npm run dev
 ```
 
-- `setFeatureFlags(...)` persists overrides in `localStorage`.
-- `clearFeatureFlags()` removes persisted overrides and returns to defaults (plus any query-param overrides).
+Default app URL is shown by Vite (typically `http://127.0.0.1:5173`).
 
-## Reliability Invariants
+## Build + Preview
 
-- AI->mock fallback must remain playable (no forced abrupt ending on incompatible IDs).
-- Parse recovery must be bounded (no infinite retry loops).
-- API keys and sensitive tokens must not be logged or exposed in telemetry.
-- Image guardrail must hold (never depict Oswaldo face/bare skin).
+```bash
+npm run build
+npm run preview
+```
 
-## Docs
+## Tests
 
-- Change history: `CHANGELOG.md`
-- Durable process lessons: `AI_LESSONS_LEARNED.md`
-- Active narrative upgrade plan: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`
+Core quality gate:
+
+```bash
+npm run lint
+npm test
+npm run test:e2e
+```
+
+Notes:
+- `npm test` runs Node suites for contracts, integration, and renderer-node compatibility checks.
+- `npm run test:e2e` runs Playwright against the SvelteKit app.
+
+## PWA
+
+- Manifest: `/manifest.json`
+- Service worker: `/service-worker.js`
+- Icons served from `/icons/*`
+
+## Docs Map
+
+- Migration plan: `docs/SVELTEKIT_MIGRATION_PLAN.md`
+- Grok follow-up plan: `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md`
+- Narrative upgrade plan: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`

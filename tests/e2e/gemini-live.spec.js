@@ -3,13 +3,13 @@ import { test, expect } from '@playwright/test';
 const LIVE_GEMINI_ENABLED = process.env.LIVE_GEMINI === '1';
 const LIVE_GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim();
 
+test.skip(
+    !LIVE_GEMINI_ENABLED || !LIVE_GEMINI_API_KEY,
+    'Set LIVE_GEMINI=1 and GEMINI_API_KEY to run live canary.'
+);
+
 test.describe('Live Gemini canary (opt-in)', () => {
     test('AI mode can generate opening and one continuation scene', async ({ page }) => {
-        test.skip(
-            !LIVE_GEMINI_ENABLED || !LIVE_GEMINI_API_KEY,
-            'Set LIVE_GEMINI=1 and GEMINI_API_KEY to run live canary.'
-        );
-
         test.setTimeout(180000);
 
         await page.goto('/');

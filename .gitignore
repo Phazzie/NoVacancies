@@ -22,6 +22,7 @@ desktop.ini
 # Build output
 dist/
 build/
+.svelte-kit/
 
 # Logs
 *.log
