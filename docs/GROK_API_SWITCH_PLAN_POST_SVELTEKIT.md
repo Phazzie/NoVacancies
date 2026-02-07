@@ -1,11 +1,11 @@
-# Grok API Switch Plan (Post-SvelteKit)
+# Grok API Switch Plan (Pre-SvelteKit Completion)
 
 Date: 2026-02-07  
-Scope: Switch AI provider with a seam-first strategy that works both before and after SvelteKit migration stabilizes.
+Scope: Switch AI provider before SvelteKit migration is complete, using seam-first work that ports cleanly into the final SvelteKit branch.
+Note: filename is retained for continuity with prior references.
 
 Execution mode:
-- `Mode A (Post-SvelteKit)`: run this plan against the SvelteKit baseline.
-- `Mode B (Pre-SvelteKit in-flight)`: implement provider seam + Grok adapters on the current runtime branch, then cherry-pick/port seam modules into SvelteKit branch.
+- `Pre-SvelteKit in-flight only`: implement provider seam + Grok adapters on the current runtime branch, then cherry-pick/port seam modules into the SvelteKit branch.
 
 ## Objective
 
@@ -26,29 +26,21 @@ Model policy:
 Execution method:
 - Seam-driven development per your rule: `contract -> probe -> tests -> mock implementation -> actual implementation`.
 
-## Start Conditions (Choose Path)
+## Start Conditions (Pre-SvelteKit In-Flight)
 
-### Path A: Post-SvelteKit (preferred if available)
-Start when all are true:
-1. SvelteKit migration branch is green (`lint`, unit/integration, e2e).
-2. Vercel preview deploy is stable.
-3. Story playthrough works end-to-end in mock mode.
-4. AI provider calls are already server-side (no client key exposure).
-
-### Path B: Pre-SvelteKit In-Flight (allowed)
-Start now if Path A is not yet ready, with these constraints:
+Start now with these constraints:
 1. Implement Grok through provider seams only (no route/component hard-coupling).
 2. Keep runtime interfaces stable so seam modules port forward cleanly.
 3. Keep Gemini/mock fallback selectable behind config flags during cutover.
 4. Do not block SvelteKit migration branch on provider-specific UI changes.
 
-Branch strategy for Path B:
+Branch strategy:
 1. Create `feat/grok-pre-sveltekit`.
 2. Land seam/contracts/tests first, then Grok adapter/text/image in small slices.
 3. Keep commits atomic by phase and push after each passed phase gate.
 4. When SvelteKit branch is ready, cherry-pick or port seam modules with tests first, then provider adapters.
 
-## Current SvelteKit Baseline (Use This Exact Layout for Path A, or target shape for Path B)
+## Current SvelteKit Baseline (Target Port Shape)
 
 This section reflects the current migration state so another agent can start Grok work without rediscovery.
 
@@ -106,7 +98,31 @@ Handoff command checklist for incoming agent:
 5. `npm run build`
 6. `npm run test:e2e` (ensure Playwright browser path is correctly configured in the environment)
 
-If running Path B before SvelteKit is complete:
+## Additional Baseline Specifics (Added)
+
+Branch/workflow:
+1. Active migration branch: `feat/sveltekit-migration`.
+2. Existing legacy `js/*` app still present during transition; treat `src/*` as the migration target.
+3. Keep non-related working-tree files untouched unless they block touched files.
+
+Runtime/tooling:
+1. Adapter runtime is pinned to `nodejs22.x` in `svelte.config.js`.
+2. Use `npm run check` before Grok changes to ensure SvelteKit sync + TS diagnostics are clean.
+3. For local e2e reliability, route startup can be slow in this environment; allow higher web-server startup timeout.
+
+Playwright notes:
+1. If Playwright cannot find browsers, use:
+   - `PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers npx playwright install chromium`
+2. Run tests with the same browser path override when needed:
+   - `PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers npm run test:e2e`
+3. Live Gemini spec is opt-in and should remain skipped unless explicit env is set.
+
+Security/ops:
+1. Do not store API tokens/keys in files or docs.
+2. Keep provider keys server-side only once Grok routes are added.
+3. Continue preserving fallback/recovery invariants while replacing provider transport.
+
+Because this is a pre-SvelteKit execution plan:
 1. Run equivalent gates on the current branch runtime.
 2. Enforce provider contract tests so porting to SvelteKit is mechanical.
 3. Avoid introducing framework-specific assumptions into server/provider modules.
@@ -169,7 +185,7 @@ Contract:
 - Freeze current scene/output contract and fallback invariants.
 
 Probe:
-- Confirm all tests green on SvelteKit baseline.
+- Confirm all tests green on the active pre-SvelteKit working baseline.
 
 Tests:
 - `npm run lint`
@@ -438,15 +454,14 @@ This restores app operability while preserving migration artifacts for retry.
 Use this prompt for cloud/local Codex execution:
 
 ```md
-Execute the full Grok provider migration autonomously on a new branch.
+Execute the full Grok provider migration autonomously before SvelteKit migration is complete.
 
 Branch:
-- Create `feat/grok-pre-sveltekit` if SvelteKit is still in-flight.
-- If SvelteKit branch is already stable, execute there and keep seam-compatible commits.
+- Create and use `feat/grok-pre-sveltekit`.
 
 Mission:
 - Replace Gemini provider path with Grok while preserving playability and bounded recovery.
-- Keep provider integration seam-first and framework-agnostic for safe porting/cherry-pick.
+- Keep provider integration seam-first and framework-agnostic for later SvelteKit port/cherry-pick.
 
 Model policy:
 - Text: `grok-4-1-fast-reasoning`
