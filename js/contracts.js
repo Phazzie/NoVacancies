@@ -144,10 +144,37 @@ export const Moods = {
 };
 
 /**
+ * Canonical runtime feature-flag defaults.
+ */
+export const DEFAULT_FEATURE_FLAGS = Object.freeze({
+    narrativeContextV2: true,
+    transitionBridges: true
+});
+
+/**
+ * Normalize runtime feature flags against known defaults.
+ * Unknown keys are ignored, and non-boolean values fall back to defaults.
+ * @param {Partial<{narrativeContextV2: boolean, transitionBridges: boolean}>} [candidate]
+ * @returns {{narrativeContextV2: boolean, transitionBridges: boolean}}
+ */
+export function normalizeFeatureFlags(candidate = {}) {
+    return {
+        narrativeContextV2:
+            typeof candidate.narrativeContextV2 === 'boolean'
+                ? candidate.narrativeContextV2
+                : DEFAULT_FEATURE_FLAGS.narrativeContextV2,
+        transitionBridges:
+            typeof candidate.transitionBridges === 'boolean'
+                ? candidate.transitionBridges
+                : DEFAULT_FEATURE_FLAGS.transitionBridges
+    };
+}
+
+/**
  * Create a new empty game state
  * @returns {GameState}
  */
-export function createGameState() {
+export function createGameState(featureFlagOverrides = {}) {
     return {
         currentSceneId: SceneIds.OPENING,
         history: [],
@@ -155,10 +182,7 @@ export function createGameState() {
         storyThreads: createStoryThreads(),
         sceneLog: [],
         pendingTransitionBridge: null,
-        featureFlags: {
-            narrativeContextV2: true,
-            transitionBridges: true
-        },
+        featureFlags: normalizeFeatureFlags(featureFlagOverrides),
         apiKey: null,
         useMocks: true,
         sceneCount: 0,

@@ -44,3 +44,13 @@
 
 **Insight:** Aggressive trimming to force a strict context cap can quietly delete the exact continuity data that improves narrative quality.
 **Lesson:** Preserve high-signal context first (last 2 full scenes, lesson history, boundary/thread narrative lines) and trim lower-signal history summaries instead.
+
+## 10. Transition Bridges Must Be Enforced in the Same Turn
+
+**Insight:** Detecting thread jumps only after scene application creates one-turn-late bridge guidance and makes shift beats feel delayed.
+**Lesson:** Detect jumps from current-scene `storyThreadUpdates` and enforce bridge rewrites in the same generation cycle when needed.
+
+## 11. Feature Flags Need an Operations Path
+
+**Insight:** Hardcoded feature flags force code edits and redeploys for tuning and rollback decisions.
+**Lesson:** Normalize flags at runtime and allow safe overrides through controlled inputs (persistent storage and explicit query keys).

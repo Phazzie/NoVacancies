@@ -10,7 +10,9 @@
 import {
     createGameState,
     createStoryThreads,
+    DEFAULT_FEATURE_FLAGS,
     mergeThreadUpdates,
+    normalizeFeatureFlags,
     validateNarrativeContext,
     validateScene,
     validatePlaythroughRecap,
@@ -986,6 +988,31 @@ function testNarrativeUpgradePhaseGates() {
         assertEqual(stable.lines.length, 0, 'stable state produces no bridge line');
         assertEqual(stable.keys.length, 0, 'stable state produces no changed keys');
     }
+
+    console.log('  Test 8.12: Feature flags normalize and apply runtime overrides');
+    {
+        const normalized = normalizeFeatureFlags({
+            narrativeContextV2: false
+        });
+
+        assertEqual(
+            normalized.narrativeContextV2,
+            false,
+            'explicit narrativeContextV2 override is honored'
+        );
+        assertEqual(
+            normalized.transitionBridges,
+            DEFAULT_FEATURE_FLAGS.transitionBridges,
+            'unspecified flags fall back to defaults'
+        );
+
+        const state = createGameState({ transitionBridges: false });
+        assertEqual(
+            state.featureFlags.transitionBridges,
+            false,
+            'createGameState applies feature-flag overrides'
+        );
+    }
 }
 
 // ─── Suite 9: Codex Regression — Gemini→Mock Fallback ────────────────
@@ -1297,6 +1324,36 @@ async function testPromptAndRecoveryQuality() {
             quality.issues.some((issue) => issue.toLowerCase().includes('opening')),
             'quality issues include opening repetition warning'
         );
+    }
+
+    console.log('  Test 10.11: lessonId null remains null through parse/format');
+    {
+        const geminiService = await loadGeminiService();
+        const parsed = geminiService.parseResponse(
+            JSON.stringify({
+                sceneText: 'You listen to the ice machine and decide not to force a thesis.',
+                choices: [{ id: 'wait', text: 'Wait one more minute' }],
+                lessonId: null,
+                imageKey: 'sydney_thinking',
+                isEnding: false,
+                endingType: null,
+                mood: 'neutral'
+            })
+        );
+        const formatted = geminiService.formatScene(parsed, 'scene_lesson_null');
+        assertEqual(formatted.lessonId, null, 'lessonId null is preserved as null');
+    }
+
+    console.log('  Test 10.12: Same-turn transition bridge detection uses scene updates');
+    {
+        const geminiService = await loadGeminiService();
+        const previous = createStoryThreads();
+        const bridge = geminiService.detectTransitionBridgeForResponse(previous, {
+            oswaldoConflict: 2
+        });
+
+        assert(bridge.lines.length > 0, 'bridge lines detected from this-scene thread jump');
+        assert(bridge.keys.includes('oswaldoConflict'), 'bridge keys include changed field');
     }
 
     console.log('  Test 10.8: Ending inference favors explicit signals');

@@ -7,9 +7,11 @@
 - **Narrative Context:** Added app-owned `NarrativeContext` building with hard budget enforcement, older-scene compression, boundary/lesson/thread narrative translations, and context-mode prompt path.
 - **Context Policy Update:** Increased default context budget to `12000` chars and changed truncation policy to preserve the last two full scenes plus lesson/boundary/thread narrative lines; only older compressed summaries are now trimmed.
 - **Prompt Hardening:** Added Trina behavior examples to `SYSTEM_PROMPT`, introduced generalized thread-state narrative lines, boundary-specific translation mapping, and 17-line lesson-history mapping.
-- **Transition Bridges:** Added thread-jump detection and one-turn transition bridge injection so major state shifts read as earned instead of abrupt.
+- **Transition Bridges:** Moved transition-bridge enforcement to same-turn generation checks using current-scene `storyThreadUpdates` (instead of one-turn-late pending bridge injection).
 - **Telemetry Guardrails:** Added context-size/truncation/transition usage telemetry and payload sanitization/redaction to prevent key/token leakage.
 - **Contracts + App Flow:** Added `NarrativeContext` contract validation; app now builds/passes validated context to Gemini service through a compatibility seam.
+- **Feature Flag Operations:** Added runtime feature-flag normalization plus localStorage/query override support so `narrativeContextV2` and `transitionBridges` can be toggled without code edits.
+- **Lesson Nullability:** Updated Gemini structured response schema so `lessonId` can be `null` (matching prompt and contract intent).
 - **Tests:** Expanded integration coverage with T1-T4 narrative-upgrade gates (prompt assets, context contract/budget, transition-only-on-jump behavior, telemetry redaction).
 - **Prompt Depth:** Expanded lesson payload in `SYSTEM_PROMPT` formatting to include per-lesson emotional stakes, common triggers, and unconventional angle (in addition to title/quote/insight).
 - **Continuity Language:** Replaced stale `laptop` continuity anchor with `phone/phones/popsocket` anchors in Gemini quality checks.

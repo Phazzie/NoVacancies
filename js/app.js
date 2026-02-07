@@ -6,13 +6,15 @@
 
 import {
     createGameState,
+    DEFAULT_FEATURE_FLAGS,
     validateScene,
     mergeThreadUpdates,
+    normalizeFeatureFlags,
     validatePlaythroughRecap,
     validateNarrativeContext
 } from './contracts.js';
 import { lessons } from './lessons.js';
-import { buildNarrativeContext, detectThreadTransitions } from './prompts.js';
+import { buildNarrativeContext } from './prompts.js';
 import { mockStoryService } from './services/mockStoryService.js';
 import { emitAiTelemetry } from './services/aiTelemetry.js';
 import { buildPlaythroughRecap } from './services/playthroughRecap.js';
@@ -50,8 +52,13 @@ let currentRecap = null;
 let pendingEndingPayload = null;
 const SETTINGS_STORAGE_KEY = 'sydney-story-settings';
 const ENDINGS_STORAGE_KEY = 'sydney-story-endings';
+const FEATURE_FLAGS_STORAGE_KEY = 'sydney-story-feature-flags';
 const API_KEY_SESSION_KEY = 'sydney-story-api-key-session';
 const API_KEY_PATTERN = /^AIza[A-Za-z0-9_-]{20,120}$/;
+const FEATURE_FLAG_QUERY_KEYS = Object.freeze({
+    narrativeContextV2: 'ffNarrativeContextV2',
+    transitionBridges: 'ffTransitionBridges'
+});
 
 /**
  * Normalize and validate a Gemini API key.
@@ -74,6 +81,102 @@ function safeGetItem(key) {
     } catch (error) {
         console.warn(`[App] localStorage read failed for '${key}':`, error.name);
         return null;
+    }
+}
+
+/**
+ * Parse common boolean flag strings.
+ * @param {unknown} value
+ * @returns {boolean|undefined}
+ */
+function parseBooleanFlag(value) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value !== 'string') return undefined;
+
+    const normalized = value.trim().toLowerCase();
+    if (['1', 'true', 'on', 'yes', 'enabled', 'enable'].includes(normalized)) return true;
+    if (['0', 'false', 'off', 'no', 'disabled', 'disable'].includes(normalized)) return false;
+    return undefined;
+}
+
+/**
+ * Load persisted feature-flag overrides.
+ * @returns {Partial<{narrativeContextV2: boolean, transitionBridges: boolean}>}
+ */
+function loadStoredFeatureFlags() {
+    const saved = safeGetItem(FEATURE_FLAGS_STORAGE_KEY);
+    if (!saved) return {};
+
+    try {
+        const parsed = JSON.parse(saved);
+        if (!parsed || typeof parsed !== 'object') return {};
+
+        return normalizeFeatureFlags({
+            narrativeContextV2: parseBooleanFlag(parsed.narrativeContextV2),
+            transitionBridges: parseBooleanFlag(parsed.transitionBridges)
+        });
+    } catch (error) {
+        console.warn('[App] Could not parse saved feature flags:', error);
+        return {};
+    }
+}
+
+/**
+ * Parse URL query flag overrides for runtime testing/operations.
+ * Supported keys: ffNarrativeContextV2, ffTransitionBridges
+ * @returns {Partial<{narrativeContextV2: boolean, transitionBridges: boolean}>}
+ */
+function loadQueryFeatureFlags() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const narrativeContextRaw = params.get(FEATURE_FLAG_QUERY_KEYS.narrativeContextV2);
+        const transitionBridgesRaw = params.get(FEATURE_FLAG_QUERY_KEYS.transitionBridges);
+
+        return {
+            ...(parseBooleanFlag(narrativeContextRaw) !== undefined
+                ? { narrativeContextV2: parseBooleanFlag(narrativeContextRaw) }
+                : {}),
+            ...(parseBooleanFlag(transitionBridgesRaw) !== undefined
+                ? { transitionBridges: parseBooleanFlag(transitionBridgesRaw) }
+                : {})
+        };
+    } catch (error) {
+        console.warn('[App] Could not parse query feature flags:', error);
+        return {};
+    }
+}
+
+/**
+ * Resolve effective runtime feature flags in precedence order:
+ * defaults < persisted overrides < query overrides.
+ * @returns {{narrativeContextV2: boolean, transitionBridges: boolean}}
+ */
+function resolveRuntimeFeatureFlags() {
+    const resolved = normalizeFeatureFlags({
+        ...DEFAULT_FEATURE_FLAGS,
+        ...loadStoredFeatureFlags(),
+        ...loadQueryFeatureFlags()
+    });
+    return resolved;
+}
+
+/**
+ * Persist runtime feature-flag overrides for future sessions.
+ * @param {Partial<{narrativeContextV2: boolean, transitionBridges: boolean}>} overrides
+ */
+function saveFeatureFlagOverrides(overrides) {
+    const normalized = normalizeFeatureFlags(overrides || {});
+    safeSetItem(FEATURE_FLAGS_STORAGE_KEY, JSON.stringify(normalized));
+}
+
+/**
+ * Clear persisted feature-flag overrides.
+ */
+function clearFeatureFlagOverrides() {
+    try {
+        localStorage.removeItem(FEATURE_FLAGS_STORAGE_KEY);
+    } catch (error) {
+        console.warn('[App] localStorage remove failed for feature flags:', error.name);
     }
 }
 
@@ -367,9 +470,10 @@ async function startGame() {
     pendingEndingPayload = null;
 
     // Create fresh game state
-    gameState = createGameState();
+    gameState = createGameState(resolveRuntimeFeatureFlags());
     gameState.useMocks = settings.useMocks;
     gameState.apiKey = settings.apiKey;
+    console.log('[App] Runtime feature flags:', gameState.featureFlags);
 
     // Select story service
     if (settings.useMocks) {
@@ -456,6 +560,11 @@ async function handleChoice(choiceId, choiceText = '') {
         timestamp: Date.now()
     });
 
+    const previousThreads = {
+        ...gameState.storyThreads,
+        boundariesSet: [...gameState.storyThreads.boundariesSet]
+    };
+
     // Show loading state
     showChoicesLoading();
     const loadingTimers = startLoadingThresholdTimers();
@@ -486,15 +595,6 @@ async function handleChoice(choiceId, choiceText = '') {
                     });
                 }
 
-                if (
-                    gameState.featureFlags?.transitionBridges &&
-                    narrativeContext.transitionBridge?.lines?.length
-                ) {
-                    emitAiTelemetry('transition_bridge_used', {
-                        keys: narrativeContext.transitionBridge.keys,
-                        lineCount: narrativeContext.transitionBridge.lines.length
-                    });
-                }
             } else {
                 console.warn('[App] NarrativeContext validation failed; falling back to legacy prompt path');
             }
@@ -507,7 +607,9 @@ async function handleChoice(choiceId, choiceText = '') {
             gameState,
             narrativeContext,
             {
-                useNarrativeContext: !!narrativeContext
+                useNarrativeContext: !!narrativeContext,
+                previousThreads,
+                enableTransitionBridges: !!gameState.featureFlags?.transitionBridges
             }
         );
 
@@ -579,11 +681,6 @@ async function getFallbackScene(choiceId) {
  * @param {import('./contracts.js').Scene} scene
  */
 function applyScene(scene) {
-    const previousThreads = {
-        ...gameState.storyThreads,
-        boundariesSet: [...gameState.storyThreads.boundariesSet]
-    };
-
     // Merge story thread updates
     if (scene.storyThreadUpdates) {
         console.log('[App] Updating story threads:', scene.storyThreadUpdates);
@@ -594,16 +691,9 @@ function applyScene(scene) {
         console.log('[App] Updated threads:', gameState.storyThreads);
     }
 
-    if (gameState.featureFlags?.transitionBridges) {
-        const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
-        if (transitionBridge.lines.length > 0) {
-            gameState.pendingTransitionBridge = transitionBridge;
-        } else {
-            gameState.pendingTransitionBridge = null;
-        }
-    } else {
-        gameState.pendingTransitionBridge = null;
-    }
+    // Transition bridge handling moved to same-turn AI generation checks.
+    // Keep pending field empty to avoid one-turn-late bridge injection.
+    gameState.pendingTransitionBridge = null;
 
     // Update game state
     gameState.currentSceneId = scene.sceneId;
@@ -803,5 +893,14 @@ window.sydneyStory = {
         unlockedEndings: [...settings.unlockedEndings],
         apiKeySet: !!settings.apiKey
     }),
-    getLessons: () => lessons
+    getLessons: () => lessons,
+    getFeatureFlags: () => ({ ...(gameState?.featureFlags || resolveRuntimeFeatureFlags()) }),
+    setFeatureFlags: (overrides = {}) => {
+        saveFeatureFlagOverrides(overrides);
+        return resolveRuntimeFeatureFlags();
+    },
+    clearFeatureFlags: () => {
+        clearFeatureFlagOverrides();
+        return resolveRuntimeFeatureFlags();
+    }
 };

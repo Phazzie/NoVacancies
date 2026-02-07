@@ -7,6 +7,7 @@
 
 import {
     SYSTEM_PROMPT,
+    detectThreadTransitions,
     getOpeningPrompt,
     getContinuePrompt,
     getContinuePromptFromContext,
@@ -14,7 +15,15 @@ import {
     validateImageKey,
     suggestEndingFromHistory
 } from '../prompts.js';
-import { ImageKeys, Moods, SceneIds, validateNarrativeContext, validateScene, validateEndingType } from '../contracts.js';
+import {
+    ImageKeys,
+    Moods,
+    SceneIds,
+    mergeThreadUpdates,
+    validateNarrativeContext,
+    validateScene,
+    validateEndingType
+} from '../contracts.js';
 import { emitAiTelemetry } from './aiTelemetry.js';
 
 /**
@@ -213,6 +222,29 @@ class GeminiStoryService {
             response = await this.callGemini(repairPrompt);
         }
 
+        // Same-turn transition bridge enforcement:
+        // if this scene's thread updates introduce a major jump, request one bridge-aware rewrite now
+        // (instead of waiting until the next turn's prompt context).
+        const transitionBridge =
+            options.enableTransitionBridges === true
+                ? this.detectTransitionBridgeForResponse(options.previousThreads, response.storyThreadUpdates)
+                : { keys: [], lines: [] };
+
+        if (transitionBridge.lines.length > 0) {
+            console.log('[GeminiService] Transition jump detected, requesting same-turn bridge rewrite');
+            const transitionRepairPrompt = this.buildTransitionBridgeRepairPrompt(
+                prompt,
+                response,
+                transitionBridge
+            );
+            response = await this.callGemini(transitionRepairPrompt);
+            emitAiTelemetry('transition_bridge_used', {
+                keys: transitionBridge.keys,
+                lineCount: transitionBridge.lines.length,
+                timing: 'same_turn'
+            });
+        }
+
         const nextSceneCount = effectiveSceneCount + 1;
         if (useNarrativeContext) {
             this.conversationHistory = narrativeContext.recentSceneProse.map((entry) => {
@@ -276,7 +308,7 @@ class GeminiStoryService {
                                 required: ['id', 'text']
                             }
                         },
-                        lessonId: { type: 'integer' },
+                        lessonId: { type: 'integer', nullable: true },
                         imageKey: { type: 'string' },
                         isEnding: { type: 'boolean' },
                         endingType: { type: 'string' },
@@ -752,6 +784,46 @@ class GeminiStoryService {
 
 QUALITY REVISION REQUIRED:
 - ${issues.join('\n- ')}
+
+Prior JSON (for reference):
+${JSON.stringify(response).slice(0, 900)}
+
+Return corrected JSON only.`;
+    }
+
+    /**
+     * Detect transition bridge lines caused by this scene's thread updates.
+     * @param {import('../contracts.js').StoryThreads|null|undefined} previousThreads
+     * @param {Object|null|undefined} storyThreadUpdates
+     * @returns {{keys: string[], lines: string[]}}
+     */
+    detectTransitionBridgeForResponse(previousThreads, storyThreadUpdates) {
+        if (!previousThreads || !storyThreadUpdates || typeof storyThreadUpdates !== 'object') {
+            return { keys: [], lines: [] };
+        }
+
+        const nextThreads = mergeThreadUpdates(previousThreads, storyThreadUpdates);
+        return detectThreadTransitions(previousThreads, nextThreads);
+    }
+
+    /**
+     * Build a targeted rewrite prompt that enforces same-turn transition bridge continuity.
+     * @param {string} originalPrompt
+     * @param {Object} response
+     * @param {{keys: string[], lines: string[]}} transitionBridge
+     * @returns {string}
+     */
+    buildTransitionBridgeRepairPrompt(originalPrompt, response, transitionBridge) {
+        const bridgeLines = transitionBridge.lines.slice(0, 2).map((line) => `- ${line}`).join('\n');
+        return `${originalPrompt}
+
+STATE SHIFT BRIDGE REQUIRED FOR THIS SCENE:
+${bridgeLines}
+
+A major thread jump happened in THIS scene. Rewrite the scene so one bridge line lands naturally in-scene.
+- Preserve plot events, choices, and continuity facts.
+- Do not add new major events.
+- Keep JSON schema and choice intent intact.
 
 Prior JSON (for reference):
 ${JSON.stringify(response).slice(0, 900)}
