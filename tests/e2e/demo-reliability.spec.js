@@ -102,6 +102,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await page.goto('/play');
 		await expectPathname(page, '/play');
 		await expect(page.getByRole('heading', { level: 2, name: 'Play' })).toBeVisible();
+		await expect(page.getByTestId('mode-pill')).toContainText(/Mock Mode|AI Mode/i);
 		await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 20000 });
 	});
 
@@ -110,6 +111,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await page.getByRole('button', { name: 'Static Story' }).click();
 
 		await page.goto('/play');
+		await expect(page.getByTestId('mode-pill')).toContainText('Mock Mode');
 		await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 20000 });
 
 		// opening -> sit_reflect
@@ -136,5 +138,13 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await expect(page.locator('.ending-title')).toContainText(/loop|shift|exit|rare/i);
 		await expect(page.getByText(/Scenes:/i)).toBeVisible();
 		await expect(page.getByText(/Insights:/i)).toBeVisible();
+	});
+
+	test('play route shows ai mode badge when ai generated mode is selected', async ({ page }) => {
+		await page.goto('/settings');
+		await page.getByRole('button', { name: 'AI Generated' }).click();
+
+		await page.goto('/play');
+		await expect(page.getByTestId('mode-pill')).toContainText('AI Mode');
 	});
 });

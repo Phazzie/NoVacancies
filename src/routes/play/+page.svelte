@@ -9,6 +9,7 @@
 	let error = '';
 	let sceneCount = 0;
 	let showLessons = true;
+	let useMocks = true;
 
 	const unsubscribe = gameStore.subscribe((state) => {
 		scene = state.scene;
@@ -16,6 +17,7 @@
 		error = state.error;
 		sceneCount = state.gameState?.sceneCount || 0;
 		showLessons = state.settings?.showLessons ?? true;
+		useMocks = state.settings?.useMocks ?? true;
 	});
 
 	onMount(() => {
@@ -65,7 +67,10 @@
 		</div>
 
 		<div class="scene-meta">
-			<p class="progress-text">Scene {sceneCount}</p>
+			<div class="mode-row">
+				<p class="progress-text">Scene {sceneCount}</p>
+				<p class="mode-pill" data-testid="mode-pill">{useMocks ? 'Mock Mode' : 'AI Mode'}</p>
+			</div>
 			<div class="scene-text">{scene.sceneText}</div>
 
 			{#if showLessons && scene.lessonId}
