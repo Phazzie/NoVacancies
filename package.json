@@ -26,10 +26,11 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@playwright/test": "^1.58.1",
+    "@rollup/rollup-linux-x64-gnu": "^4.57.1",
     "@sveltejs/adapter-vercel": "^5.10.0",
     "@sveltejs/kit": "^2.48.4",
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
-    "@playwright/test": "^1.58.1",
     "eslint": "^9.39.2",
     "globals": "^17.3.0",
     "http-server": "^14.1.1",

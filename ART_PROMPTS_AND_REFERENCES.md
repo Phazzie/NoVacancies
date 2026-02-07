@@ -24,12 +24,14 @@ Use this context block in your image generation session before running individua
 ## Reference Workflow (important)
 
 For each image prompt:
+
 1. Use the listed **Reference** image(s) as image-to-image guidance (or style/character reference slots).
 2. Keep reference strength medium-high so Sydney remains consistent.
 3. Combine: **Style Prefix + Character Continuity Lock + Prompt + Negative Prompt**.
 4. If your tool supports seed locking, keep one Sydney seed for all Sydney-centered images.
 
 Recommended reference strength targets (tool-agnostic):
+
 - Character reference: 60-80%
 - Style reference: 30-50%
 - Composition reference: 30-60%
@@ -63,6 +65,7 @@ Prompt:
 `Dawn inside a cramped daily-rate motel room, Sydney (44, brunette asymmetric bob, blue eyes) sitting on edge of bed with 4 phones with pop sockets spread across lap and hands, dim yellow lamp plus blue street neon leaking through blinds, rumpled blankets, cluttered side table, unpaid-rent tension in posture`
 
 References:
+
 - `images/hotel_room.png` (primary composition/style)
 - `images/sydney_thinking.png` (secondary face continuity)
 
@@ -72,6 +75,7 @@ Prompt:
 `Sydney (44, brunette asymmetric bob, blue eyes, pretty) intensely multitasking 5 phones with pop sockets, thumbs moving, notification glow on face, motel room background out of focus, exhausted concentration, no computer visible`
 
 References:
+
 - `images/sydney_laptop.png` (primary framing replacement target)
 - `images/sydney_phone_anxious.png` (secondary phone-hand continuity)
 
@@ -81,6 +85,7 @@ Prompt:
 `Close three-quarter portrait of Sydney (44, brunette asymmetric bob, blue eyes), quiet calculating expression, 3 phones with pop sockets resting in lap, early morning motel light, emotional fatigue and strategic focus`
 
 References:
+
 - `images/sydney_thinking.png` (primary character continuity)
 - `images/sydney_window_dawn.png` (secondary dawn lighting)
 
@@ -90,6 +95,7 @@ Prompt:
 `Sydney (44, brunette asymmetric bob, blue eyes) visibly frustrated, one hand on forehead, 3 phones with pop sockets in other hand and on blanket, tense jaw, motel room clutter, harsh practical lighting`
 
 References:
+
 - `images/sydney_frustrated.png` (primary expression)
 - `images/sydney_tired.png` (secondary mood continuity)
 
@@ -99,6 +105,7 @@ Prompt:
 `Sydney (44, brunette asymmetric bob, blue eyes) burned out, slumped posture, under-eye fatigue, 4 phones with pop sockets loosely held, half-drunk coffee cup nearby, dawn light through blinds`
 
 References:
+
 - `images/sydney_tired.png` (primary fatigue expression)
 - `images/sydney_coffee_morning.png` (secondary prop/lighting continuity)
 
@@ -108,6 +115,7 @@ Prompt:
 `Anxious close-up of Sydney (44, brunette asymmetric bob, blue eyes) with two phones in hands and two in lap, all with pop sockets, incoming alerts reflected in eyes, motel background soft blur`
 
 References:
+
 - `images/sydney_phone_anxious.png` (primary composition)
 - `images/sydney_laptop.png` (secondary multi-phone continuity)
 
@@ -117,6 +125,7 @@ Prompt:
 `Sydney (44, brunette asymmetric bob, blue eyes) at motel morning table with coffee and 3 phones with pop sockets, first-light ambience, tired but determined expression, lived-in clutter, realistic textures`
 
 References:
+
 - `images/sydney_coffee_morning.png` (primary morning coffee composition)
 - `images/sydney_window_dawn.png` (secondary dawn light tone)
 
@@ -126,6 +135,7 @@ Prompt:
 `Sydney (44, brunette asymmetric bob, blue eyes) by motel window at dawn, holding 3 phones with pop sockets against chest, reflective mood, cool blue exterior light mixed with warm interior lamp`
 
 References:
+
 - `images/sydney_window_dawn.png` (primary composition)
 - `images/sydney_thinking.png` (secondary face continuity)
 
@@ -135,6 +145,7 @@ Prompt:
 `Motel bed with Oswaldo sleeping fully covered by blanket and hoodie, face hidden and skin not visible, camera angle from foot of bed, Sydney blurred in foreground with 3 phones with pop sockets, heavy morning tension`
 
 References:
+
 - `images/oswaldo_sleeping.png` (primary scene blocking)
 - `images/sydney_tired.png` (secondary Sydney continuity in foreground)
 
@@ -144,6 +155,7 @@ Prompt:
 `Oswaldo implied presence only: back turned, hood up, hands/gloves covered, no face visible, no bare skin, Sydney in foreground with 3-4 phones with pop sockets, confrontational motel room atmosphere`
 
 References:
+
 - `images/oswaldo_awake.png` (primary blocking; regenerate with strict no-face framing)
 - `images/sydney_oswaldo_tension.png` (secondary tension composition)
 
@@ -153,6 +165,7 @@ Prompt:
 `Motel room door framed as emotional threshold, chain latch visible, harsh hallway light under door, Sydney's hand holding a phone with pop socket near the knob, suspenseful composition`
 
 References:
+
 - `images/the_door.png` (primary doorway composition)
 - `images/hotel_room.png` (secondary environmental continuity)
 
@@ -162,6 +175,7 @@ Prompt:
 `Empty motel room after conflict, bed unmade, scattered receipts and charger cords, 2 phones with pop sockets left on blanket, cool desaturated light, sense of aftermath`
 
 References:
+
 - `images/empty_room.png` (primary composition)
 - `images/hotel_room.png` (secondary room identity continuity)
 
@@ -171,6 +185,7 @@ Prompt:
 `Exterior of low-budget motel at dawn, flickering vacancy sign, Sydney silhouette near railing holding phones with pop sockets, mood of uncertainty and transition, cinematic realism`
 
 References:
+
 - `images/motel_exterior.png` (primary exterior continuity)
 - `images/sydney_window_dawn.png` (secondary dawn palette continuity)
 
@@ -186,6 +201,7 @@ Prompt:
 `Trina asleep on floor under blanket, face partially hidden by hoodie sleeve/hair, clutter around her, Sydney in background with phones and coffee, cramped motel tension`
 
 References:
+
 - `images/trina_crashed.png` (primary)
 - `images/hotel_room.png` (secondary environment continuity)
 
@@ -195,6 +211,7 @@ Prompt:
 `Sydney foreground with 3 phones in hand, Oswaldo background as back-turned silhouette only (no face/skin), room split by light/shadow to convey conflict`
 
 References:
+
 - `images/sydney_oswaldo_tension.png` (primary)
 - `images/sydney_frustrated.png` (secondary Sydney expression)
 
@@ -204,6 +221,7 @@ Prompt:
 `Fluorescent convenience store aisle, Sydney holding 3 phones with pop sockets and counting bills/coins, exhausted but focused, late-night/early-morning vibe`
 
 References:
+
 - `images/convenience_store.png` (primary)
 - `images/sydney_phone_anxious.png` (secondary hand/phone continuity)
 
@@ -213,6 +231,7 @@ Prompt:
 `Memory/flashback tone: damaged car at night, red-blue emergency reflections, Sydney seen in profile clutching phone, emotionally distant composition`
 
 References:
+
 - `images/car_memory.png` (primary)
 - `images/sydney_window_dawn.png` (secondary emotional tone)
 
