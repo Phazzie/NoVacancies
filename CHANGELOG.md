@@ -10,6 +10,10 @@
 - **Build Pipeline:** Switched project scripts to Vite/SvelteKit (`dev`, `build`, `preview`, `check`) and updated config files (`svelte.config.js`, `vite.config.ts`, `tsconfig.json`).
 - **E2E Migration:** Reworked primary Playwright reliability spec for route-based SvelteKit flow and mock playthrough ending verification.
 - **Docs:** Added migration execution docs (`docs/SVELTEKIT_MIGRATION_PLAN.md`, `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md`) and refreshed `README.md` run/test/build guidance.
+- **Provider Seams:** Added server-side AI provider interface + registry (`mock` and `grok`) with typed error handling, bounded retry classification, and outage-mode policy loading.
+- **Grok Integration:** Added Grok text/image adapters and SvelteKit API endpoints (`/api/story/opening`, `/api/story/next`, `/api/image`, `/api/ai/probe`) behind env/config flags.
+- **Runtime Routing:** Updated Svelte runtime/store to call server endpoints in AI mode while preserving mock fallback playability and compatibility-safe opening/next scene contracts.
+- **Observability Hardening:** Added server telemetry redaction/sanitization and basic story-sanity checks to catch schema-valid but low-quality outputs before apply.
 
 ## [Unreleased] - 2026-02-05
 
