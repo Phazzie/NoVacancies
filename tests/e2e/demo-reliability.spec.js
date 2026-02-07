@@ -3,9 +3,13 @@ import { readFile } from 'node:fs/promises';
 
 const GEMINI_ROUTE_GLOB = '**/v1beta/models/*:generateContent**';
 const TELEMETRY_STAGE_SET = new Set([
+    'context_built',
+    'context_truncated',
+    'context_mode',
     'request_start',
     'model_used',
     'parse_recovery_attempt',
+    'transition_bridge_used',
     'fallback_trigger',
     'final_success',
     'final_failure'
@@ -233,6 +237,97 @@ test('AI mode smoke flow: 2 choices with loading + transitions and no dead-end U
     expect(stages).toContain('request_start');
     expect(stages).toContain('model_used');
     expect(stages).toContain('final_success');
+});
+
+test('Transition bridge runs in the same turn as thread jump', async ({ page }) => {
+    const capturedPrompts = [];
+    let callCount = 0;
+
+    await page.route(GEMINI_ROUTE_GLOB, async (route) => {
+        const requestBody = route.request().postDataJSON();
+        const promptText = requestBody?.contents?.[0]?.parts?.[0]?.text || '';
+        capturedPrompts.push(promptText);
+        callCount++;
+
+        if (callCount === 1) {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify(
+                    wrapGeminiResponse(
+                        createSceneResponse(
+                            "You stare at the motel clock while everyone else sleeps through your math. The front desk does not care how late Oswaldo stayed up or how many wrappers Trina dropped on the floor. You still need eighteen dollars by eleven, and every minute sounds louder than the last. The room smells like stale smoke and cold coffee, and your phone screen lights your hands blue while you decide where to spend your next ounce of energy.",
+                            [
+                                { id: 'open_laptop', text: 'Open the laptop and start hustling' },
+                                { id: 'wake_oswaldo', text: 'Wake Oswaldo and demand help' }
+                            ],
+                            { storyThreadUpdates: { exhaustionLevel: 2 } }
+                        )
+                    )
+                )
+            });
+            return;
+        }
+
+        if (callCount === 2) {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify(
+                    wrapGeminiResponse(
+                        createSceneResponse(
+                            "You wake Oswaldo and he answers with that half-smirk that means he already plans to dodge. He says you are being dramatic while you count bills out loud, then reaches for his phone instead of the problem. The insult lands because it is familiar, not new. Trina rolls over, wrappers crackle, and you feel the room tilt toward another day where your labor gets renamed as attitude.",
+                            [
+                                { id: 'hold_line', text: 'Hold the line and keep pressing him' },
+                                { id: 'pivot_work', text: 'Pivot back to work and close the gap yourself' }
+                            ],
+                            { storyThreadUpdates: { oswaldoConflict: 2 } }
+                        )
+                    )
+                )
+            });
+            return;
+        }
+
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(
+                wrapGeminiResponse(
+                    createSceneResponse(
+                        "You hear yourself go from swallowed comments to open war when he calls you dramatic with rent money in your hand. The fight is no longer hidden under polite phrasing. He reaches for deflection, you stay on facts, and the air turns sharp enough to cut through the stale smoke. This is not a misunderstanding anymore; it is the same pattern without camouflage.",
+                        [
+                            { id: 'set_boundary', text: 'Set one hard boundary out loud' },
+                            { id: 'walk_hallway', text: 'Step into the hallway to cool off' }
+                        ],
+                        { storyThreadUpdates: { oswaldoConflict: 2 } }
+                    )
+                )
+            )
+        });
+    });
+
+    await openAndStartInAiMode(page);
+
+    const sceneText = page.locator('#scene-text');
+    const previousText = (await sceneText.innerText()).trim();
+    await page.locator('.choice-btn').first().click();
+    await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 15000 });
+    await expect
+        .poll(async () => {
+            const current = (await sceneText.innerText()).trim();
+            return current !== previousText && current.length > 24;
+        })
+        .toBe(true);
+
+    expect(capturedPrompts.length).toBeGreaterThanOrEqual(3);
+    expect(capturedPrompts[2]).toContain('STATE SHIFT BRIDGE REQUIRED FOR THIS SCENE:');
+    expect(capturedPrompts[2]).toContain('A major thread jump happened in THIS scene.');
+
+    const telemetryStages = await page.evaluate(() =>
+        (window.__sydneyAiTelemetry || []).map((entry) => entry.stage)
+    );
+    expect(telemetryStages).toContain('transition_bridge_used');
 });
 
 test('Lesson insight appears only after scene text finishes typing', async ({ page }) => {
