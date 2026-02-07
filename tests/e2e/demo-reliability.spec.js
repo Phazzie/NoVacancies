@@ -93,7 +93,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('route shells render', async ({ page }) => {
 		await page.goto('/');
 		await expectPathname(page, '/');
-		await expect(page.getByRole('heading', { name: 'No Vacancies' })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 2, name: 'Carry What Matters' })).toBeVisible();
 
 		await page.goto('/settings');
 		await expectPathname(page, '/settings');

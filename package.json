@@ -25,6 +25,9 @@
   ],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": "22.x"
+  },
   "devDependencies": {
     "@playwright/test": "^1.58.1",
     "@rollup/rollup-linux-x64-gnu": "^4.57.1",

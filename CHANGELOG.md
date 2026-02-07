@@ -15,6 +15,11 @@
 - **Grok Integration:** Added Grok text/image adapters and SvelteKit API endpoints (`/api/story/opening`, `/api/story/next`, `/api/image`, `/api/ai/probe`) behind env/config flags.
 - **Runtime Routing:** Updated Svelte runtime/store to call server endpoints in AI mode while preserving mock fallback playability and compatibility-safe opening/next scene contracts.
 - **Observability Hardening:** Added server telemetry redaction/sanitization and basic story-sanity checks to catch schema-valid but low-quality outputs before apply.
+- **Security Headers:** Added SvelteKit server hook (`src/hooks.server.ts`) that applies baseline hardening headers and conditional HTTPS HSTS.
+- **Deploy Env Baseline:** Added `.env.example` and documented server-side AI env variables in `README.md` for consistent local/preview/production setup.
+- **Runtime Pinning:** Added Node.js engine requirement `22.x` in `package.json` for deploy/runtime consistency.
+- **Vercel Hygiene:** Added `.vercel/` to `.gitignore` to avoid committing local deployment artifacts.
+- **E2E Reliability:** Removed legacy static-server branch from Playwright config, pinned e2e runtime defaults to safe mock mode, updated route-shell heading expectation, and migrated opt-in live canary flow to Grok/SvelteKit selectors.
 
 ## [Unreleased] - 2026-02-05
 

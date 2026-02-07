@@ -23,6 +23,7 @@ desktop.ini
 dist/
 build/
 .svelte-kit/
+.vercel/
 
 # Logs
 *.log
