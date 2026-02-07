@@ -1,50 +1,44 @@
 import { test, expect } from '@playwright/test';
 
-const LIVE_GEMINI_ENABLED = process.env.LIVE_GEMINI === '1';
-const LIVE_GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim();
+const LIVE_GROK_ENABLED = process.env.LIVE_GROK === '1';
+const LIVE_GROK_API_KEY = (process.env.XAI_API_KEY || '').trim();
 
-test.describe('Live Gemini canary (opt-in)', () => {
+test.skip(
+    !LIVE_GROK_ENABLED || !LIVE_GROK_API_KEY,
+    'Set LIVE_GROK=1 and XAI_API_KEY to run live canary.'
+);
+
+test.describe('Live Grok canary (opt-in)', () => {
     test('AI mode can generate opening and one continuation scene', async ({ page }) => {
-        test.skip(
-            !LIVE_GEMINI_ENABLED || !LIVE_GEMINI_API_KEY,
-            'Set LIVE_GEMINI=1 and GEMINI_API_KEY to run live canary.'
-        );
-
         test.setTimeout(180000);
 
-        await page.goto('/');
-        await expect(page.locator('#title-screen')).toHaveClass(/active/, { timeout: 20000 });
+        await page.goto('/settings');
+        await expect(page.getByRole('heading', { level: 2, name: 'Settings' })).toBeVisible({
+            timeout: 20000
+        });
+        await page.getByRole('button', { name: 'AI Generated' }).click();
 
-        await page.click('#settings-btn');
-        await expect(page.locator('#settings-screen')).toHaveClass(/active/);
-        await page.click('#mode-ai');
-        await expect(page.locator('#mode-ai')).toHaveClass(/active/);
-
-        const apiKeyInput = page.locator('#api-key-input');
-        await apiKeyInput.fill(LIVE_GEMINI_API_KEY);
+        const apiKeyInput = page.getByPlaceholder('Enter AI key');
+        await expect(apiKeyInput).toBeVisible();
+        await apiKeyInput.fill(LIVE_GROK_API_KEY);
         await apiKeyInput.blur();
-        await expect.poll(async () => page.evaluate(() => window.sydneyStory?.getSettings?.().apiKeySet)).toBe(
-            true
-        );
+        await page.goto('/play');
+        await expect(page.getByRole('heading', { level: 2, name: 'Play' })).toBeVisible({
+            timeout: 20000
+        });
+        await expect(page.getByTestId('mode-pill')).toContainText('AI Mode');
+        await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 90000 });
 
-        await page.click('#settings-back-btn');
-        await expect(page.locator('#title-screen')).toHaveClass(/active/);
-
-        await page.locator('#title-screen.active #start-btn').click({ timeout: 20000 });
-        await expect(page.locator('#game-screen')).toHaveClass(/active/, { timeout: 20000 });
-        await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 60000 });
-
-        const sceneText = page.locator('#scene-text');
+        const sceneText = page.locator('.scene-text');
         const before = (await sceneText.innerText()).trim();
 
         await page.locator('.choice-btn').first().click();
-        await expect(page.locator('.loading-indicator')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 90000 });
 
         await expect
             .poll(async () => (await sceneText.innerText()).trim(), { timeout: 90000 })
             .not.toBe(before);
 
-        await expect(page.locator('.error-message')).toHaveCount(0);
+        await expect(page.locator('.error-banner')).toHaveCount(0);
     });
 });

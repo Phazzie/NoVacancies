@@ -1,5 +1,26 @@
 # Changelog
 
+## [Unreleased] - 2026-02-07
+
+### Changed
+
+- **Framework Migration:** Added SvelteKit TypeScript scaffold with split routes (`/`, `/settings`, `/play`, `/ending`) and shared layout navigation.
+- **Gameplay Runtime Port:** Added typed `src/lib` game/runtime/service modules to support mock-mode playthrough in SvelteKit while preserving scene/state contracts and fallback-safe behavior.
+- **PWA Preservation:** Added SvelteKit static manifest/service worker pathing and client-side registration helper under `src/lib/client/pwa.ts`.
+- **Build Pipeline:** Switched project scripts to Vite/SvelteKit (`dev`, `build`, `preview`, `check`) and updated config files (`svelte.config.js`, `vite.config.ts`, `tsconfig.json`).
+- **E2E Migration:** Reworked primary Playwright reliability spec for route-based SvelteKit flow and mock playthrough ending verification.
+- **Runtime Mode Visibility:** Added an explicit `/play` mode pill so players can always see whether they are in `Mock Mode` or `AI Mode`, with Playwright coverage for both states.
+- **Docs:** Added migration execution docs (`docs/SVELTEKIT_MIGRATION_PLAN.md`, `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md`) and refreshed `README.md` run/test/build guidance.
+- **Provider Seams:** Added server-side AI provider interface + registry (`mock` and `grok`) with typed error handling, bounded retry classification, and outage-mode policy loading.
+- **Grok Integration:** Added Grok text/image adapters and SvelteKit API endpoints (`/api/story/opening`, `/api/story/next`, `/api/image`, `/api/ai/probe`) behind env/config flags.
+- **Runtime Routing:** Updated Svelte runtime/store to call server endpoints in AI mode while preserving mock fallback playability and compatibility-safe opening/next scene contracts.
+- **Observability Hardening:** Added server telemetry redaction/sanitization and basic story-sanity checks to catch schema-valid but low-quality outputs before apply.
+- **Security Headers:** Added SvelteKit server hook (`src/hooks.server.ts`) that applies baseline hardening headers and conditional HTTPS HSTS.
+- **Deploy Env Baseline:** Added `.env.example` and documented server-side AI env variables in `README.md` for consistent local/preview/production setup.
+- **Runtime Pinning:** Added Node.js engine requirement `22.x` in `package.json` for deploy/runtime consistency.
+- **Vercel Hygiene:** Added `.vercel/` to `.gitignore` to avoid committing local deployment artifacts.
+- **E2E Reliability:** Removed legacy static-server branch from Playwright config, pinned e2e runtime defaults to safe mock mode, updated route-shell heading expectation, and migrated opt-in live canary flow to Grok/SvelteKit selectors.
+
 ## [Unreleased] - 2026-02-05
 
 ### Changed
@@ -13,6 +34,13 @@
 - **Feature Flag Operations:** Added runtime feature-flag normalization plus localStorage/query override support so `narrativeContextV2` and `transitionBridges` can be toggled without code edits.
 - **Lesson Nullability:** Updated Gemini structured response schema so `lessonId` can be `null` (matching prompt and contract intent).
 - **Tests:** Expanded integration coverage with T1-T4 narrative-upgrade gates (prompt assets, context contract/budget, transition-only-on-jump behavior, telemetry redaction).
+- **Auth Bypass Control:** Added non-production `AI_AUTH_BYPASS` handling so auth failures can intentionally route through mock fallback during local/preview debugging while remaining blocked in production.
+- **Opening Fallback Parity:** Added opening-scene fallback in runtime start flow so first-turn AI failures degrade to playable mock mode instead of hard-stopping.
+- **Provider Prompt Context:** Updated Grok provider prompt construction to include `NarrativeContext` sections (recent prose, lesson history, thread/boundary lines, transition bridge) for stronger continuity.
+- **Image Reliability Hardening:** Added timeout/retry handling and guardrail enforcement to Grok image generation path, plus typed route error status mapping.
+- **E2E Reliability Expansion:** Added endpoint coverage for image guardrail rejection and AI-mode opening request playability.
+- **E2E Regression:** Added Playwright coverage proving transition bridges are requested in the same turn as a detected thread jump, and aligned telemetry stage contract assertions with current AI instrumentation.
+- **Prompt Regression:** Added coverage that enforces prompt instructions to label `lessonId` only after scene writing (system + legacy + context prompt paths).
 - **Prompt Depth:** Expanded lesson payload in `SYSTEM_PROMPT` formatting to include per-lesson emotional stakes, common triggers, and unconventional angle (in addition to title/quote/insight).
 - **Continuity Language:** Replaced stale `laptop` continuity anchor with `phone/phones/popsocket` anchors in Gemini quality checks.
 - **Voice Anchors:** Added two high-signal narrative lines to `SYSTEM_PROMPT` as explicit voice-ceiling examples so model tone targets stay sharp across generations.

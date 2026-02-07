@@ -25,6 +25,11 @@
 **Insight:** General style directives ("be gritty", "dark humor") help, but specific high-quality exemplar lines set a clearer target for model tone.
 **Lesson:** Keep 1-3 canonical "voice ceiling" lines in the system prompt so generation quality regresses less over long playthroughs and prompt edits.
 
+## 6. Separate Framework Migration From Provider Migration
+
+**Insight:** Moving UI/runtime framework and swapping AI providers in the same phase multiplies unknowns and slows debugging.
+**Lesson:** Keep framework migration mock-first, lock test gates, then switch providers against a stable contract seam.
+
 ## 6. Generalize State, Specialize Character Examples
 
 **Insight:** If thread-state translations include concrete incidents, the model can treat those incidents as already happened facts and drift continuity.
@@ -54,3 +59,32 @@
 
 **Insight:** Hardcoded feature flags force code edits and redeploys for tuning and rollback decisions.
 **Lesson:** Normalize flags at runtime and allow safe overrides through controlled inputs (persistent storage and explicit query keys).
+
+## 12. Unsolicited Process Critique: We Still Mix Delivery with Discovery
+
+**What haters would say:** "You keep proving fixes in tests, but you still do too much discovery while shipping. That's how scope creep sneaks in."
+**Lesson:** Freeze scope per phase up front, and track every "nice-to-have" separately so implementation commits stay purpose-pure.
+
+## 13. Unsolicited Process Critique: Worktree Noise Hides Real Risk
+
+**What haters would say:** "Your branch always has unrelated local files, so nobody can tell what actually changed for the feature."
+**Lesson:** Keep local noise out of feature diffs:
+- use `git status --short` before every commit
+- commit only explicit file lists
+- maintain local ignore rules (`.git/info/exclude`) for personal artifacts instead of polluting tracked ignores
+- never include unrelated files in phase commits, even when tests are passing
+
+## 14. First-Turn Reliability Must Match Mid-Turn Reliability
+
+**Insight:** A robust fallback path in `handleChoice()` is not enough if `startGame()` can still hard-fail on the very first provider call.
+**Lesson:** Apply identical fallback semantics to opening-scene generation so playability invariants hold from turn zero.
+
+## 15. Auth Bypass Can Be Useful, But It Must Be Contained
+
+**Insight:** Temporary auth bypass speeds local debugging, but if it leaks into production it can mask broken secrets and delay incident detection.
+**Lesson:** Gate bypass behind explicit env, block it in production, and emit telemetry whenever bypass is used.
+
+## 16. Provider Prompts Need the Same Narrative Context as Runtime
+
+**Insight:** Building `NarrativeContext` but not injecting it into provider prompts silently degrades continuity while all schema checks still pass.
+**Lesson:** Enforce context-to-prompt wiring tests so continuity assets are always consumed by the active provider path.

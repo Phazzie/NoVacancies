@@ -8,9 +8,9 @@ Validate user-visible reliability for demo-critical flows.
 
 ## Execution Rules
 
-- Use local static serving for app boot (no `file://` module loading).
+- Use SvelteKit dev/preview serving for app boot (no `file://` module loading).
 - Respect env-configured host/port (`E2E_HOST`, `E2E_PORT`) where supported.
-- Keep live-provider tests opt-in and clearly gated (for example, `LIVE_GEMINI=1`).
+- Keep live-provider tests opt-in and clearly gated (for example, `LIVE_GROK=1`).
 
 ## Test Content Rules
 

@@ -1,0 +1,214 @@
+:root {
+	font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+	line-height: 1.45;
+	color: #111;
+	background: #f6f7fb;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+}
+
+.app-shell {
+	max-width: 980px;
+	margin: 0 auto;
+	padding: 16px;
+}
+
+header h1 {
+	margin: 0 0 8px;
+}
+
+.top-nav {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 16px;
+}
+
+.top-nav a {
+	padding: 8px 12px;
+	border: 1px solid #d0d4e1;
+	border-radius: 999px;
+	text-decoration: none;
+	color: #1f2430;
+	background: #fff;
+}
+
+.top-nav a.active {
+	background: #111827;
+	color: #fff;
+}
+
+.panel {
+	background: #fff;
+	border: 1px solid #e2e5ef;
+	border-radius: 12px;
+	padding: 18px;
+}
+
+.lede {
+	margin-top: 0;
+	color: #505770;
+}
+
+.home-actions,
+.ending-actions,
+.toggle-row {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.btn {
+	appearance: none;
+	border-radius: 10px;
+	padding: 10px 14px;
+	font-weight: 600;
+	cursor: pointer;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid transparent;
+}
+
+.btn:disabled {
+	opacity: 0.6;
+	cursor: wait;
+}
+
+.btn-primary {
+	background: #111827;
+	color: #fff;
+}
+
+.btn-secondary {
+	background: #f3f4f8;
+	color: #111827;
+	border-color: #d1d5e3;
+}
+
+.settings-section {
+	padding: 12px;
+	border: 1px solid #e6e8f1;
+	border-radius: 10px;
+	margin-bottom: 10px;
+}
+
+.settings-section h3 {
+	margin-top: 0;
+}
+
+.hint {
+	margin: 6px 0 0;
+	color: #575f78;
+	font-size: 0.95rem;
+}
+
+.text-input {
+	width: 100%;
+	max-width: 420px;
+	padding: 10px;
+	border: 1px solid #cfd5e8;
+	border-radius: 8px;
+}
+
+.play-grid {
+	display: grid;
+	gap: 14px;
+}
+
+.scene-image-wrap {
+	border-radius: 10px;
+	overflow: hidden;
+	border: 1px solid #dbe1f2;
+}
+
+.scene-image {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.progress-text {
+	margin: 0 0 10px;
+	font-size: 0.92rem;
+	color: #646b82;
+}
+
+.mode-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+
+.mode-row .progress-text {
+	margin: 0;
+}
+
+.mode-pill {
+	margin: 0;
+	padding: 4px 10px;
+	border-radius: 999px;
+	border: 1px solid #d1d5e3;
+	background: #f3f4f8;
+	color: #1f2430;
+	font-size: 0.85rem;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+}
+
+.scene-text {
+	white-space: pre-wrap;
+	line-height: 1.6;
+	margin-bottom: 14px;
+}
+
+.lesson-pill {
+	display: inline-block;
+	margin: 0 0 12px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: #fef3c7;
+	color: #92400e;
+	font-size: 0.9rem;
+}
+
+.choices-list {
+	display: grid;
+	gap: 10px;
+}
+
+.choice-btn {
+	justify-content: flex-start;
+	text-align: left;
+}
+
+.error-banner {
+	padding: 10px;
+	border: 1px solid #fecaca;
+	background: #fef2f2;
+	color: #991b1b;
+	border-radius: 8px;
+}
+
+.ending-card {
+	border: 1px solid #e6e8f1;
+	border-radius: 10px;
+	padding: 14px;
+}
+
+.ending-title {
+	font-size: 1.2rem;
+	font-weight: 700;
+	margin: 0 0 8px;
+	text-transform: capitalize;
+}
