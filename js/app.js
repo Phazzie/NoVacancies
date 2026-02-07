@@ -8,9 +8,11 @@ import {
     createGameState,
     validateScene,
     mergeThreadUpdates,
-    validatePlaythroughRecap
+    validatePlaythroughRecap,
+    validateNarrativeContext
 } from './contracts.js';
 import { lessons } from './lessons.js';
+import { buildNarrativeContext, detectThreadTransitions } from './prompts.js';
 import { mockStoryService } from './services/mockStoryService.js';
 import { emitAiTelemetry } from './services/aiTelemetry.js';
 import { buildPlaythroughRecap } from './services/playthroughRecap.js';
@@ -402,6 +404,15 @@ async function startGame() {
 
         gameState.currentSceneId = openingScene.sceneId;
         gameState.sceneCount = 1;
+        gameState.pendingTransitionBridge = null;
+        gameState.sceneLog = [
+            {
+                sceneId: openingScene.sceneId,
+                sceneText: openingScene.sceneText || '',
+                viaChoiceText: '',
+                isEnding: !!openingScene.isEnding
+            }
+        ];
 
         // Track lesson
         if (openingScene.lessonId) {
@@ -450,11 +461,54 @@ async function handleChoice(choiceId, choiceText = '') {
     const loadingTimers = startLoadingThresholdTimers();
 
     try {
+        const useNarrativeContext = !!gameState.featureFlags?.narrativeContextV2;
+        let narrativeContext = null;
+
+        if (useNarrativeContext) {
+            const candidateContext = buildNarrativeContext(gameState, {
+                lastChoiceText: choiceText
+            });
+
+            if (validateNarrativeContext(candidateContext)) {
+                narrativeContext = candidateContext;
+                emitAiTelemetry('context_built', {
+                    contextChars: narrativeContext.meta.contextChars,
+                    budgetChars: narrativeContext.meta.budgetChars,
+                    truncated: narrativeContext.meta.truncated,
+                    recentSceneCount: narrativeContext.recentSceneProse.length,
+                    olderSummaryCount: narrativeContext.olderSceneSummaries.length
+                });
+
+                if (narrativeContext.meta.truncated) {
+                    emitAiTelemetry('context_truncated', {
+                        droppedOlderSummaries: narrativeContext.meta.droppedOlderSummaries,
+                        droppedRecentProse: narrativeContext.meta.droppedRecentProse
+                    });
+                }
+
+                if (
+                    gameState.featureFlags?.transitionBridges &&
+                    narrativeContext.transitionBridge?.lines?.length
+                ) {
+                    emitAiTelemetry('transition_bridge_used', {
+                        keys: narrativeContext.transitionBridge.keys,
+                        lineCount: narrativeContext.transitionBridge.lines.length
+                    });
+                }
+            } else {
+                console.warn('[App] NarrativeContext validation failed; falling back to legacy prompt path');
+            }
+        }
+
         // Get next scene
         const nextScene = await storyService.getNextScene(
             gameState.currentSceneId,
             choiceId,
-            gameState
+            gameState,
+            narrativeContext,
+            {
+                useNarrativeContext: !!narrativeContext
+            }
         );
 
         if (!validateScene(nextScene)) {
@@ -525,6 +579,11 @@ async function getFallbackScene(choiceId) {
  * @param {import('./contracts.js').Scene} scene
  */
 function applyScene(scene) {
+    const previousThreads = {
+        ...gameState.storyThreads,
+        boundariesSet: [...gameState.storyThreads.boundariesSet]
+    };
+
     // Merge story thread updates
     if (scene.storyThreadUpdates) {
         console.log('[App] Updating story threads:', scene.storyThreadUpdates);
@@ -535,9 +594,32 @@ function applyScene(scene) {
         console.log('[App] Updated threads:', gameState.storyThreads);
     }
 
+    if (gameState.featureFlags?.transitionBridges) {
+        const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
+        if (transitionBridge.lines.length > 0) {
+            gameState.pendingTransitionBridge = transitionBridge;
+        } else {
+            gameState.pendingTransitionBridge = null;
+        }
+    } else {
+        gameState.pendingTransitionBridge = null;
+    }
+
     // Update game state
     gameState.currentSceneId = scene.sceneId;
     gameState.sceneCount++;
+
+    const lastHistoryEntry = gameState.history[gameState.history.length - 1];
+    const viaChoiceText = lastHistoryEntry?.choiceText || '';
+    if (!Array.isArray(gameState.sceneLog)) {
+        gameState.sceneLog = [];
+    }
+    gameState.sceneLog.push({
+        sceneId: scene.sceneId,
+        sceneText: scene.sceneText || '',
+        viaChoiceText,
+        isEnding: !!scene.isEnding
+    });
 
     // Track lesson
     if (scene.lessonId && !gameState.lessonsEncountered.includes(scene.lessonId)) {
