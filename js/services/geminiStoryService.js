@@ -9,11 +9,12 @@ import {
     SYSTEM_PROMPT,
     getOpeningPrompt,
     getContinuePrompt,
+    getContinuePromptFromContext,
     getRecoveryPrompt,
     validateImageKey,
     suggestEndingFromHistory
 } from '../prompts.js';
-import { ImageKeys, Moods, SceneIds, validateScene, validateEndingType } from '../contracts.js';
+import { ImageKeys, Moods, SceneIds, validateNarrativeContext, validateScene, validateEndingType } from '../contracts.js';
 import { emitAiTelemetry } from './aiTelemetry.js';
 
 /**
@@ -173,38 +174,61 @@ class GeminiStoryService {
      * @param {import('../contracts.js').GameState} gameState
      * @returns {Promise<import('../contracts.js').Scene>}
      */
-    async getNextScene(currentSceneId, choiceId, gameState) {
+    async getNextScene(currentSceneId, choiceId, gameState, narrativeContext = null, options = {}) {
         // Find the choice text from the last response or use the ID
         const choiceText = this.lastChoices?.find((c) => c.id === choiceId)?.text || choiceId;
+        const useNarrativeContext =
+            options.useNarrativeContext !== false && validateNarrativeContext(narrativeContext);
+        const effectiveSceneCount = useNarrativeContext
+            ? narrativeContext.sceneCount
+            : this.sceneCount;
 
         let suggestedEnding = null;
-        if (this.sceneCount >= 8) {
+        if (effectiveSceneCount >= 8) {
             suggestedEnding = suggestEndingFromHistory(gameState.history);
             console.log(`[GeminiService] Suggested ending: ${suggestedEnding}`);
         }
 
-        const prompt = getContinuePrompt(
-            this.conversationHistory,
-            choiceText,
-            this.sceneCount,
-            suggestedEnding,
-            gameState.storyThreads
-        );
+        const prompt = useNarrativeContext
+            ? getContinuePromptFromContext(narrativeContext, suggestedEnding)
+            : getContinuePrompt(
+                  this.conversationHistory,
+                  choiceText,
+                  this.sceneCount,
+                  suggestedEnding,
+                  gameState.storyThreads
+              );
 
         let response = await this.callGemini(prompt);
 
-        const quality = this.evaluateResponseQuality(response, gameState, choiceText);
+        const quality = this.evaluateResponseQuality(
+            response,
+            gameState,
+            choiceText,
+            useNarrativeContext ? narrativeContext : null
+        );
         if (!quality.ok) {
             console.warn('[GeminiService] Response quality check failed, retrying once:', quality.issues);
             const repairPrompt = this.buildQualityRepairPrompt(prompt, response, quality.issues);
             response = await this.callGemini(repairPrompt);
         }
 
+        const nextSceneCount = effectiveSceneCount + 1;
+        if (useNarrativeContext) {
+            this.conversationHistory = narrativeContext.recentSceneProse.map((entry) => {
+                const prefix = entry.viaChoiceText ? `[Choice: ${entry.viaChoiceText}]` : '[Choice: opening]';
+                return `${prefix}\n${entry.text}`;
+            });
+        }
         this.conversationHistory.push(`[Choice: ${choiceText}]\n${response.sceneText}`);
-        this.sceneCount++;
+        this.sceneCount = nextSceneCount;
+        emitAiTelemetry('context_mode', {
+            mode: useNarrativeContext ? 'app_context' : 'legacy_service_memory',
+            sceneCount: nextSceneCount
+        });
 
         // Generate a scene ID
-        const sceneId = `scene_${this.sceneCount}_${Date.now()}`;
+        const sceneId = `scene_${nextSceneCount}_${Date.now()}`;
 
         return this.formatScene(response, sceneId);
     }
@@ -551,11 +575,22 @@ class GeminiStoryService {
      * @param {string} sceneText
      * @returns {boolean}
      */
-    isRepetitiveScene(sceneText) {
-        if (!sceneText || this.conversationHistory.length === 0) return false;
+    getPreviousSceneText(narrativeContext = null) {
+        if (narrativeContext?.recentSceneProse?.length) {
+            const lastEntry = narrativeContext.recentSceneProse[narrativeContext.recentSceneProse.length - 1];
+            return (lastEntry?.text || '').trim();
+        }
+        if (this.conversationHistory.length > 0) {
+            const previousEntry = this.conversationHistory[this.conversationHistory.length - 1] || '';
+            return previousEntry.replace(/^\[Choice:[^\n]*\]\n/, '').trim();
+        }
+        return '';
+    }
 
-        const previousEntry = this.conversationHistory[this.conversationHistory.length - 1] || '';
-        const previousSceneText = previousEntry.replace(/^\[Choice:[^\n]*\]\n/, '').trim();
+    isRepetitiveScene(sceneText, narrativeContext = null) {
+        if (!sceneText) return false;
+
+        const previousSceneText = this.getPreviousSceneText(narrativeContext);
         if (!previousSceneText) return false;
 
         const currentTokens = this.normalizeSceneTokens(sceneText);
@@ -571,11 +606,13 @@ class GeminiStoryService {
      * @param {string} sceneText
      * @returns {boolean}
      */
-    isRepetitiveOpening(sceneText) {
-        if (!sceneText || this.conversationHistory.length === 0) return false;
+    isRepetitiveOpening(sceneText, narrativeContext = null) {
+        if (!sceneText) return false;
 
-        const previousEntry = this.conversationHistory[this.conversationHistory.length - 1] || '';
-        const previousTokens = this.extractOpeningTokens(previousEntry);
+        const previousSceneText = this.getPreviousSceneText(narrativeContext);
+        if (!previousSceneText) return false;
+
+        const previousTokens = this.extractOpeningTokens(previousSceneText);
         const currentTokens = this.extractOpeningTokens(sceneText);
         if (previousTokens.length < 6 || currentTokens.length < 6) return false;
 
@@ -671,7 +708,7 @@ class GeminiStoryService {
      * @param {string|null} lastChoiceText
      * @returns {{ok: boolean, issues: string[]}}
      */
-    evaluateResponseQuality(response, gameState = null, lastChoiceText = null) {
+    evaluateResponseQuality(response, gameState = null, lastChoiceText = null, narrativeContext = null) {
         const issues = [];
 
         if (!response?.isEnding && !this.hasDistinctChoices(response?.choices || [])) {
@@ -681,14 +718,15 @@ class GeminiStoryService {
             issues.push('Choice openings are too similar; start choices with different actions.');
         }
 
-        if (!response?.isEnding && this.isRepetitiveScene(response?.sceneText || '')) {
+        if (!response?.isEnding && this.isRepetitiveScene(response?.sceneText || '', narrativeContext)) {
             issues.push('Scene repeats previous narrative beats too closely; introduce forward movement.');
         }
-        if (!response?.isEnding && this.isRepetitiveOpening(response?.sceneText || '')) {
+        if (!response?.isEnding && this.isRepetitiveOpening(response?.sceneText || '', narrativeContext)) {
             issues.push('Opening line repeats previous framing; change the opening action or setting detail.');
         }
 
-        if (gameState && this.sceneCount >= 2) {
+        const continuitySceneCount = narrativeContext?.sceneCount ?? this.sceneCount;
+        if (gameState && continuitySceneCount >= 2) {
             const sceneText = (response?.sceneText || '').toLowerCase();
             const strictAnchors = this.getSpecificContinuityAnchors(gameState.storyThreads, lastChoiceText);
             const fallbackAnchors = this.getContinuityAnchors(gameState, lastChoiceText);

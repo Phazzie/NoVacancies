@@ -43,6 +43,9 @@
  * @property {Array<{sceneId: string, choiceId: string, choiceText?: string, timestamp: number}>} history - All previous choices
  * @property {number[]} lessonsEncountered - Array of lesson IDs encountered
  * @property {StoryThreads} storyThreads - Continuity tracking for narrative consistency
+ * @property {Array<{sceneId: string, sceneText: string, viaChoiceText?: string, isEnding?: boolean}>} sceneLog - Ordered scene prose log
+ * @property {{keys: string[], lines: string[]} | null} pendingTransitionBridge - One-turn transition bridge payload
+ * @property {{narrativeContextV2: boolean, transitionBridges: boolean}} featureFlags - Runtime feature flags
  * @property {string} [apiKey] - Gemini API key if using real AI
  * @property {boolean} useMocks - Whether to use mock service
  * @property {number} sceneCount - Number of scenes visited
@@ -56,6 +59,21 @@
  * @property {Lesson[]} lessons - All available lessons
  * @property {Object} characters - Character details
  * @property {string[]} conversationHistory - Previous scenes/choices as text
+ */
+
+/**
+ * @typedef {Object} NarrativeContext
+ * @property {number} sceneCount
+ * @property {string} arcPosition
+ * @property {string} lastChoiceText
+ * @property {StoryThreads|null} threadState
+ * @property {string[]} threadNarrativeLines
+ * @property {string[]} boundaryNarrativeLines
+ * @property {string[]} lessonHistoryLines
+ * @property {Array<{sceneId: string, text: string, viaChoiceText: string}>} recentSceneProse
+ * @property {string[]} olderSceneSummaries
+ * @property {{keys: string[], lines: string[]} | null} transitionBridge
+ * @property {{contextChars: number, budgetChars: number, truncated: boolean, droppedOlderSummaries: number, droppedRecentProse: number}} meta
  */
 
 /**
@@ -135,6 +153,12 @@ export function createGameState() {
         history: [],
         lessonsEncountered: [],
         storyThreads: createStoryThreads(),
+        sceneLog: [],
+        pendingTransitionBridge: null,
+        featureFlags: {
+            narrativeContextV2: true,
+            transitionBridges: true
+        },
         apiKey: null,
         useMocks: true,
         sceneCount: 0,
@@ -213,6 +237,53 @@ export function validateChoice(choice) {
     if (!choice) return false;
     if (typeof choice.id !== 'string') return false;
     if (typeof choice.text !== 'string') return false;
+    return true;
+}
+
+/**
+ * Validate NarrativeContext payload shape.
+ * @param {NarrativeContext} context
+ * @returns {boolean}
+ */
+export function validateNarrativeContext(context) {
+    if (!context || typeof context !== 'object') return false;
+    if (!Number.isInteger(context.sceneCount) || context.sceneCount < 0) return false;
+    if (typeof context.arcPosition !== 'string') return false;
+    if (typeof context.lastChoiceText !== 'string') return false;
+    if (!Array.isArray(context.threadNarrativeLines)) return false;
+    if (!Array.isArray(context.boundaryNarrativeLines)) return false;
+    if (!Array.isArray(context.lessonHistoryLines)) return false;
+    if (!Array.isArray(context.recentSceneProse)) return false;
+    if (!Array.isArray(context.olderSceneSummaries)) return false;
+    if (!context.meta || typeof context.meta !== 'object') return false;
+    if (!Number.isInteger(context.meta.contextChars) || context.meta.contextChars < 0) return false;
+    if (!Number.isInteger(context.meta.budgetChars) || context.meta.budgetChars <= 0) return false;
+    if (typeof context.meta.truncated !== 'boolean') return false;
+    if (!Number.isInteger(context.meta.droppedOlderSummaries) || context.meta.droppedOlderSummaries < 0) {
+        return false;
+    }
+    if (!Number.isInteger(context.meta.droppedRecentProse) || context.meta.droppedRecentProse < 0) {
+        return false;
+    }
+
+    const hasValidRecent = context.recentSceneProse.every((entry) =>
+        entry &&
+        typeof entry.sceneId === 'string' &&
+        typeof entry.text === 'string' &&
+        typeof entry.viaChoiceText === 'string'
+    );
+    if (!hasValidRecent) return false;
+
+    if (context.transitionBridge !== null && context.transitionBridge !== undefined) {
+        if (
+            typeof context.transitionBridge !== 'object' ||
+            !Array.isArray(context.transitionBridge.keys) ||
+            !Array.isArray(context.transitionBridge.lines)
+        ) {
+            return false;
+        }
+    }
+
     return true;
 }
 
