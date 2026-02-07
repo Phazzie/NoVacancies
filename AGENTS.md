@@ -42,6 +42,14 @@ When updating code:
 
 At task end, always include a "Docs Updated" list in the handoff.
 
+### Change Trigger Matrix
+
+If these files change, update the paired docs/tests in the same task:
+- `js/contracts.js` -> update `tests/integrationTest.js` contract coverage and `CHANGELOG.md`
+- `js/prompts.js` or `js/services/geminiStoryService.js` -> update AI quality/recovery tests and `AI_LESSONS_LEARNED.md` when new prompt behavior lessons emerge
+- `index.html` / `style.css` / `js/renderer.js` -> update renderer/e2e checks and `README.md` UX notes if behavior changed
+- `tests/*` pipeline behavior -> update `README.md` test commands/status expectations
+
 ## Non-Negotiable Product Invariants
 
 - AI->mock fallback must preserve playability; no abrupt forced ending from incompatible scene IDs.
@@ -62,6 +70,16 @@ At task end, always include a "Docs Updated" list in the handoff.
    - `npm run test:e2e` when e2e-related paths change (or clearly report environment block)
 5. Report evidence, not assumptions (commands run + pass/fail summary).
 
+### Confidence Protocol
+
+- Do not claim "done" or "fixed" without fresh command evidence.
+- If execution is environment-blocked, explicitly mark as blocked and provide exact command(s) for user-side verification.
+- Include at least one "risk introduced by this change" note for non-trivial edits.
+
+### Invariant-to-Test Rule
+
+Any change touching a non-negotiable invariant must include or update at least one test proving it.
+
 ## Stop/Ask Conditions
 
 Pause and ask if:
@@ -69,6 +87,25 @@ Pause and ask if:
 - A change requires destructive operations or sweeping refactors.
 - A schema contract change will break backward compatibility.
 - You detect unexpected external edits during active work.
+
+## Anti-Goals
+
+- Do not broaden scope while reliability hardening is in progress.
+- Do not move durable project knowledge into transient logs.
+- Do not rewrite architecture for style preference when a small fix is sufficient.
+
+## Freshness Budget
+
+- Active canonical docs (`README.md`, `CHANGELOG.md`, `AI_LESSONS_LEARNED.md`) should be reviewed within 30 days of major behavior changes.
+- If stale, mark status as "Needs review" before adding more content.
+
+## Handoff Requirements for Significant Changes
+
+Include these sections in final handoff:
+- `Docs Updated`
+- `Risks Introduced`
+- `Assumptions Made`
+- `Rollback Note` (how to back out change safely)
 
 ## What Must Not Go Into AGENTS Files
 

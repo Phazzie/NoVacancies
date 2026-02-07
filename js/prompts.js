@@ -13,7 +13,22 @@ import { EndingTypes, ImageKeys } from './contracts.js';
  */
 function formatLessonsForPrompt() {
     return lessons
-        .map((l) => `${l.id}. ${l.title}: "${l.quote}"\n   Insight: ${l.insight}`)
+        .map((l) => {
+            const stakes = Array.isArray(l.emotionalStakes)
+                ? l.emotionalStakes.slice(0, 2).join(' | ')
+                : '';
+            const triggers = Array.isArray(l.storyTriggers)
+                ? l.storyTriggers.slice(0, 2).join(' | ')
+                : '';
+            const unconventionalAngle = l.unconventionalAngle || '';
+
+            return `${l.id}. ${l.title}
+   Quote: "${l.quote}"
+   Core Insight: ${l.insight}
+   Emotional Stakes: ${stakes}
+   Common Triggers: ${triggers}
+   Unconventional Angle: ${unconventionalAngle}`;
+        })
         .join('\n\n');
 }
 
@@ -342,7 +357,7 @@ Continue the story based on this choice. Remember:
 - Weave in a lesson naturally if appropriate
 - Maintain dark humor as coping
 - Include one concrete callback to recent history or thread state
-- Avoid repeating the previous scene's exact framing or rhythm
+- Do not open the new scene with the same action, image, or setting detail as the previous scene
 - Include "storyThreadUpdates" with only changed thread fields (omit field if unchanged)
 - The choice should have consequences${endingGuidance}
 

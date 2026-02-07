@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased] - 2026-02-05
+
+### Changed
+
+- **Prompt Depth:** Expanded lesson payload in `SYSTEM_PROMPT` formatting to include per-lesson emotional stakes, common triggers, and unconventional angle (in addition to title/quote/insight).
+- **Continuity Language:** Replaced stale `laptop` continuity anchor with `phone/phones/popsocket` anchors in Gemini quality checks.
+
 ## [Unreleased] - 2026-02-03
 
 ### Changed

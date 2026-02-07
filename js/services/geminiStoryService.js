@@ -514,6 +514,20 @@ class GeminiStoryService {
     }
 
     /**
+     * Extract a compact opening signature from a scene for repetition checks.
+     * @param {string} text
+     * @returns {string[]}
+     */
+    extractOpeningTokens(text) {
+        const clean = (text || '').replace(/^\[Choice:[^\n]*\]\n/, '').trim();
+        if (!clean) return [];
+
+        const firstLine = clean.split(/\n+/)[0] || '';
+        const firstSentence = firstLine.split(/[.!?]/)[0] || firstLine;
+        return this.normalizeSceneTokens(firstSentence).slice(0, 14);
+    }
+
+    /**
      * Jaccard similarity between two token arrays.
      * @param {string[]} aTokens
      * @param {string[]} bTokens
@@ -553,6 +567,23 @@ class GeminiStoryService {
     }
 
     /**
+     * Detect repeated opening framing across consecutive scenes.
+     * @param {string} sceneText
+     * @returns {boolean}
+     */
+    isRepetitiveOpening(sceneText) {
+        if (!sceneText || this.conversationHistory.length === 0) return false;
+
+        const previousEntry = this.conversationHistory[this.conversationHistory.length - 1] || '';
+        const previousTokens = this.extractOpeningTokens(previousEntry);
+        const currentTokens = this.extractOpeningTokens(sceneText);
+        if (previousTokens.length < 6 || currentTokens.length < 6) return false;
+
+        const similarity = this.tokenSimilarity(previousTokens, currentTokens);
+        return similarity >= 0.65;
+    }
+
+    /**
      * Build continuity anchors from state to validate callback references.
      * @param {import('../contracts.js').GameState} gameState
      * @param {string} lastChoiceText
@@ -561,7 +592,7 @@ class GeminiStoryService {
     getContinuityAnchors(gameState, lastChoiceText) {
         if (!gameState) return [];
 
-        const anchors = ['sydney', 'oswaldo', 'trina', 'dex', 'room', 'rent', 'laptop'];
+        const anchors = ['sydney', 'oswaldo', 'trina', 'dex', 'room', 'rent', 'phone', 'phones', 'popsocket'];
         const threads = gameState.storyThreads;
 
         if (threads) {
@@ -652,6 +683,9 @@ class GeminiStoryService {
 
         if (!response?.isEnding && this.isRepetitiveScene(response?.sceneText || '')) {
             issues.push('Scene repeats previous narrative beats too closely; introduce forward movement.');
+        }
+        if (!response?.isEnding && this.isRepetitiveOpening(response?.sceneText || '')) {
+            issues.push('Opening line repeats previous framing; change the opening action or setting detail.');
         }
 
         if (gameState && this.sceneCount >= 2) {

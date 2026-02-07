@@ -1099,6 +1099,37 @@ async function testPromptAndRecoveryQuality() {
         );
     }
 
+    console.log('  Test 10.10: Opening-line repetition is flagged');
+    {
+        const geminiService = await loadGeminiService();
+
+        geminiService.conversationHistory = [
+            '[Choice: wait]\nYou stare at the vibrating phone while the ice machine growls. The neon bleeds in, the clock grinds forward.'
+        ];
+
+        const response = {
+            sceneText:
+                'You stare at the vibrating phone while the ice machine growls, then force yourself to stand. The room feels smaller than it did a minute ago.',
+            choices: [
+                { id: 'wake_oswaldo', text: 'Wake Oswaldo now' },
+                { id: 'step_out', text: 'Step into the hallway for air' }
+            ],
+            isEnding: false
+        };
+
+        const quality = geminiService.evaluateResponseQuality(
+            response,
+            createGameState(),
+            'wait'
+        );
+
+        assertEqual(quality.ok, false, 'opening repetition should be flagged');
+        assert(
+            quality.issues.some((issue) => issue.toLowerCase().includes('opening')),
+            'quality issues include opening repetition warning'
+        );
+    }
+
     console.log('  Test 10.8: Ending inference favors explicit signals');
     {
         const exitHistory = [
