@@ -17,7 +17,7 @@ Provider-down behavior is a design decision, not an accident:
 1. Production default: degrade to mock playability mode when Grok is unavailable.
 2. If product intentionally chooses hard-stop mode, set `AI_OUTAGE_MODE=hard_fail` explicitly and test that UX path.
 3. Recovery loops remain bounded in all modes (no infinite retries).
-4. Every environment must declare outage mode; missing setting fails closed at startup/config-load time.
+4. Preview/production must declare outage mode explicitly; local dev may default to `mock_fallback`.
 
 Model policy:
 - Text generation: `grok-4-1-fast-reasoning` (always)
@@ -345,11 +345,13 @@ Expected:
 3. `GROK_TEXT_MODEL` (default `grok-4-1-fast-reasoning`)
 4. `GROK_IMAGE_MODEL` (default `grok-imagine-image`)
 5. `AI_MAX_OUTPUT_TOKENS` (default `1800`)
-6. `AI_OUTAGE_MODE` (`mock_fallback` default)
+6. `AI_OUTAGE_MODE` (`mock_fallback|hard_fail`, required in preview/prod)
 
 Rules:
 - Never expose secret vars as public env.
 - Never log raw key values.
+- In preview/prod, missing `AI_OUTAGE_MODE` must fail closed during config load.
+- In local dev only, `AI_OUTAGE_MODE` may default to `mock_fallback`.
 
 ## Observability Contract (Required)
 
@@ -427,6 +429,13 @@ Before phase close, answer:
 
 If critique reveals risk, revise before closing phase.
 
+Required phase artifact:
+1. `Phase Review Note` with:
+   - issues found
+   - plan delta
+   - test delta
+   - rollback impact
+
 ## Rollback Note
 
 Safe rollback path:
@@ -468,7 +477,7 @@ Model policy:
 - Image: `grok-imagine-image`
 
 Outage policy (required):
-- Default `AI_OUTAGE_MODE=mock_fallback`.
+- Set `AI_OUTAGE_MODE` explicitly in preview/prod (recommended: `mock_fallback`).
 - If `hard_fail` is used, treat as explicit product policy and test UX for it.
 
 Required implementation outcomes:
@@ -510,3 +519,21 @@ Final handoff must include:
 - Rollback Note
 - Commits and pushed refs
 ```
+
+## Critique Summary and Revisions Applied (2026-02-07)
+
+Key critiques addressed in this revision:
+1. Contradiction between bounded recovery and outage handling:
+   - Resolved by explicit outage policy and required `AI_OUTAGE_MODE` in preview/prod.
+2. Startup probe mismatch with serverless runtime:
+   - Replaced with `/api/ai/probe` endpoint + controlled caller model.
+3. Insufficient observability for production debugging:
+   - Added required observability event contract and redaction test expectations.
+4. Deterministic smoke-test fragility:
+   - Reframed smoke checks to schema/invariants instead of exact prose.
+5. Schema-pass semantic degradation risk:
+   - Added story sanity validator set and required failing fixtures.
+6. Config/flag drift risk:
+   - Added single typed `loadAiConfig()` contract with fail-closed validation.
+7. Rollback realism:
+   - Added mock parity gate in Definition of Done.
