@@ -935,6 +935,11 @@ function testNarrativeUpgradePhaseGates() {
     {
         const state = createGameState();
         state.sceneCount = 9;
+        state.lessonsEncountered = [1, 5, 8, 12, 17];
+        state.storyThreads = {
+            ...createStoryThreads(),
+            boundariesSet: ['no guests without asking', 'no lending money to Dex']
+        };
         state.sceneLog = Array.from({ length: 10 }, (_, index) => ({
             sceneId: `scene_${index}`,
             sceneText: `Scene ${index} ` + 'x'.repeat(600),
@@ -943,8 +948,14 @@ function testNarrativeUpgradePhaseGates() {
 
         const context = buildNarrativeContext(state, { lastChoiceText: 'wait', maxChars: 1200 });
         assertEqual(context.meta.truncated, true, 'context marks truncation');
-        assert(context.meta.droppedOlderSummaries > 0 || context.meta.droppedRecentProse > 0, 'some context was dropped');
-        assert(context.meta.contextChars <= 1200, 'context fits hard cap');
+        assert(context.meta.droppedOlderSummaries > 0, 'older summaries are dropped first');
+        assertEqual(context.recentSceneProse.length, 2, 'last two full scenes are always preserved');
+        assert(
+            context.recentSceneProse.every((entry) => entry.text.length >= 600),
+            'recent scenes are preserved without clipping'
+        );
+        assert(context.lessonHistoryLines.length >= 5, 'lesson history is preserved');
+        assert(context.boundaryNarrativeLines.length >= 2, 'boundary narrative lines are preserved');
     }
 
     console.log('  Test 8.10 (T2.3): Context prompt path includes narrative context sections');

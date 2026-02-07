@@ -39,3 +39,8 @@
 
 **Insight:** Logging rich prompt/context payloads helps debugging but can accidentally leak keys or sensitive text.
 **Lesson:** Emit only structural metrics (sizes/counts/flags), and sanitize telemetry payloads by redacting key/token/secret-like fields before any console/event emission.
+
+## 9. Protect High-Signal Context Before Chasing Hard Caps
+
+**Insight:** Aggressive trimming to force a strict context cap can quietly delete the exact continuity data that improves narrative quality.
+**Lesson:** Preserve high-signal context first (last 2 full scenes, lesson history, boundary/thread narrative lines) and trim lower-signal history summaries instead.

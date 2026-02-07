@@ -8,7 +8,7 @@
 import { lessons } from './lessons.js';
 import { EndingTypes, ImageKeys } from './contracts.js';
 
-export const NARRATIVE_CONTEXT_CHAR_BUDGET = 5200;
+export const NARRATIVE_CONTEXT_CHAR_BUDGET = 12000;
 const MAX_RECENT_SCENE_PROSE = 2;
 const MAX_OLDER_SCENE_SUMMARIES = 6;
 
@@ -243,51 +243,10 @@ function applyContextBudget(context, maxChars) {
         dropped.olderSummaries += 1;
     }
 
-    while (
-        estimateContextChars(budgeted) > maxChars &&
-        budgeted.recentSceneProse.length > 1
-    ) {
-        budgeted.recentSceneProse.shift();
-        dropped.recentProse += 1;
-    }
-
-    if (estimateContextChars(budgeted) > maxChars && budgeted.recentSceneProse.length > 0) {
-        for (let i = 0; i < budgeted.recentSceneProse.length; i++) {
-            if (estimateContextChars(budgeted) <= maxChars) break;
-            const entry = budgeted.recentSceneProse[i];
-            if (!entry?.text) continue;
-
-            const clipped = entry.text.slice(0, 240);
-            if (clipped.length < entry.text.length) {
-                entry.text = `${clipped}...`;
-            }
-        }
-    }
-
-    if (estimateContextChars(budgeted) > maxChars && budgeted.recentSceneProse.length > 0) {
-        for (let i = 0; i < budgeted.recentSceneProse.length; i++) {
-            if (estimateContextChars(budgeted) <= maxChars) break;
-            const entry = budgeted.recentSceneProse[i];
-            if (!entry?.text) continue;
-            entry.text = entry.text.slice(0, 80);
-        }
-    }
-
-    while (estimateContextChars(budgeted) > maxChars && budgeted.lessonHistoryLines.length > 1) {
-        budgeted.lessonHistoryLines.shift();
-    }
-
-    while (estimateContextChars(budgeted) > maxChars && budgeted.boundaryNarrativeLines.length > 1) {
-        budgeted.boundaryNarrativeLines.shift();
-    }
-
-    while (estimateContextChars(budgeted) > maxChars && budgeted.threadNarrativeLines.length > 4) {
-        budgeted.threadNarrativeLines.shift();
-    }
-
-    if (estimateContextChars(budgeted) > maxChars && budgeted.lastChoiceText.length > 60) {
-        budgeted.lastChoiceText = `${budgeted.lastChoiceText.slice(0, 57)}...`;
-    }
+    // High-signal context policy:
+    // - Always keep the last 2 full scenes intact.
+    // - Never trim lesson history, boundary lines, or thread narrative lines.
+    // - Only trim older compressed summaries.
 
     budgeted.meta = {
         ...budgeted.meta,
