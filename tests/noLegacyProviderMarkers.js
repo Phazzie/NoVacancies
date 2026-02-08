@@ -10,6 +10,30 @@ const BANNED_PATTERNS = [
 	{ name: 'Google Generative Language endpoint', regex: /generativelanguage\.googleapis\.com/i },
 	{ name: 'AIza-style key marker', regex: /AIza[A-Za-z0-9_-]{10,}/ }
 ];
+const PARITY_CHECKS = [
+	{
+		file: 'src/lib/server/ai/providers/grok.ts',
+		require: [
+			/SYSTEM_PROMPT/,
+			/getOpeningPrompt/,
+			/getContinuePromptFromContext/,
+			/getRecoveryPrompt/
+		],
+		forbid: [/interactive fiction engine\. output json only\./i]
+	},
+	{
+		file: 'src/lib/game/gameRuntime.ts',
+		require: [/buildNarrativeContext\(/, /detectThreadTransitions\(/]
+	},
+	{
+		file: 'src/lib/server/ai/sanity.ts',
+		require: [/scene_word_count_soft_limit/, /ending_scene_word_count_soft_limit/, /therapy_speak_summary/]
+	},
+	{
+		file: 'src/lib/server/ai/narrative.ts',
+		require: [/He will ride five miles for strangers and five inches for nobody in this room\./]
+	}
+];
 
 function walk(targetPath, acc) {
 	const stat = fs.statSync(targetPath);
@@ -57,11 +81,39 @@ function findViolations(files) {
 
 const files = collectFiles();
 const violations = findViolations(files);
+const parityViolations = [];
 
 if (violations.length > 0) {
 	console.error('Found banned Gemini markers in active runtime paths:');
 	for (const violation of violations) {
 		console.error(`- ${violation.file} (${violation.pattern})`);
+	}
+	process.exit(1);
+}
+
+for (const check of PARITY_CHECKS) {
+	const absolutePath = path.join(ROOT, check.file);
+	if (!fs.existsSync(absolutePath)) {
+		parityViolations.push(`${check.file} (missing file)`);
+		continue;
+	}
+	const content = fs.readFileSync(absolutePath, 'utf8');
+	for (const pattern of check.require || []) {
+		if (!pattern.test(content)) {
+			parityViolations.push(`${check.file} (missing: ${String(pattern)})`);
+		}
+	}
+	for (const pattern of check.forbid || []) {
+		if (pattern.test(content)) {
+			parityViolations.push(`${check.file} (forbidden: ${String(pattern)})`);
+		}
+	}
+}
+
+if (parityViolations.length > 0) {
+	console.error('Found narrative parity marker regressions:');
+	for (const violation of parityViolations) {
+		console.error(`- ${violation}`);
 	}
 	process.exit(1);
 }

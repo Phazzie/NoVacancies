@@ -128,3 +128,12 @@
 
 **Insight:** A marker guard limited to `src/**` can still miss old code roots (`js/**`) that remain in the repo and reintroduce banned provider assumptions.
 **Lesson:** Expand guard scope to every runtime code directory that still exists, then shrink scope only after those directories are fully deleted.
+
+## 25. Narrative Assets Must Be Runtime-Reachable, Not Just Well-Written
+
+**Insight:** High-quality prompt assets (voice maps, lesson history, transition bridges, recovery rules) have zero product value if the active provider path does not import them.
+**Lesson:** Treat narrative parity as an integration contract:
+- full `SYSTEM_PROMPT` must be wired in active provider code
+- opening/continue/recovery prompt builders must be used in generation flow
+- `NarrativeContext` must be built/passed at runtime
+- sanity checks must enforce voice constraints (not only JSON shape)

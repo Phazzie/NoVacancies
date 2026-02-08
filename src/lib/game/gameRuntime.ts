@@ -12,6 +12,7 @@ import {
 	type RuntimeFeatureFlags,
 	type Scene
 } from '$lib/contracts';
+import { buildNarrativeContext, detectThreadTransitions } from '$lib/server/ai/narrative';
 import {
 	createSettingsStorage,
 	type SettingsStorage,
@@ -154,11 +155,22 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			throw new Error('Cannot apply scene before game start');
 		}
 
+		const previousThreads = {
+			...gameState.storyThreads,
+			boundariesSet: [...gameState.storyThreads.boundariesSet]
+		};
+
 		if (scene.storyThreadUpdates) {
 			gameState.storyThreads = mergeThreadUpdates(gameState.storyThreads, scene.storyThreadUpdates);
 		}
 
-		gameState.pendingTransitionBridge = null;
+		if (gameState.featureFlags.transitionBridges) {
+			const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
+			gameState.pendingTransitionBridge =
+				transitionBridge.lines.length > 0 ? transitionBridge : null;
+		} else {
+			gameState.pendingTransitionBridge = null;
+		}
 		gameState.currentSceneId = scene.sceneId;
 		gameState.sceneCount += 1;
 
@@ -239,7 +251,19 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		});
 
 		try {
-			const nextScene = await storyService.getNextScene(gameState.currentSceneId, choiceId, gameState);
+			const narrativeContext = gameState.featureFlags.narrativeContextV2
+				? buildNarrativeContext(gameState, { lastChoiceText: choiceText })
+				: null;
+			const nextScene = await storyService.getNextScene(
+				gameState.currentSceneId,
+				choiceId,
+				gameState,
+				narrativeContext,
+				{
+					useNarrativeContext: gameState.featureFlags.narrativeContextV2,
+					enableTransitionBridges: gameState.featureFlags.transitionBridges
+				}
+			);
 			if (!validateScene(nextScene)) {
 				throw new Error('Story service returned invalid scene payload');
 			}

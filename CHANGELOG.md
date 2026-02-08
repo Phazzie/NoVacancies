@@ -4,6 +4,11 @@
 
 ### Changed
 
+- **Narrative Parity Activation:** Added `src/lib/server/ai/narrative.ts` + `src/lib/server/ai/lessons.ts` as active runtime copies of canonical prompt/context assets, and switched Grok text generation to use the full system/opening/continue/recovery prompt set (instead of the single-line system stub).
+- **Context + Transition Wiring:** Updated `src/lib/game/gameRuntime.ts` to build/pass `NarrativeContext` on each turn and to set `pendingTransitionBridge` from real thread deltas via `detectThreadTransitions`, preserving intended next-turn bridge behavior.
+- **Sanity Guard Upgrade:** Expanded `src/lib/server/ai/sanity.ts` with banned-phrase checks, therapy-speak detection, and dual word-budget thresholds (soft/hard, ending vs non-ending) plus retryable-vs-blocking issue classification.
+- **Grok Recovery Path:** Updated `src/lib/server/ai/providers/grok.ts` to run parse-recovery prompts when JSON extraction fails and to retry once on retryable sanity drift before failing hard.
+- **Parity Regression Guard:** Extended `tests/noLegacyProviderMarkers.js` with narrative parity marker checks (canonical prompt wiring, runtime context wiring, sanity thresholds, voice anchor presence).
 - **Ending Debug Shortcut (Temp):** Added `Open Debug (Temp)` button on `/ending` so runtime errors are one click away during demo validation.
 - **CSP Hardening:** Added a baseline Content Security Policy in `src/app.html` for the SvelteKit runtime, then tuned `script-src` compatibility so SvelteKit client hydration remains functional.
 - **Debug UX Resilience:** `/debug` manual test entries now stay visible even when localStorage writes fail (quota/privacy mode), instead of silently no-oping.
