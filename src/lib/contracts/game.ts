@@ -136,7 +136,7 @@ export const DEFAULT_FEATURE_FLAGS: RuntimeFeatureFlags = Object.freeze({
 });
 
 export const DEFAULT_SETTINGS: GameSettings = Object.freeze({
-	useMocks: true,
+	useMocks: false,
 	showLessons: true,
 	apiKey: '',
 	unlockedEndings: [],
@@ -187,7 +187,7 @@ export function createGameState(options?: {
 		pendingTransitionBridge: null,
 		featureFlags: normalizeFeatureFlags(options?.featureFlags),
 		apiKey: options?.apiKey ?? null,
-		useMocks: options?.useMocks ?? true,
+		useMocks: options?.useMocks ?? false,
 		sceneCount: 0,
 		startTime: now()
 	};

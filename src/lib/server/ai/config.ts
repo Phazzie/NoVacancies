@@ -1,6 +1,6 @@
 import type { AiProviderName } from '$lib/server/ai/provider.interface';
 
-export type AiOutageMode = 'mock_fallback' | 'hard_fail';
+export type AiOutageMode = 'hard_fail';
 
 const runtimeEnv: Record<string, string | undefined> =
 	(globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
@@ -37,11 +37,17 @@ function parseIntInRange(value: string | undefined, fallback: number, min: numbe
 }
 
 function parseProvider(value: string | undefined): AiProviderName {
-	return value === 'grok' ? 'grok' : 'mock';
+	if (value === 'mock') {
+		throw new Error('AI_PROVIDER=mock is disabled in Grok-only mode');
+	}
+	return 'grok';
 }
 
 function parseOutageMode(value: string | undefined): AiOutageMode | null {
-	if (value === 'mock_fallback' || value === 'hard_fail') return value;
+	if (value === 'hard_fail') return value;
+	if (value === 'mock_fallback') {
+		throw new Error('AI_OUTAGE_MODE=mock_fallback is disabled in Grok-only mode');
+	}
 	return null;
 }
 
@@ -51,37 +57,28 @@ function isProdLikeEnv(env: Record<string, string | undefined>): boolean {
 	return env.NODE_ENV === 'production';
 }
 
-function isStrictProduction(env: Record<string, string | undefined>): boolean {
-	const vercelEnv = env.VERCEL_ENV?.toLowerCase();
-	if (vercelEnv === 'production') return true;
-	return env.NODE_ENV === 'production' && vercelEnv !== 'preview';
-}
-
 export function loadAiConfig(env: Record<string, string | undefined> = runtimeEnv): AiConfig {
 	const provider = parseProvider(env.AI_PROVIDER);
 	const prodLike = isProdLikeEnv(env);
-	const strictProduction = isStrictProduction(env);
-	const defaultOutageMode: AiOutageMode = 'mock_fallback';
+	const defaultOutageMode: AiOutageMode = 'hard_fail';
 	const parsedOutageMode = parseOutageMode(env.AI_OUTAGE_MODE);
 	const aiAuthBypass = parseBoolean(env.AI_AUTH_BYPASS, false);
 
 	if (prodLike && !parsedOutageMode) {
 		throw new Error('AI_OUTAGE_MODE must be set in preview/production');
 	}
-	if (strictProduction && aiAuthBypass) {
-		throw new Error('AI_AUTH_BYPASS is not allowed in production');
+	if (aiAuthBypass) {
+		throw new Error('AI_AUTH_BYPASS is disabled in Grok-only mode');
 	}
 
 	const outageMode = parsedOutageMode ?? defaultOutageMode;
 	const enableGrokText = parseBoolean(env.ENABLE_GROK_TEXT, provider === 'grok');
-	const enableGrokImages = parseBoolean(env.ENABLE_GROK_IMAGES, provider === 'grok');
+	const enableGrokImages = parseBoolean(env.ENABLE_GROK_IMAGES, false);
 	const enableProviderProbe = parseBoolean(env.ENABLE_PROVIDER_PROBE, false);
 	const xaiApiKey = (env.XAI_API_KEY ?? '').trim();
 
 	if ((provider === 'grok' || enableGrokText || enableGrokImages || enableProviderProbe) && !xaiApiKey) {
-		if (prodLike || outageMode === 'hard_fail') {
-			throw new Error('XAI_API_KEY is required when Grok/provider probe is enabled');
-		}
+		throw new Error('XAI_API_KEY is required in Grok-only mode');
 	}
 
 	return {

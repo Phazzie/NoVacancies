@@ -21,8 +21,7 @@ export interface StorageBindings {
 export const STORAGE_KEYS = Object.freeze({
 	settings: 'sydney-story-settings',
 	endings: 'sydney-story-endings',
-	featureFlags: 'sydney-story-feature-flags',
-	apiKeySession: 'sydney-story-api-key-session'
+	featureFlags: 'sydney-story-feature-flags'
 });
 
 function parseBooleanFlag(value: unknown): boolean | undefined {
@@ -79,15 +78,12 @@ export interface SettingsStorage {
 	loadFeatureFlags(): RuntimeFeatureFlags;
 	saveFeatureFlags(flags: Partial<RuntimeFeatureFlags>): RuntimeFeatureFlags;
 	clearFeatureFlags(): RuntimeFeatureFlags;
-	loadSessionApiKey(): string;
-	saveSessionApiKey(apiKey: string): void;
 	loadUnlockedEndings(): EndingType[];
 	saveUnlockedEndings(endings: EndingType[]): EndingType[];
 }
 
 export function createSettingsStorage(bindings: StorageBindings = {}): SettingsStorage {
 	const local = bindings.local ?? null;
-	const session = bindings.session ?? null;
 
 	const loadFeatureFlags = (): RuntimeFeatureFlags => {
 		const saved = safeRead(local, STORAGE_KEYS.featureFlags);
@@ -104,11 +100,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 		}
 	};
 
-	const loadSessionApiKey = (): string => {
-		const raw = safeRead(session, STORAGE_KEYS.apiKeySession);
-		return typeof raw === 'string' ? raw : '';
-	};
-
 	const loadUnlockedEndings = (): EndingType[] =>
 		parseStringArray(safeRead(local, STORAGE_KEYS.endings)) as EndingType[];
 
@@ -116,7 +107,7 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 		const base: GameSettings = {
 			...DEFAULT_SETTINGS,
 			featureFlags: loadFeatureFlags(),
-			apiKey: loadSessionApiKey(),
+			apiKey: '',
 			unlockedEndings: loadUnlockedEndings()
 		};
 
@@ -157,9 +148,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 			})
 		);
 
-		if (typeof patch.apiKey === 'string') {
-			saveSessionApiKey(patch.apiKey);
-		}
 		if (patch.unlockedEndings) {
 			saveUnlockedEndings(next.unlockedEndings);
 		}
@@ -181,15 +169,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 		return { ...DEFAULT_FEATURE_FLAGS };
 	};
 
-	const saveSessionApiKey = (apiKey: string): void => {
-		const trimmed = typeof apiKey === 'string' ? apiKey.trim() : '';
-		if (trimmed.length > 0) {
-			safeWrite(session, STORAGE_KEYS.apiKeySession, trimmed);
-			return;
-		}
-		safeRemove(session, STORAGE_KEYS.apiKeySession);
-	};
-
 	const saveUnlockedEndings = (endings: EndingType[]): EndingType[] => {
 		const normalized = endings.filter(
 			(ending): ending is EndingType => typeof ending === 'string' && ending.trim().length > 0
@@ -204,8 +183,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 		loadFeatureFlags,
 		saveFeatureFlags,
 		clearFeatureFlags,
-		loadSessionApiKey,
-		saveSessionApiKey,
 		loadUnlockedEndings,
 		saveUnlockedEndings
 	};
