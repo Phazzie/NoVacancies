@@ -22,12 +22,15 @@ export function selectTextProvider(
 	gameState: Pick<GameState, 'useMocks'>
 ): AiProvider {
 	if (gameState.useMocks) return registry.mock;
-	if (config.provider === 'grok' && config.enableGrokText) return registry.grok;
+	if (config.provider === 'grok' && config.enableGrokText && config.xaiApiKey.length > 0) {
+		return registry.grok;
+	}
 	return registry.mock;
 }
 
 export function selectImageProvider(config: AiConfig, registry: ProviderRegistry): AiProvider {
-	if (config.provider === 'grok' && config.enableGrokImages) return registry.grok;
+	if (config.provider === 'grok' && config.enableGrokImages && config.xaiApiKey.length > 0) {
+		return registry.grok;
+	}
 	return registry.mock;
 }
-

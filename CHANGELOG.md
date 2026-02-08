@@ -4,6 +4,9 @@
 
 ### Changed
 
+- **Provider Defaults:** Set Grok as the default text provider path (`AI_PROVIDER=grok` when unset) while keeping image generation on pre-generated/static assets by default unless `ENABLE_GROK_IMAGES=1`.
+- **Runtime Defaults:** Switched game settings/opening request defaults to AI mode (`useMocks=false`) so new sessions start in AI Generated mode.
+- **Credential Guard:** Provider selection now requires `XAI_API_KEY` before activating Grok adapters and otherwise degrades to mock adapters to preserve local/dev playability.
 - **Framework Migration:** Added SvelteKit TypeScript scaffold with split routes (`/`, `/settings`, `/play`, `/ending`) and shared layout navigation.
 - **Gameplay Runtime Port:** Added typed `src/lib` game/runtime/service modules to support mock-mode playthrough in SvelteKit while preserving scene/state contracts and fallback-safe behavior.
 - **PWA Preservation:** Added SvelteKit static manifest/service worker pathing and client-side registration helper under `src/lib/client/pwa.ts`.

@@ -22,7 +22,7 @@ export function buildOpeningInput(payload: {
 	featureFlags?: unknown;
 }): GenerateSceneInput {
 	const gameState = createGameState({
-		useMocks: payload.useMocks ?? true,
+		useMocks: payload.useMocks ?? false,
 		featureFlags: safeFeatureFlags(payload.featureFlags)
 	});
 	return {

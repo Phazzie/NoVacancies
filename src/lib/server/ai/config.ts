@@ -37,7 +37,7 @@ function parseIntInRange(value: string | undefined, fallback: number, min: numbe
 }
 
 function parseProvider(value: string | undefined): AiProviderName {
-	return value === 'grok' ? 'grok' : 'mock';
+	return value === 'mock' ? 'mock' : 'grok';
 }
 
 function parseOutageMode(value: string | undefined): AiOutageMode | null {
@@ -74,7 +74,7 @@ export function loadAiConfig(env: Record<string, string | undefined> = runtimeEn
 
 	const outageMode = parsedOutageMode ?? defaultOutageMode;
 	const enableGrokText = parseBoolean(env.ENABLE_GROK_TEXT, provider === 'grok');
-	const enableGrokImages = parseBoolean(env.ENABLE_GROK_IMAGES, provider === 'grok');
+	const enableGrokImages = parseBoolean(env.ENABLE_GROK_IMAGES, false);
 	const enableProviderProbe = parseBoolean(env.ENABLE_PROVIDER_PROBE, false);
 	const xaiApiKey = (env.XAI_API_KEY ?? '').trim();
 
