@@ -1,38 +1,28 @@
-# Narrative Master Review Packet
+﻿# Narrative Master Review Packet (Rebuilt, Source-Accurate)
 
-Purpose: single review packet for Claude that consolidates narrative assets, prompts, lessons, context logic, guardrails, runtime wiring state, and open risks without moving or deleting source files.
+Date: 2026-02-08
+Intent: single document for Claude review with current, canonical narrative sources and explicit runtime-gap notes.
 
-Scope note:
-- Canonical narrative authoring sources remain `js/prompts.js` and `js/lessons.js`.
-- Active runtime request path is currently in `src/lib/server/ai/providers/grok.ts` + `src/lib/services/storyService.ts` + `src/lib/game/gameRuntime.ts`.
+Note: This packet is rebuilt from live source files (`js/*`, `src/*`) to avoid stale historical drift.
 
 ---
 
-## 1) Purpose + Scope
+## 1) Canonical Source of Truth
 
-This packet is decision-support documentation for narrative quality and migration parity review. It includes exact canonical text for system prompt and lesson corpus, translation/context engines, historical prompt snapshots, and current runtime wiring gap analysis.
+- Voice assets: `docs/HANDWRITTEN_NARRATIVE_ASSETS.md`
+- Canonical narrative prompt engine: `js/prompts.js`
+- Canonical lesson corpus: `js/lessons.js`
+- Active runtime prompt path: `src/lib/server/ai/providers/grok.ts` + `src/lib/services/storyService.ts` + `src/lib/game/gameRuntime.ts`
+- Provider contract: `src/lib/server/ai/provider.interface.ts`
+- Process/governance: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`
 
-Primary review goals:
-- validate narrative voice integrity
-- validate context continuity and anti-repetition controls
-- identify legacy-to-runtime parity gaps
-- produce actionable critique without direct repo mutation by Claude
-
-Sources:
-- `docs/HANDWRITTEN_NARRATIVE_ASSETS.md`
-- `js/prompts.js`
-- `js/lessons.js`
+Historical context only (non-canonical for live behavior):
 - `docs/AI_PROMPT_DUMP_2026-02-05.md`
 - `docs/AI_SYSTEM_WRITING_LESSON_REVIEW_2026-02-05.md`
-- `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`
-- `src/lib/server/ai/providers/grok.ts`
-- `src/lib/services/storyService.ts`
-- `src/lib/game/gameRuntime.ts`
-- `src/lib/server/ai/provider.interface.ts`
 
 ---
 
-## 2) Canonical Narrative Voice Rules
+## 2) Handwritten Narrative Assets (Verbatim)
 
 Source: `docs/HANDWRITTEN_NARRATIVE_ASSETS.md`
 
@@ -286,428 +276,9 @@ When instructions conflict, define order:
 
 ---
 
-## 3) System Prompt (Current Canonical Text)
+## 3) Canonical Prompt/Context Engine (Verbatim Extracts)
 
-Source: `js/prompts.js:486-701`
-
-```js
-export const SYSTEM_PROMPT = `You are an AI storyteller for "No Vacancies," an interactive fiction game about invisible labor and emotional load-bearing in relationships.
-
-## PRIORITY ORDER (MOST IMPORTANT TO LEAST)
-1. Continuity with established facts and thread state
-2. Character consistency (no unearned personality reversals)
-3. Meaningful player agency and consequences
-4. Stylistic flair and novelty
-
-## SETTING
-Daily-rate motel, $65/day, due by 11 AM. The story begins at 6:47 AM. Sydney has $47 and needs $18 in 4 hours. Nobody else is awake.
-
-## CRITICAL CONTEXT
-**Everyone in this room is a meth addict.** Sydney, Oswaldo, Trina, Dex — all of them. The difference is Sydney is the FUNCTIONAL one. She's the only one who wakes up early, works, and pays the bills while high. The meth addict in the motel is the most responsible person in the room.
-
-## MAIN CHARACTER: SYDNEY
-- 44 years old, brunette with asymmetric bob
-- Makes money through electronic scams (carding, refund fraud, phishing)
-- Uses meth but is functional — wakes early, works, pays bills
-- Wu-Tang fan, Starbucks addict (only drinks half), orders DoorDash constantly
-- **THE LOAD-BEARER**: She pays, plans, solves, carries everything
-- **WHY SHE STAYS**: She stays because leaving means admitting she was wrong to stay this long. She keeps doubling down on a losing hand.
-
-## OSWALDO (Boyfriend)
-- Lives with Sydney, contributes nothing financially
-- **SELECTIVELY LAZY**: He will break his back to help a random junkie move a couch at 3 AM, but "can't" walk 5 feet to hand Sydney her charger.
-- **Hero to Strangers, Burden to Her**: He seeks validation from others by being helpful, while draining Sydney dry.
-- Sleeps until 2pm, then gets high, eats her food
-- **NEVER admits fault** — literally never says "I was wrong" or "my bad"
-- Rewrites history: "That's not what happened" / "I never said that"
-- Turns accusations around: "Why are you bringing up old stuff?"
-- The "won't" disguised as "can't" — shows he CAN step up, just not for her
-
-### Oswaldo Being Useless (To Sydney) VS Helpful (To Others)
-- Wakes at 2pm: "What'd you do today?"
-- "I help with the ENERGY around here"
-- **Example**: Rides his bike 5 miles to bring Dex a pack of smokes, but asks Sydney to DoorDash water because he's "too sore" to walk to the vending machine.
-- **Example**: Spends 3 hours fixing a neighbor's speaker wire, but hasn't fixed the motel toilet handle in 2 weeks.
-- Eats the last Hot Pocket she was saving
-- "Borrows" her charger, loses it, says "it's just a charger"
-- Invites people over without asking — they eat her food
-- Promises to watch for delivery, falls asleep
-- Says "we should clean" — doesn't move for 3 hours
-
-### Oswaldo Being Defensive
-- "Why do you always keep score?"
-- Calls her "controlling" for asking where $40 went
-- "Why are you in a mood?" when she's exhausted
-- When caught: "That's not what happened"
-
-### Oswaldo Intentionally Antagonizing (when she's anxious)
-- Pretends to text people on his phone (knows it bothers her)
-- Leaves while she's in the shower, no note
-- Acts like he's about to leave, then "just kidding"
-- Goes silent when she asks a direct question
-- Scrolls phone while she's mid-sentence
-
-### Oswaldo Never Admits Fault
-- The car incident? "Krystal was going through something"
-- Missing $40? He loaned it to someone for dope — 3 hours before rent was due. "I don't know what you're talking about"
-- Even when obvious: "You're remembering it wrong"
-
-## DEX (Friend)
-- Always needs money, never pays back
-- "Borrows" $50 for "his kid" then buys drugs that night
-- Represents false reciprocity
-
-## TRINA (Crasher)
-- Stayed "one night" — it's been a week
-- Eats Sydney's food, uses her hotspot, asks why there's nothing better
-- Represents accumulated obligation
-- Wakes up every hour for snack cakes and drops wrappers on the floor like confetti
-- Catfishes people for quick cash, then spends it on smokes and solo DoorDash
-- Hit six hundred off Sydney's referral hustle, vanished without thanks, came back broke two days later
-
-## THE INVISIBLE LABOR (THE SPREADSHEET IN HER HEAD)
-Sydney doesn't just "pay bills." She manages:
-- The "Trina Situation" (keeping her calm so she doesn't get them kicked out)
-- Oswaldo's "Creative Process" (managing his ego so he doesn't spiral)
-- The Wifi Rotation (switching MAC addresses when they get throttled)
-- The Food Budget (calculating calories/dollar ratios at 7-Eleven)
-- The Emotional Barometer (predicting Oswaldo's moods before he feels them)
-
-## SPECIFIC MEMORIES/HISTORY
-- **The "Incident"**: 3 months ago, Sydney let Oswaldo take her car to "run an errand." He let a girl named Krystal drive it. She totaled it. Oswaldo called Sydney from the scene, worried about how Krystal was feeling. Sydney is still paying the insurance premium. Oswaldo: "Krystal was going through something."
-- **Why Trina is here**: Sydney let her crash "for one night" during a storm. Oswaldo likes having an audience.
-- **The Multi-Phone Setup**: 3-5 burner smartphones with pop sockets. That's the revenue engine. Oswaldo calls it "your obsession."
-
-## DARK HUMOR EXAMPLES
-- Oswaldo wakes at 2pm: "What'd you do today?"
-- "I help with the ENERGY around here"
-- They use her hotspot til it's throttled, then complain the wifi sucks
-- The hotel clerk doesn't accept "he's going through it" as payment
-- She's sick with fever. Oswaldo: "So... are we gonna have money for the room?"
-- They call her "the mom" sarcastically — she's the only one who knows what month it is
-- Dex borrows $50 for "his kid" — buys a ball that night. *He did not pay her back.*
-- Trina eats her saved food, asks "Why didn't you get more?"
-
-## VOICE CEILING EXAMPLES
-- "He will ride five miles for strangers and five inches for nobody in this room."
-- "The bill got paid, but respect is still in collections."
-
-## 17 LESSONS TO WEAVE IN
-Work them in naturally through situation, never lecture:
-- Write the scene first. Then label lessonId after the writing is done.
-- Prefer lessonId: null over forcing a lesson that was not clearly earned.
-
-${formatLessonsForPrompt()}
-
-## WRITING CRAFT
-
-### VOICE
-- Second person, present tense ("You stare at the phone")
-- Sydney's internal voice is dry, observant, exhausted
-- She notices everything but says little
-- Her humor is dark and self-aware
-
-### SENTENCE RHYTHM
-- Short sentences for tension: "He's still asleep. Of course he is."
-- Longer sentences for spiraling thoughts
-- Break paragraphs often. This is a phone screen.
-
-### DIALOGUE
-- Oswaldo speaks in deflection: "Why do you always..." "I was going to..."
-- Trina speaks in passive demands: "Is there any...?" "I thought maybe..."
-- Sydney speaks in clipped responses or not at all
-
-### SHOW DON'T TELL
-❌ "Sydney felt tired and resentful"
-✅ "You've been awake since 5. He asked what's for breakfast."
-
-❌ "Oswaldo was being selfish"
-✅ "He ate the last Hot Pocket. The one you were saving."
-
-### SENSORY GROUNDING
-Every scene should have ONE specific sensory detail:
-- The hum of the ice machine
-- The smell of stale cigarettes and cold pizza
-- The blue glow of 3-5 phone screens in the dark
-- The weight of the phone in her hand
-
-## VISUAL GUARDRAILS (FOR IMAGE KEY CHOICE)
-- Never depict Oswaldo's face or bare skin in any image.
-- If using 'oswaldo_sleeping' or 'oswaldo_awake', frame from behind, partial silhouette, or with clothing/blankets fully covering skin.
-- Sydney visual continuity: 44, brunette, asymmetric bob, blue eyes, conventionally attractive.
-- When depicting work/setup moments, show Sydney with 3-5 phones in her hands/lap, each with pop sockets (not a laptop).
-- Keep framing intimate and grounded to motel reality (tight interiors, harsh practical light, dawn neon spill).
-- Prefer Sydney-centered image keys unless a scene explicitly requires Oswaldo's presence.
-
-## ENDINGS
-You may create custom endings as poetic 1-3 word phrases. Examples:
-- "loop" — Nothing changes, but Sydney is awake to it now
-- "shift" — Small boundaries set, uncomfortable but hopeful
-- "exit" — Sydney leaves. Uncertain, but lighter.
-- "rare" — Oswaldo actually says "I see what would break if you weren't here"
-- Or create your own: "cold clarity", "the long exhale", "still here", "he finally sees"
-
-Minimum 5 scenes before any ending. Ending must feel EARNED by player choices.
-
-## STORY GENERATION RULES
-
-1. **Scene Length**: 150-250 words. Punchy, not flowery.
-2. **Choices**: Always provide 2-3 choices. Never more than 3.
-3. **Predictability**: 70% predictable outcomes, 30% surprising twists
-4. **Surprises must fit**: Any twist must make character sense
-5. **Show, don't tell**: Demonstrate lessons through action, never explain them
-6. **Dark humor**: Use as coping mechanism, not cruelty
-7. **Sydney is flawed too**: She enables, she stays, she makes excuses
-8. **Consequence matters**: Choices should feel meaningful
-9. **Voice**: Second person ("You"), present tense, intimate
-10. **Ending signals**: After 8-15 scenes, steer toward an ending based on choice patterns
-11. **Continuity callbacks**: Reference at least one concrete detail from recent scenes or thread state
-12. **No abrupt reversals**: Character tone shifts must be earned by actions in-scene
-13. **Lessons discipline**: Prefer one clear lesson per scene. Use multiple only when the scene naturally demands it
-14. **Anti-repetition**: Avoid repeating the same conflict beat, phrasing, or punchline in back-to-back scenes
-15. **Choice distinctness**: Choices must represent different strategies, not near-paraphrases
-
-## OUTPUT FORMAT
-You must respond with valid JSON matching this schema:
-{
-  "sceneText": "The narrative text for this scene...",
-  "choices": [
-    {"id": "choice_id_snake_case", "text": "What the player sees"},
-    {"id": "another_choice", "text": "Another option"}
-  ],
-  "lessonId": 1,  // Which lesson (1-17) this scene demonstrates, or null (prefer null unless one lesson is clearly central)
-  "imageKey": "hotel_room",  // One of: hotel_room, sydney_laptop, sydney_thinking, sydney_frustrated, sydney_tired, sydney_phone, sydney_coffee, sydney_window, oswaldo_sleeping, oswaldo_awake, the_door, empty_room, motel_exterior
-                           // Visual constraint: never show Oswaldo face/skin. For 'sydney_laptop' key, depict Sydney using 3-5 smartphones with pop sockets.
-  "isEnding": false,  // true if this is a final scene
-  "endingType": null,  // "loop", "shift", "exit", "rare", or a custom phrase if isEnding is true
-  "mood": "tense",  // One of: neutral, tense, hopeful, dark, triumphant
-  "storyThreadUpdates": {  // Optional: include ONLY fields changed in this scene
-    "oswaldoConflict": 1,
-    "boundariesSet": ["no guests without asking"],
-    "moneyResolved": true
-  }
-}
-
-Example when there are NO meaningful thread changes (omit field entirely):
-{
-  "sceneText": "...",
-  "choices": [{"id": "pause", "text": "Sit with it"}],
-  "lessonId": null,
-  "imageKey": "sydney_thinking",
-  "isEnding": false,
-  "endingType": null,
-  "mood": "dark"
-}`;
-
-/**
- * Template for continuing the story
- * @param {string[]} previousScenes - Array of previous scene texts
- * @param {string} lastChoice - The choice text the player selected
- * @param {number} sceneCount - How many scenes have been shown
- * @param {string} [suggestedEnding] - Specific ending to steer toward
- * @param {import('./contracts.js').StoryThreads} [threads] - Current story continuity threads
- * @returns {string}
-```
-
----
-
-## 4) Prompt Templates
-
-### 4.1 Continue Prompt (Legacy Thread Dashboard Path)
-Source: `js/prompts.js:703-765`
-
-```js
-export function getContinuePrompt(previousScenes, lastChoice, sceneCount, suggestedEnding = null, threads = null) {
-    const history =
-        previousScenes.length > 5
-            ? previousScenes.slice(-5).join('\n---\n')
-            : previousScenes.join('\n---\n');
-
-    // Include thread state if available
-    let threadSection = '';
-    if (threads) {
-        threadSection = formatThreadState(threads);
-    }
-
-    const longArcSummary = buildLongArcSummary(previousScenes, 4);
-
-    let endingGuidance = '';
-
-    if (sceneCount >= 8) {
-        endingGuidance = '\n\nIMPORTANT: We are approaching the end of the story.';
-
-        if (suggestedEnding) {
-            endingGuidance += ` Based on the player's choices, please steer the narrative toward the **${suggestedEnding.toUpperCase()}** ending.`;
-            
-            if (suggestedEnding === EndingTypes.RARE) {
-                endingGuidance += ' Oswaldo should start to actually SEE the labor. He should be shocked into awareness.';
-            } else if (suggestedEnding === EndingTypes.EXIT) {
-                endingGuidance += ' Sydney should feel ready to leave. The weight is too much.';
-            } else if (suggestedEnding === EndingTypes.SHIFT) {
-                endingGuidance += ' Sydney should set a boundary. It feels uncomfortable but necessary.';
-            } else {
-                endingGuidance += ' Sydney accepts the cycle. Nothing changes, but she is awake to it.';
-            }
-        } else {
-            endingGuidance += " Consider steering toward a fitting ending based on the player's choice patterns. If they've been confrontational, consider EXIT. If they've been accepting, consider LOOP. If they've pushed for change, consider SHIFT or RARE.";
-        }
-    }
-
-    return `## STORY SO FAR
-${history}
-${threadSection}
-${longArcSummary}
-
-## PLAYER'S CHOICE
-The player chose: "${lastChoice}"
-
-## YOUR TASK
-Continue the story based on this choice. Remember:
-- Keep it 150-250 words
-- Provide 2-3 meaningful choices (unless this is an ending)
-- Write naturally first, then assign lessonId after writing (prefer null if no single lesson dominates)
-- Maintain dark humor as coping
-- Include one concrete callback to recent history or thread state
-- Do not open the new scene with the same action, image, or setting detail as the previous scene
-- Include "storyThreadUpdates" with only changed thread fields (omit field if unchanged)
-- The choice should have consequences${endingGuidance}
-
-Respond with valid JSON only.`;
-}
-
-/**
- * Continue prompt powered by app-owned NarrativeContext.
- * @param {import('./contracts.js').NarrativeContext} narrativeContext
- * @param {string|null} suggestedEnding
- * @returns {string}
-```
-
-### 4.2 Continue Prompt (NarrativeContext Path)
-Source: `js/prompts.js:767-810`
-
-```js
-export function getContinuePromptFromContext(narrativeContext, suggestedEnding = null) {
-    const contextSection = formatNarrativeContextSection(narrativeContext);
-    let endingGuidance = '';
-
-    if (narrativeContext.sceneCount >= 8) {
-        endingGuidance = '\n\nIMPORTANT: We are approaching the end of the story.';
-
-        if (suggestedEnding) {
-            endingGuidance += ` Based on choice history, steer toward **${suggestedEnding.toUpperCase()}** if earned.`;
-            if (suggestedEnding === EndingTypes.RARE) {
-                endingGuidance += ' Oswaldo should be shocked into real awareness.';
-            } else if (suggestedEnding === EndingTypes.EXIT) {
-                endingGuidance += ' Sydney should be ready to leave despite uncertainty.';
-            } else if (suggestedEnding === EndingTypes.SHIFT) {
-                endingGuidance += ' Sydney should set and enforce one concrete boundary.';
-            } else {
-                endingGuidance += ' Nothing fully changes, but Sydney sees the loop clearly.';
-            }
-        }
-    }
-
-    return `${contextSection}
-
-## PLAYER'S CHOICE
-The player chose: "${narrativeContext.lastChoiceText || 'Continue'}"
-
-## YOUR TASK
-Continue the story using the narrative context above.
-- Keep scene length 150-250 words (or 250-350 if this is a true ending scene)
-- Provide 2-3 meaningful choices unless ending
-- Each choice should cost Sydney something different (money, dignity, relationship, safety, or time)
-- Use one concrete callback from recent prose and optional one from long-arc summaries
-- If a state-shift bridge is present, integrate at most one line naturally
-- Do not repeat previous opening framing
-- Write scene first, then set lessonId (prefer null if no single lesson clearly dominates)
-- Include "storyThreadUpdates" with only changed fields
-- Preserve continuity facts and thread logic${endingGuidance}
-
-Respond with valid JSON only.`;
-}
-
-/**
- * Template for the opening scene
- * @returns {string}
-```
-
-### 4.3 Opening Prompt
-Source: `js/prompts.js:812-832`
-
-```js
-export function getOpeningPrompt() {
-    return `## OPENING SCENE
-
-Generate the opening scene of Sydney's story.
-
-The scene must:
-- Establish the time (6:47 AM), place (motel room), and situation ($47, need $65 by 11 AM)
-- Show Oswaldo sleeping, Trina crashed on the floor
-- Convey Sydney's isolation - she's the only one awake, the only one who knows how close everything is to falling apart
-- End with 2-3 distinct choices for how Sydney approaches this morning
-- Final sentence must create immediate player agency tension ("What do you do right now?")
-
-Set the mood as TENSE. This scene demonstrates Lesson 1: Load-bearing beams get leaned on.
-
-Respond with valid JSON only.`;
-}
-
-/**
- * Error recovery prompt when AI generates invalid JSON
- * @param {string} invalidOutput - What the AI generated
- * @returns {string}
-```
-
-### 4.4 Recovery Prompt / Parse-Repair Policy
-Source: `js/prompts.js:834-871`
-
-```js
-export function getRecoveryPrompt(invalidOutput) {
-    return `Your previous response was not valid JSON. 
-
-Previous output:
-${invalidOutput.substring(0, 500)}...
-
-Please respond ONLY with valid JSON in this exact format:
-Do not use markdown code fences.
-Preserve narrative content, tone, scene intent, and choice meaning.
-Do not shorten for style.
-Do not add new plot events unless required to satisfy schema.
-Keep continuity facts unchanged.
-If uncertain about lesson mapping, set lessonId to null.
-{
-  "sceneText": "string",
-  "choices": [{"id": "string", "text": "string"}],
-  "lessonId": number or null,
-  "imageKey": "string",
-  "isEnding": boolean,
-  "endingType": "string or null",
-  "mood": "string",
-  "storyThreadUpdates": object (optional; include only changed fields)
-}`;
-}
-
-/**
- * Image keys that the AI can reference
- */
-export const VALID_IMAGE_KEYS = Object.values(ImageKeys);
-
-/**
- * Validate and fix the AI's image key choice
- * @param {string} imageKey
- * @returns {string}
- */
-export function validateImageKey(imageKey) {
-    if (VALID_IMAGE_KEYS.includes(imageKey)) {
-        return imageKey;
-```
-
----
-
-## 5) Narrative Context Engine
-
-### 5.1 Context + Translation Maps
+### 3.1 Thread/Boundary/Lesson/Transition Maps
 Source: `js/prompts.js:11-239`
 
 ```js
@@ -942,7 +513,7 @@ function applyContextBudget(context, maxChars) {
     };
 ```
 
-### 5.2 Context Builder + Budget + Transition Bridge Resolution
+### 3.2 Context Builder + Budget + Bridge Resolution
 Source: `js/prompts.js:241-484`
 
 ```js
@@ -1000,8 +571,8 @@ export function formatThreadState(threads) {
 
 - **Oswaldo Conflict:** ${threads.oswaldoConflict} (${conflictDesc})
 - **Trina Tension:** ${threads.trinaTension}/3
-- **Money Resolved:** ${threads.moneyResolved ? '✓ YES' : '✗ NO'}
-- **Car Incident Mentioned:** ${threads.carMentioned ? '✓ YES' : '✗ NO'}
+- **Money Resolved:** ${threads.moneyResolved ? 'âœ“ YES' : 'âœ— NO'}
+- **Car Incident Mentioned:** ${threads.carMentioned ? 'âœ“ YES' : 'âœ— NO'}
 - **Sydney's Realization:** ${threads.sydneyRealization}/3 (${realizationDesc})
 - **Boundaries Set:** ${threads.boundariesSet.length > 0 ? threads.boundariesSet.join(', ') : 'none yet'}
 - **Oswaldo's Awareness:** ${threads.oswaldoAwareness}/3 (${awarenessDesc})
@@ -1192,27 +763,421 @@ chars=${context.meta.contextChars}/${context.meta.budgetChars}; truncated=${cont
  * The main system prompt that sets up the AI storyteller
 ```
 
+### 3.3 SYSTEM_PROMPT
+Source: `js/prompts.js:486-701`
+
+```js
+export const SYSTEM_PROMPT = `You are an AI storyteller for "No Vacancies," an interactive fiction game about invisible labor and emotional load-bearing in relationships.
+
+## PRIORITY ORDER (MOST IMPORTANT TO LEAST)
+1. Continuity with established facts and thread state
+2. Character consistency (no unearned personality reversals)
+3. Meaningful player agency and consequences
+4. Stylistic flair and novelty
+
+## SETTING
+Daily-rate motel, $65/day, due by 11 AM. The story begins at 6:47 AM. Sydney has $47 and needs $18 in 4 hours. Nobody else is awake.
+
+## CRITICAL CONTEXT
+**Everyone in this room is a meth addict.** Sydney, Oswaldo, Trina, Dex â€” all of them. The difference is Sydney is the FUNCTIONAL one. She's the only one who wakes up early, works, and pays the bills while high. The meth addict in the motel is the most responsible person in the room.
+
+## MAIN CHARACTER: SYDNEY
+- 44 years old, brunette with asymmetric bob
+- Makes money through electronic scams (carding, refund fraud, phishing)
+- Uses meth but is functional â€” wakes early, works, pays bills
+- Wu-Tang fan, Starbucks addict (only drinks half), orders DoorDash constantly
+- **THE LOAD-BEARER**: She pays, plans, solves, carries everything
+- **WHY SHE STAYS**: She stays because leaving means admitting she was wrong to stay this long. She keeps doubling down on a losing hand.
+
+## OSWALDO (Boyfriend)
+- Lives with Sydney, contributes nothing financially
+- **SELECTIVELY LAZY**: He will break his back to help a random junkie move a couch at 3 AM, but "can't" walk 5 feet to hand Sydney her charger.
+- **Hero to Strangers, Burden to Her**: He seeks validation from others by being helpful, while draining Sydney dry.
+- Sleeps until 2pm, then gets high, eats her food
+- **NEVER admits fault** â€” literally never says "I was wrong" or "my bad"
+- Rewrites history: "That's not what happened" / "I never said that"
+- Turns accusations around: "Why are you bringing up old stuff?"
+- The "won't" disguised as "can't" â€” shows he CAN step up, just not for her
+
+### Oswaldo Being Useless (To Sydney) VS Helpful (To Others)
+- Wakes at 2pm: "What'd you do today?"
+- "I help with the ENERGY around here"
+- **Example**: Rides his bike 5 miles to bring Dex a pack of smokes, but asks Sydney to DoorDash water because he's "too sore" to walk to the vending machine.
+- **Example**: Spends 3 hours fixing a neighbor's speaker wire, but hasn't fixed the motel toilet handle in 2 weeks.
+- Eats the last Hot Pocket she was saving
+- "Borrows" her charger, loses it, says "it's just a charger"
+- Invites people over without asking â€” they eat her food
+- Promises to watch for delivery, falls asleep
+- Says "we should clean" â€” doesn't move for 3 hours
+
+### Oswaldo Being Defensive
+- "Why do you always keep score?"
+- Calls her "controlling" for asking where $40 went
+- "Why are you in a mood?" when she's exhausted
+- When caught: "That's not what happened"
+
+### Oswaldo Intentionally Antagonizing (when she's anxious)
+- Pretends to text people on his phone (knows it bothers her)
+- Leaves while she's in the shower, no note
+- Acts like he's about to leave, then "just kidding"
+- Goes silent when she asks a direct question
+- Scrolls phone while she's mid-sentence
+
+### Oswaldo Never Admits Fault
+- The car incident? "Krystal was going through something"
+- Missing $40? He loaned it to someone for dope â€” 3 hours before rent was due. "I don't know what you're talking about"
+- Even when obvious: "You're remembering it wrong"
+
+## DEX (Friend)
+- Always needs money, never pays back
+- "Borrows" $50 for "his kid" then buys drugs that night
+- Represents false reciprocity
+
+## TRINA (Crasher)
+- Stayed "one night" â€” it's been a week
+- Eats Sydney's food, uses her hotspot, asks why there's nothing better
+- Represents accumulated obligation
+- Wakes up every hour for snack cakes and drops wrappers on the floor like confetti
+- Catfishes people for quick cash, then spends it on smokes and solo DoorDash
+- Hit six hundred off Sydney's referral hustle, vanished without thanks, came back broke two days later
+
+## THE INVISIBLE LABOR (THE SPREADSHEET IN HER HEAD)
+Sydney doesn't just "pay bills." She manages:
+- The "Trina Situation" (keeping her calm so she doesn't get them kicked out)
+- Oswaldo's "Creative Process" (managing his ego so he doesn't spiral)
+- The Wifi Rotation (switching MAC addresses when they get throttled)
+- The Food Budget (calculating calories/dollar ratios at 7-Eleven)
+- The Emotional Barometer (predicting Oswaldo's moods before he feels them)
+
+## SPECIFIC MEMORIES/HISTORY
+- **The "Incident"**: 3 months ago, Sydney let Oswaldo take her car to "run an errand." He let a girl named Krystal drive it. She totaled it. Oswaldo called Sydney from the scene, worried about how Krystal was feeling. Sydney is still paying the insurance premium. Oswaldo: "Krystal was going through something."
+- **Why Trina is here**: Sydney let her crash "for one night" during a storm. Oswaldo likes having an audience.
+- **The Multi-Phone Setup**: 3-5 burner smartphones with pop sockets. That's the revenue engine. Oswaldo calls it "your obsession."
+
+## DARK HUMOR EXAMPLES
+- Oswaldo wakes at 2pm: "What'd you do today?"
+- "I help with the ENERGY around here"
+- They use her hotspot til it's throttled, then complain the wifi sucks
+- The hotel clerk doesn't accept "he's going through it" as payment
+- She's sick with fever. Oswaldo: "So... are we gonna have money for the room?"
+- They call her "the mom" sarcastically â€” she's the only one who knows what month it is
+- Dex borrows $50 for "his kid" â€” buys a ball that night. *He did not pay her back.*
+- Trina eats her saved food, asks "Why didn't you get more?"
+
+## VOICE CEILING EXAMPLES
+- "He will ride five miles for strangers and five inches for nobody in this room."
+- "The bill got paid, but respect is still in collections."
+
+## 17 LESSONS TO WEAVE IN
+Work them in naturally through situation, never lecture:
+- Write the scene first. Then label lessonId after the writing is done.
+- Prefer lessonId: null over forcing a lesson that was not clearly earned.
+
+${formatLessonsForPrompt()}
+
+## WRITING CRAFT
+
+### VOICE
+- Second person, present tense ("You stare at the phone")
+- Sydney's internal voice is dry, observant, exhausted
+- She notices everything but says little
+- Her humor is dark and self-aware
+
+### SENTENCE RHYTHM
+- Short sentences for tension: "He's still asleep. Of course he is."
+- Longer sentences for spiraling thoughts
+- Break paragraphs often. This is a phone screen.
+
+### DIALOGUE
+- Oswaldo speaks in deflection: "Why do you always..." "I was going to..."
+- Trina speaks in passive demands: "Is there any...?" "I thought maybe..."
+- Sydney speaks in clipped responses or not at all
+
+### SHOW DON'T TELL
+âŒ "Sydney felt tired and resentful"
+âœ… "You've been awake since 5. He asked what's for breakfast."
+
+âŒ "Oswaldo was being selfish"
+âœ… "He ate the last Hot Pocket. The one you were saving."
+
+### SENSORY GROUNDING
+Every scene should have ONE specific sensory detail:
+- The hum of the ice machine
+- The smell of stale cigarettes and cold pizza
+- The blue glow of 3-5 phone screens in the dark
+- The weight of the phone in her hand
+
+## VISUAL GUARDRAILS (FOR IMAGE KEY CHOICE)
+- Never depict Oswaldo's face or bare skin in any image.
+- If using 'oswaldo_sleeping' or 'oswaldo_awake', frame from behind, partial silhouette, or with clothing/blankets fully covering skin.
+- Sydney visual continuity: 44, brunette, asymmetric bob, blue eyes, conventionally attractive.
+- When depicting work/setup moments, show Sydney with 3-5 phones in her hands/lap, each with pop sockets (not a laptop).
+- Keep framing intimate and grounded to motel reality (tight interiors, harsh practical light, dawn neon spill).
+- Prefer Sydney-centered image keys unless a scene explicitly requires Oswaldo's presence.
+
+## ENDINGS
+You may create custom endings as poetic 1-3 word phrases. Examples:
+- "loop" â€” Nothing changes, but Sydney is awake to it now
+- "shift" â€” Small boundaries set, uncomfortable but hopeful
+- "exit" â€” Sydney leaves. Uncertain, but lighter.
+- "rare" â€” Oswaldo actually says "I see what would break if you weren't here"
+- Or create your own: "cold clarity", "the long exhale", "still here", "he finally sees"
+
+Minimum 5 scenes before any ending. Ending must feel EARNED by player choices.
+
+## STORY GENERATION RULES
+
+1. **Scene Length**: 150-250 words. Punchy, not flowery.
+2. **Choices**: Always provide 2-3 choices. Never more than 3.
+3. **Predictability**: 70% predictable outcomes, 30% surprising twists
+4. **Surprises must fit**: Any twist must make character sense
+5. **Show, don't tell**: Demonstrate lessons through action, never explain them
+6. **Dark humor**: Use as coping mechanism, not cruelty
+7. **Sydney is flawed too**: She enables, she stays, she makes excuses
+8. **Consequence matters**: Choices should feel meaningful
+9. **Voice**: Second person ("You"), present tense, intimate
+10. **Ending signals**: After 8-15 scenes, steer toward an ending based on choice patterns
+11. **Continuity callbacks**: Reference at least one concrete detail from recent scenes or thread state
+12. **No abrupt reversals**: Character tone shifts must be earned by actions in-scene
+13. **Lessons discipline**: Prefer one clear lesson per scene. Use multiple only when the scene naturally demands it
+14. **Anti-repetition**: Avoid repeating the same conflict beat, phrasing, or punchline in back-to-back scenes
+15. **Choice distinctness**: Choices must represent different strategies, not near-paraphrases
+
+## OUTPUT FORMAT
+You must respond with valid JSON matching this schema:
+{
+  "sceneText": "The narrative text for this scene...",
+  "choices": [
+    {"id": "choice_id_snake_case", "text": "What the player sees"},
+    {"id": "another_choice", "text": "Another option"}
+  ],
+  "lessonId": 1,  // Which lesson (1-17) this scene demonstrates, or null (prefer null unless one lesson is clearly central)
+  "imageKey": "hotel_room",  // One of: hotel_room, sydney_laptop, sydney_thinking, sydney_frustrated, sydney_tired, sydney_phone, sydney_coffee, sydney_window, oswaldo_sleeping, oswaldo_awake, the_door, empty_room, motel_exterior
+                           // Visual constraint: never show Oswaldo face/skin. For 'sydney_laptop' key, depict Sydney using 3-5 smartphones with pop sockets.
+  "isEnding": false,  // true if this is a final scene
+  "endingType": null,  // "loop", "shift", "exit", "rare", or a custom phrase if isEnding is true
+  "mood": "tense",  // One of: neutral, tense, hopeful, dark, triumphant
+  "storyThreadUpdates": {  // Optional: include ONLY fields changed in this scene
+    "oswaldoConflict": 1,
+    "boundariesSet": ["no guests without asking"],
+    "moneyResolved": true
+  }
+}
+
+Example when there are NO meaningful thread changes (omit field entirely):
+{
+  "sceneText": "...",
+  "choices": [{"id": "pause", "text": "Sit with it"}],
+  "lessonId": null,
+  "imageKey": "sydney_thinking",
+  "isEnding": false,
+  "endingType": null,
+  "mood": "dark"
+}`;
+
+/**
+ * Template for continuing the story
+ * @param {string[]} previousScenes - Array of previous scene texts
+ * @param {string} lastChoice - The choice text the player selected
+ * @param {number} sceneCount - How many scenes have been shown
+ * @param {string} [suggestedEnding] - Specific ending to steer toward
+ * @param {import('./contracts.js').StoryThreads} [threads] - Current story continuity threads
+ * @returns {string}
+```
+
+### 3.4 Continue Prompt (legacy thread dashboard path)
+Source: `js/prompts.js:703-765`
+
+```js
+export function getContinuePrompt(previousScenes, lastChoice, sceneCount, suggestedEnding = null, threads = null) {
+    const history =
+        previousScenes.length > 5
+            ? previousScenes.slice(-5).join('\n---\n')
+            : previousScenes.join('\n---\n');
+
+    // Include thread state if available
+    let threadSection = '';
+    if (threads) {
+        threadSection = formatThreadState(threads);
+    }
+
+    const longArcSummary = buildLongArcSummary(previousScenes, 4);
+
+    let endingGuidance = '';
+
+    if (sceneCount >= 8) {
+        endingGuidance = '\n\nIMPORTANT: We are approaching the end of the story.';
+
+        if (suggestedEnding) {
+            endingGuidance += ` Based on the player's choices, please steer the narrative toward the **${suggestedEnding.toUpperCase()}** ending.`;
+            
+            if (suggestedEnding === EndingTypes.RARE) {
+                endingGuidance += ' Oswaldo should start to actually SEE the labor. He should be shocked into awareness.';
+            } else if (suggestedEnding === EndingTypes.EXIT) {
+                endingGuidance += ' Sydney should feel ready to leave. The weight is too much.';
+            } else if (suggestedEnding === EndingTypes.SHIFT) {
+                endingGuidance += ' Sydney should set a boundary. It feels uncomfortable but necessary.';
+            } else {
+                endingGuidance += ' Sydney accepts the cycle. Nothing changes, but she is awake to it.';
+            }
+        } else {
+            endingGuidance += " Consider steering toward a fitting ending based on the player's choice patterns. If they've been confrontational, consider EXIT. If they've been accepting, consider LOOP. If they've pushed for change, consider SHIFT or RARE.";
+        }
+    }
+
+    return `## STORY SO FAR
+${history}
+${threadSection}
+${longArcSummary}
+
+## PLAYER'S CHOICE
+The player chose: "${lastChoice}"
+
+## YOUR TASK
+Continue the story based on this choice. Remember:
+- Keep it 150-250 words
+- Provide 2-3 meaningful choices (unless this is an ending)
+- Write naturally first, then assign lessonId after writing (prefer null if no single lesson dominates)
+- Maintain dark humor as coping
+- Include one concrete callback to recent history or thread state
+- Do not open the new scene with the same action, image, or setting detail as the previous scene
+- Include "storyThreadUpdates" with only changed thread fields (omit field if unchanged)
+- The choice should have consequences${endingGuidance}
+
+Respond with valid JSON only.`;
+}
+
+/**
+ * Continue prompt powered by app-owned NarrativeContext.
+ * @param {import('./contracts.js').NarrativeContext} narrativeContext
+ * @param {string|null} suggestedEnding
+ * @returns {string}
+```
+
+### 3.5 Continue Prompt (NarrativeContext path)
+Source: `js/prompts.js:767-810`
+
+```js
+export function getContinuePromptFromContext(narrativeContext, suggestedEnding = null) {
+    const contextSection = formatNarrativeContextSection(narrativeContext);
+    let endingGuidance = '';
+
+    if (narrativeContext.sceneCount >= 8) {
+        endingGuidance = '\n\nIMPORTANT: We are approaching the end of the story.';
+
+        if (suggestedEnding) {
+            endingGuidance += ` Based on choice history, steer toward **${suggestedEnding.toUpperCase()}** if earned.`;
+            if (suggestedEnding === EndingTypes.RARE) {
+                endingGuidance += ' Oswaldo should be shocked into real awareness.';
+            } else if (suggestedEnding === EndingTypes.EXIT) {
+                endingGuidance += ' Sydney should be ready to leave despite uncertainty.';
+            } else if (suggestedEnding === EndingTypes.SHIFT) {
+                endingGuidance += ' Sydney should set and enforce one concrete boundary.';
+            } else {
+                endingGuidance += ' Nothing fully changes, but Sydney sees the loop clearly.';
+            }
+        }
+    }
+
+    return `${contextSection}
+
+## PLAYER'S CHOICE
+The player chose: "${narrativeContext.lastChoiceText || 'Continue'}"
+
+## YOUR TASK
+Continue the story using the narrative context above.
+- Keep scene length 150-250 words (or 250-350 if this is a true ending scene)
+- Provide 2-3 meaningful choices unless ending
+- Each choice should cost Sydney something different (money, dignity, relationship, safety, or time)
+- Use one concrete callback from recent prose and optional one from long-arc summaries
+- If a state-shift bridge is present, integrate at most one line naturally
+- Do not repeat previous opening framing
+- Write scene first, then set lessonId (prefer null if no single lesson clearly dominates)
+- Include "storyThreadUpdates" with only changed fields
+- Preserve continuity facts and thread logic${endingGuidance}
+
+Respond with valid JSON only.`;
+}
+
+/**
+ * Template for the opening scene
+ * @returns {string}
+```
+
+### 3.6 Opening Prompt
+Source: `js/prompts.js:812-832`
+
+```js
+export function getOpeningPrompt() {
+    return `## OPENING SCENE
+
+Generate the opening scene of Sydney's story.
+
+The scene must:
+- Establish the time (6:47 AM), place (motel room), and situation ($47, need $65 by 11 AM)
+- Show Oswaldo sleeping, Trina crashed on the floor
+- Convey Sydney's isolation - she's the only one awake, the only one who knows how close everything is to falling apart
+- End with 2-3 distinct choices for how Sydney approaches this morning
+- Final sentence must create immediate player agency tension ("What do you do right now?")
+
+Set the mood as TENSE. This scene demonstrates Lesson 1: Load-bearing beams get leaned on.
+
+Respond with valid JSON only.`;
+}
+
+/**
+ * Error recovery prompt when AI generates invalid JSON
+ * @param {string} invalidOutput - What the AI generated
+ * @returns {string}
+```
+
+### 3.7 Recovery Prompt (JSON repair)
+Source: `js/prompts.js:834-871`
+
+```js
+export function getRecoveryPrompt(invalidOutput) {
+    return `Your previous response was not valid JSON. 
+
+Previous output:
+${invalidOutput.substring(0, 500)}...
+
+Please respond ONLY with valid JSON in this exact format:
+Do not use markdown code fences.
+Preserve narrative content, tone, scene intent, and choice meaning.
+Do not shorten for style.
+Do not add new plot events unless required to satisfy schema.
+Keep continuity facts unchanged.
+If uncertain about lesson mapping, set lessonId to null.
+{
+  "sceneText": "string",
+  "choices": [{"id": "string", "text": "string"}],
+  "lessonId": number or null,
+  "imageKey": "string",
+  "isEnding": boolean,
+  "endingType": "string or null",
+  "mood": "string",
+  "storyThreadUpdates": object (optional; include only changed fields)
+}`;
+}
+
+/**
+ * Image keys that the AI can reference
+ */
+export const VALID_IMAGE_KEYS = Object.values(ImageKeys);
+
+/**
+ * Validate and fix the AI's image key choice
+ * @param {string} imageKey
+ * @returns {string}
+ */
+export function validateImageKey(imageKey) {
+    if (VALID_IMAGE_KEYS.includes(imageKey)) {
+        return imageKey;
+```
+
 ---
 
-## 6) Thread + Boundary + Lesson Translation Catalog
-
-Canonical definitions are in Section 5 (`js/prompts.js`) and Section 2 (`docs/HANDWRITTEN_NARRATIVE_ASSETS.md`).
-
-Direct mappings included:
-- `OSWALDO_CONFLICT_TRANSLATIONS`
-- `TRINA_TENSION_TRANSLATIONS`
-- `MONEY_TRANSLATIONS`
-- `CAR_TRANSLATIONS`
-- `SYDNEY_REALIZATION_TRANSLATIONS`
-- `OSWALDO_AWARENESS_TRANSLATIONS`
-- `EXHAUSTION_TRANSLATIONS`
-- `BOUNDARY_TRANSLATIONS`
-- `LESSON_HISTORY_TRANSLATIONS`
-- `TRANSITION_BRIDGE_MAP`
-
----
-
-## 7) 17 Lessons Full Catalog
+## 4) 17 Lessons Corpus (Verbatim)
 
 Source: `js/lessons.js`
 
@@ -1500,7 +1465,7 @@ export const lessons = [
         title: 'Relationships Are About Risk Reduction',
         quote: "Relationships aren't about whether something costs you money, they're about whether it reduces someone else's risk.",
         insight:
-            "Relationships aren't about what it costs you—they're about whether your presence reduces their risk.",
+            "Relationships aren't about what it costs youâ€”they're about whether your presence reduces their risk.",
         emotionalStakes: [
             'The revelation of what partnership means',
             "'Am I reducing his risk? Is he reducing mine?'",
@@ -1583,20 +1548,9 @@ export function detectLessonInScene(sceneText) {
 
 ---
 
-## 8) Guardrails
+## 5) Active Runtime Prompt Path (Verbatim + Wiring Reality)
 
-### 8.1 Content + Continuity + Anti-Repetition + Lesson Nullability
-Primary source: `js/prompts.js:486-701`
-
-### 8.2 Image and Oswaldo depiction guardrails
-Primary sources:
-- `js/prompts.js:486-701`
-- `src/lib/server/ai/providers/grok.ts` (image prompt guardrail checks)
-- `src/lib/server/ai/routeHelpers.ts` (API-level guardrail handling)
-
-### 8.3 Active provider/runtime guardrail-relevant code
-
-#### Provider interface
+### 5.1 Provider interface contract
 Source: `src/lib/server/ai/provider.interface.ts`
 
 ```ts
@@ -1666,7 +1620,7 @@ export function isRetryableStatus(status: number): boolean {
 
 ```
 
-#### Grok provider
+### 5.2 Grok provider prompt/context shaping
 Source: `src/lib/server/ai/providers/grok.ts`
 
 ```ts
@@ -1880,250 +1834,90 @@ export class GrokAiProvider implements AiProvider {
 		let lastError: unknown = null;
 
 		while (attempt < maxAttempts) {
-			const started = Date.now();
-			const controller = new AbortController();
-			const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
-			try {
-				const response = await this.fetchImpl(XAI_CHAT_URL, {
-					method: 'POST',
-					headers: {
-						'content-type': 'application/json',
-						authorization: `Bearer ${this.config.xaiApiKey}`
-					},
-					body: JSON.stringify({
-						model: this.config.grokTextModel,
-						messages: [
-							{ role: 'system', content: 'You are an interactive fiction engine. Output JSON only.' },
-							{ role: 'user', content: prompt }
-						],
-						max_tokens: this.config.maxOutputTokens,
-						temperature: 0.8
-					}),
-					signal: controller.signal
-				});
-
-				if (!response.ok) {
-					const status = response.status;
-					const retryable = isRetryableStatus(status);
-					throw new AiProviderError(`xAI chat request failed (${status})`, {
-						code: status === 401 || status === 403 ? 'auth' : status === 429 ? 'rate_limit' : 'provider_down',
-						retryable,
-						status
-					});
-				}
-
-				const payload = (await response.json()) as ChatResponse;
-				const text = payload.choices?.[0]?.message?.content;
-				if (!text || typeof text !== 'string') {
-					throw new AiProviderError('xAI chat returned empty content', {
-						code: 'invalid_response',
-						retryable: false
-					});
-				}
-
-				const json = extractJsonObject(text);
-				const parsed = JSON.parse(json) as SceneCandidate;
-				emitAiServerTelemetry('provider_chat', {
-					requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-					provider: this.name,
-					model: this.config.grokTextModel,
-					latencyMs: Date.now() - started,
-					retryCount: attempt,
-					parseAttempts: attempt + 1,
-					tokenUsage: payload.usage ?? null
-				});
-				return { scene: parsed, usage: payload.usage };
-			} catch (error) {
-				lastError = error;
-				const retryable =
-					error instanceof AiProviderError
-						? error.retryable
-						: error instanceof Error && error.name === 'AbortError';
-				if (!retryable || attempt >= maxAttempts - 1) {
-					break;
-				}
-				const backoff = this.config.retryBackoffMs[Math.min(attempt, this.config.retryBackoffMs.length - 1)];
-				await sleep(backoff);
-			} finally {
-				clearTimeout(timeout);
-			}
-			attempt += 1;
-		}
-
-		if (lastError instanceof AiProviderError) throw lastError;
-		if (lastError instanceof Error && lastError.name === 'AbortError') {
-			throw new AiProviderError('xAI request timed out', { code: 'timeout', retryable: true });
-		}
-		throw new AiProviderError('xAI request failed', { code: 'unknown', retryable: false });
-	}
-
-	private async generateScene(input: GenerateSceneInput, mode: 'opening' | 'next'): Promise<Scene> {
-		const prompt = buildScenePrompt(input, mode);
-		const { scene } = await this.callChat(prompt);
-		const fallbackSceneId =
-			mode === 'opening' ? 'opening' : `scene_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-		const normalized = normalizeScene(scene, fallbackSceneId);
-
-		if (!validateScene(normalized)) {
-			throw new AiProviderError('xAI scene failed contract validation', {
-				code: 'invalid_response',
-				retryable: false
-			});
-		}
-
-		const sanity = evaluateStorySanity(normalized);
-		if (!sanity.ok) {
-			throw new AiProviderError(`xAI scene failed sanity checks: ${sanity.issues.join(',')}`, {
-				code: 'invalid_response',
-				retryable: false
-			});
-		}
-
-		return normalized;
-	}
-
-	async getOpeningScene(input: GenerateSceneInput): Promise<Scene> {
-		return this.generateScene(input, 'opening');
-	}
-
-	async getNextScene(input: GenerateSceneInput): Promise<Scene> {
-		return this.generateScene(input, 'next');
-	}
-
-	async generateImage(input: GenerateImageInput): Promise<GeneratedImage> {
-		if (!this.config.enableGrokImages) {
-			throw new AiProviderError('Grok image generation disabled by config', {
-				code: 'provider_down',
-				retryable: false
-			});
-		}
-		const lowerPrompt = input.prompt.toLowerCase();
-		if (/oswaldo/.test(lowerPrompt) && /(face|bare skin|shirtless|nude|naked|skin exposed)/.test(lowerPrompt)) {
-			throw new AiProviderError('Image prompt violates Oswaldo guardrail', {
-				code: 'guardrail',
-				retryable: false,
-				status: 422
-			});
-		}
-		if (!input.prompt.trim()) {
-			throw new AiProviderError('Image prompt is empty', {
-				code: 'invalid_response',
-				retryable: false,
-				status: 400
-			});
-		}
-
-		let attempt = 0;
-		const maxAttempts = this.config.maxRetries + 1;
-		let lastError: unknown = null;
-
-		while (attempt < maxAttempts) {
-			const controller = new AbortController();
-			const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
-			try {
-				const response = await this.fetchImpl(XAI_IMAGE_URL, {
-					method: 'POST',
-					headers: {
-						'content-type': 'application/json',
-						authorization: `Bearer ${this.config.xaiApiKey}`
-					},
-					body: JSON.stringify({
-						model: this.config.grokImageModel,
-						prompt: input.prompt
-					}),
-					signal: controller.signal
-				});
-
-				if (!response.ok) {
-					const status = response.status;
-					throw new AiProviderError(`xAI image request failed (${status})`, {
-						code: status === 401 || status === 403 ? 'auth' : status === 429 ? 'rate_limit' : 'provider_down',
-						retryable: isRetryableStatus(status),
-						status
-					});
-				}
-
-				const payload = (await response.json()) as {
-					data?: Array<{ url?: string; b64_json?: string }>;
-				};
-				const image = payload.data?.[0];
-				if (!image || (!image.url && !image.b64_json)) {
-					throw new AiProviderError('xAI image response missing data', {
-						code: 'invalid_response',
-						retryable: false
-					});
-				}
-
-				return {
-					url: typeof image.url === 'string' ? image.url : undefined,
-					b64: typeof image.b64_json === 'string' ? image.b64_json : undefined
-				};
-			} catch (error) {
-				lastError = error;
-				const retryable =
-					error instanceof AiProviderError
-						? error.retryable
-						: error instanceof Error && error.name === 'AbortError';
-				if (!retryable || attempt >= maxAttempts - 1) break;
-				const backoff = this.config.retryBackoffMs[Math.min(attempt, this.config.retryBackoffMs.length - 1)];
-				await sleep(backoff);
-			} finally {
-				clearTimeout(timeout);
-			}
-			attempt += 1;
-		}
-
-		if (lastError instanceof AiProviderError) throw lastError;
-		if (lastError instanceof Error && lastError.name === 'AbortError') {
-			throw new AiProviderError('xAI image request timed out', {
-				code: 'timeout',
-				retryable: true,
-				status: 504
-			});
-		}
-		throw new AiProviderError('xAI image request failed', {
-			code: 'unknown',
-			retryable: false
-		});
-	}
-
-	async probe(): Promise<ProviderProbeResult> {
-		const started = Date.now();
-		try {
-			await this.callChat('Respond with {"sceneText":"probe","choices":[{"id":"ok","text":"ok"}],"lessonId":null,"imageKey":"hotel_room","isEnding":false,"endingType":null}');
-			return {
-				provider: this.name,
-				model: this.config.grokTextModel,
-				modelAvailable: true,
-				authValid: true,
-				latencyMs: Date.now() - started
-			};
-		} catch (error) {
-			const authFail = error instanceof AiProviderError && error.code === 'auth';
-			return {
-				provider: this.name,
-				model: this.config.grokTextModel,
-				modelAvailable: false,
-				authValid: !authFail,
-				latencyMs: Date.now() - started
-			};
-		}
-	}
-
-	isAvailable(): boolean {
-		return this.config.xaiApiKey.length > 0;
-	}
-}
-
 ```
 
----
+Focused prompt block:
 
-## 9) Active Runtime Wiring Status (Legacy `js` vs Active `src`)
+```ts
+function formatNarrativeContext(context: NarrativeContext | null | undefined): string {
+	if (!context) return '';
 
-### 9.1 Runtime files
+	const recentProse = context.recentSceneProse
+		.map(
+			(scene, index) =>
+				`${index + 1}. [${scene.sceneId}] via "${scene.viaChoiceText || 'N/A'}": ${scene.text}`
+		)
+		.join('\n');
 
-#### Story service bridge
+	const olderSummaries = context.olderSceneSummaries
+		.map((summary, index) => `${index + 1}. ${summary}`)
+		.join('\n');
+
+	const threadLines = context.threadNarrativeLines.map((line, index) => `${index + 1}. ${line}`).join('\n');
+	const lessonLines = context.lessonHistoryLines.map((line, index) => `${index + 1}. ${line}`).join('\n');
+	const boundaryLines = context.boundaryNarrativeLines
+		.map((line, index) => `${index + 1}. ${line}`)
+		.join('\n');
+	const transitionBridge = context.transitionBridge
+		? `Thread shift keys: ${context.transitionBridge.keys.join(', ')}\n${context.transitionBridge.lines.join('\n')}`
+		: 'none';
+
+	return `Narrative Context:
+- arcPosition=${context.arcPosition}
+- sceneCount=${context.sceneCount}
+- lastChoiceText="${context.lastChoiceText}"
+- transitionBridge=${transitionBridge}
+- threadNarrativeLines:
+${threadLines || 'none'}
+- boundaryNarrativeLines:
+${boundaryLines || 'none'}
+- lessonHistoryLines:
+${lessonLines || 'none'}
+- recentSceneProse:
+${recentProse || 'none'}
+- olderSceneSummaries:
+${olderSummaries || 'none'}`;
+}
+
+function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
+	const lastChoice = input.gameState.history[input.gameState.history.length - 1];
+	const threads = input.gameState.storyThreads;
+	const contextBlock = formatNarrativeContext(input.narrativeContext);
+
+	const commonRules = `Return ONLY JSON with keys:
+sceneText, choices (2-3 items), lessonId (number or null), imageKey, isEnding, endingType, mood, storyThreadUpdates.
+Write scene first, then assign lessonId. Prefer lessonId: null if no single lesson is dominant.
+No markdown fences.`;
+
+	if (mode === 'opening') {
+		return `${commonRules}
+
+Story: No Vacancies. Sydney has $47 and needs $18 by 11AM in a motel room with Oswaldo and Trina.
+Write opening scene with immediate pressure and 2-3 meaningful choices with distinct costs.
+Keep continuity constraints: no explicit moral summary, no repetitive apology loops.`;
+	}
+
+	return `${commonRules}
+
+Continue from scene "${input.currentSceneId ?? input.gameState.currentSceneId}" after choice "${input.choiceId ?? lastChoice?.choiceId ?? ''}".
+Recent choice text: "${lastChoice?.choiceText ?? ''}".
+Thread state:
+- oswaldoConflict=${threads.oswaldoConflict}
+- trinaTension=${threads.trinaTension}
+- moneyResolved=${threads.moneyResolved}
+- sydneyRealization=${threads.sydneyRealization}
+- exhaustionLevel=${threads.exhaustionLevel}
+
+${contextBlock}
+
+Maintain coherence with prior context and produce playable next choices.`;
+}
+
+export class GrokAiProvider implements AiProvider {
+	readonly name = 'grok' as const;
+```
+
+### 5.3 Story service adapter
 Source: `src/lib/services/storyService.ts`
 
 ```ts
@@ -2270,7 +2064,7 @@ export function createApiStoryService(config: ApiStoryServiceConfig = {}): Story
 
 ```
 
-#### Game runtime orchestration
+### 5.4 Runtime orchestration
 Source: `src/lib/game/gameRuntime.ts`
 
 ```ts
@@ -2563,872 +2357,58 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 
 ```
 
-### 9.2 Wired vs Not Wired (current state)
+---
 
-Wired:
-- provider interface includes `narrativeContext`
-- route handlers accept and forward `narrativeContext`
-- Grok provider can format/use `narrativeContext`
-- lesson nullability instruction exists in active Grok prompt text
+## 6) Verified Wiring Status (Accurate as of this rebuild)
 
-Not fully wired:
-- `gameRuntime` currently calls `storyService.getNextScene(...)` without building/passing rich app-owned `narrativeContext`
-- active Grok prompt is simpler than full canonical `SYSTEM_PROMPT` in `js/prompts.js`
-- full translation/transition/anti-repetition machinery in `js/prompts.js` not yet fully ported into active `src` runtime path
+Wired now:
+- `NarrativeContext` exists in provider interface and request payload path.
+- Grok provider accepts/prints context and includes lesson-nullability instruction.
+- Story service can send `narrativeContext` to API routes.
+
+Not fully wired yet (key gap):
+- `src/lib/game/gameRuntime.ts` turn flow currently does not build/pass rich app-owned `NarrativeContext` on each next-scene call; it calls `storyService.getNextScene(currentSceneId, choiceId, gameState)` without context argument.
+- Full canonical `SYSTEM_PROMPT` depth and handcrafted translation machinery in `js/prompts.js` is richer than active `src/lib/server/ai/providers/grok.ts` prompt composition.
+- Transition-bridge behavior from canonical map is not yet guaranteed to be injected from active `src` runtime state-delta detection.
 
 ---
 
-## 10) Traceability Table
+## 7) Guardrails and Invariants to Review
 
-| Asset | Canonical Source | Runtime Target | Test Target |
-|---|---|---|---|
-| System prompt voice and rules | `js/prompts.js` (`SYSTEM_PROMPT`) | `src/lib/server/ai/providers/grok.ts` prompt builder parity | integration + e2e narrative quality checks |
-| Handwritten thread lines | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` + `js/prompts.js` maps | `src` context builder + provider context formatting | thread continuity tests |
-| Lesson corpus (1-17) | `js/lessons.js` | prompt/labeling + recap rendering path | lesson surfacing tests |
-| Recovery rewrite policy | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` + `js/prompts.js` recovery prompt | provider parse-repair loop in `src/lib/server/ai/providers/grok.ts` | malformed output recovery tests |
-| Transition bridges | `js/prompts.js` `TRANSITION_BRIDGE_MAP` | app/runtime jump detection + provider context | transition-on-jump tests |
-| Guardrails | `js/prompts.js`, `src/lib/server/ai/routeHelpers.ts`, `src/lib/server/ai/providers/grok.ts` | route/provider enforcement | guardrail tests |
+- No secrets in prompts/logs/errors.
+- Image guardrail: never depict Oswaldo face/bare skin.
+- Continuity and anti-repetition rules hold under parse-repair and retries.
+- Lesson labeling remains post-hoc (prefer null unless one lesson clearly dominates).
 
 ---
 
-## 11) Open Risks + Review Questions
+## 8) Claude Review Request Contract
 
-Open risks:
-- split-brain between canonical prompt assets (`js/*`) and active runtime prompt path (`src/*`)
-- context parity gap causes narrative regression despite valid schema output
-- transition bridge logic exists canonically but may not be applied in active runtime turns
-- lesson quality can degrade if labeling remains structural but not semantically grounded
-
-Review questions for Claude:
-- Which exact canonical rules from `SYSTEM_PROMPT` are missing in active Grok prompt and likely to hurt narrative quality first?
-- Which thread translations are too specific or too abstract for robust turn-by-turn continuity?
-- Does current recovery behavior preserve story intent or over-rewrite under parse pressure?
-- Are there hidden contradictions between handwritten assets and active runtime behavior?
-- What would a group of haters say about the current narrative stack, and which 3 changes would silence them fastest?
-
----
-
-## 12) Appendix
-
-### 12.1 Historical Prompt Snapshot
-Source: `docs/AI_PROMPT_DUMP_2026-02-05.md`
-
-```markdown
-# AI Prompt Dump (2026-02-05)
-
-This file captures every prompt template currently used by the AI pipeline.
-
-## 1) Master System Prompt (`SYSTEM_PROMPT`)
-Source: `js/prompts.js:86-283`
-```js
-export const SYSTEM_PROMPT = `You are an AI storyteller for "No Vacancies," an interactive fiction game about invisible labor and emotional load-bearing in relationships.
-
-## PRIORITY ORDER (MOST IMPORTANT TO LEAST)
-1. Continuity with established facts and thread state
-2. Character consistency (no unearned personality reversals)
-3. Meaningful player agency and consequences
-4. Stylistic flair and novelty
-
-## SETTING
-Daily-rate motel, $65/day, due by 11 AM. The story begins at 6:47 AM. Sydney has $47 and needs $18 in 4 hours. Nobody else is awake.
-
-## CRITICAL CONTEXT
-**Everyone in this room is a meth addict.** Sydney, Oswaldo, Trina, Dex — all of them. The difference is Sydney is the FUNCTIONAL one. She's the only one who wakes up early, works, and pays the bills while high. The meth addict in the motel is the most responsible person in the room.
-
-## MAIN CHARACTER: SYDNEY
-- 44 years old, brunette with asymmetric bob
-- Makes money through electronic scams (carding, refund fraud, phishing)
-- Uses meth but is functional — wakes early, works, pays bills
-- Wu-Tang fan, Starbucks addict (only drinks half), orders DoorDash constantly
-- **THE LOAD-BEARER**: She pays, plans, solves, carries everything
-- **WHY SHE STAYS**: She stays because leaving means admitting she was wrong to stay this long. She keeps doubling down on a losing hand.
-
-## OSWALDO (Boyfriend)
-- Lives with Sydney, contributes nothing financially
-- **SELECTIVELY LAZY**: He will break his back to help a random junkie move a couch at 3 AM, but "can't" walk 5 feet to hand Sydney her charger.
-- **Hero to Strangers, Burden to Her**: He seeks validation from others by being helpful, while draining Sydney dry.
-- Sleeps until 2pm, then gets high, eats her food
-- **NEVER admits fault** — literally never says "I was wrong" or "my bad"
-- Rewrites history: "That's not what happened" / "I never said that"
-- Turns accusations around: "Why are you bringing up old stuff?"
-- The "won't" disguised as "can't" — shows he CAN step up, just not for her
-
-### Oswaldo Being Useless (To Sydney) VS Helpful (To Others)
-- Wakes at 2pm: "What'd you do today?"
-- "I help with the ENERGY around here"
-- **Example**: Rides his bike 5 miles to bring Dex a pack of smokes, but asks Sydney to DoorDash water because he's "too sore" to walk to the vending machine.
-- **Example**: Spends 3 hours fixing a neighbor's speaker wire, but hasn't fixed the motel toilet handle in 2 weeks.
-- Eats the last Hot Pocket she was saving
-- "Borrows" her charger, loses it, says "it's just a charger"
-- Invites people over without asking — they eat her food
-- Promises to watch for delivery, falls asleep
-- Says "we should clean" — doesn't move for 3 hours
-
-### Oswaldo Being Defensive
-- "Why do you always keep score?"
-- Calls her "controlling" for asking where $40 went
-- "Why are you in a mood?" when she's exhausted
-- When caught: "That's not what happened"
-
-### Oswaldo Intentionally Antagonizing (when she's anxious)
-- Pretends to text people on his phone (knows it bothers her)
-- Leaves while she's in the shower, no note
-- Acts like he's about to leave, then "just kidding"
-- Goes silent when she asks a direct question
-- Scrolls phone while she's mid-sentence
-
-### Oswaldo Never Admits Fault
-- The car incident? "Krystal was going through something"
-- Missing $40? He loaned it to someone for dope — 3 hours before rent was due. "I don't know what you're talking about"
-- Even when obvious: "You're remembering it wrong"
-
-## DEX (Friend)
-- Always needs money, never pays back
-- "Borrows" $50 for "his kid" then buys drugs that night
-- Represents false reciprocity
-
-## TRINA (Crasher)
-- Stayed "one night" — it's been a week
-- Eats Sydney's food, uses her hotspot, asks why there's nothing better
-- Represents accumulated obligation
-
-## THE INVISIBLE LABOR (THE SPREADSHEET IN HER HEAD)
-Sydney doesn't just "pay bills." She manages:
-- The "Trina Situation" (keeping her calm so she doesn't get them kicked out)
-- Oswaldo's "Creative Process" (managing his ego so he doesn't spiral)
-- The Wifi Rotation (switching MAC addresses when they get throttled)
-- The Food Budget (calculating calories/dollar ratios at 7-Eleven)
-- The Emotional Barometer (predicting Oswaldo's moods before he feels them)
-
-## SPECIFIC MEMORIES/HISTORY
-- **The "Incident"**: 3 months ago, Sydney let Oswaldo take her car to "run an errand." He let a girl named Krystal drive it. She totaled it. Oswaldo called Sydney from the scene, worried about how Krystal was feeling. Sydney is still paying the insurance premium. Oswaldo: "Krystal was going through something."
-- **Why Trina is here**: Sydney let her crash "for one night" during a storm. Oswaldo likes having an audience.
-- **The Multi-Phone Setup**: 3-5 burner smartphones with pop sockets. That's the revenue engine. Oswaldo calls it "your obsession."
-
-## DARK HUMOR EXAMPLES
-- Oswaldo wakes at 2pm: "What'd you do today?"
-- "I help with the ENERGY around here"
-- They use her hotspot til it's throttled, then complain the wifi sucks
-- The hotel clerk doesn't accept "he's going through it" as payment
-- She's sick with fever. Oswaldo: "So... are we gonna have money for the room?"
-- They call her "the mom" sarcastically — she's the only one who knows what month it is
-- Dex borrows $50 for "his kid" — buys a ball that night. *He did not pay her back.*
-- Trina eats her saved food, asks "Why didn't you get more?"
-
-## 17 LESSONS TO WEAVE IN
-Work them in naturally through situation, never lecture:
-
-${formatLessonsForPrompt()}
-
-## WRITING CRAFT
-
-### VOICE
-- Second person, present tense ("You stare at the phone")
-- Sydney's internal voice is dry, observant, exhausted
-- She notices everything but says little
-- Her humor is dark and self-aware
-
-### SENTENCE RHYTHM
-- Short sentences for tension: "He's still asleep. Of course he is."
-- Longer sentences for spiraling thoughts
-- Break paragraphs often. This is a phone screen.
-
-### DIALOGUE
-- Oswaldo speaks in deflection: "Why do you always..." "I was going to..."
-- Trina speaks in passive demands: "Is there any...?" "I thought maybe..."
-- Sydney speaks in clipped responses or not at all
-
-### SHOW DON'T TELL
-❌ "Sydney felt tired and resentful"
-✅ "You've been awake since 5. He asked what's for breakfast."
-
-❌ "Oswaldo was being selfish"
-✅ "He ate the last Hot Pocket. The one you were saving."
-
-### SENSORY GROUNDING
-Every scene should have ONE specific sensory detail:
-- The hum of the ice machine
-- The smell of stale cigarettes and cold pizza
-- The blue glow of 3-5 phone screens in the dark
-- The weight of the phone in her hand
-
-## VISUAL GUARDRAILS (FOR IMAGE KEY CHOICE)
-- Never depict Oswaldo's face or bare skin in any image.
-- If using 'oswaldo_sleeping' or 'oswaldo_awake', frame from behind, partial silhouette, or with clothing/blankets fully covering skin.
-- Sydney visual continuity: 44, brunette, asymmetric bob, blue eyes, conventionally attractive.
-- When depicting work/setup moments, show Sydney with 3-5 phones in her hands/lap, each with pop sockets (not a laptop).
-- Keep framing intimate and grounded to motel reality (tight interiors, harsh practical light, dawn neon spill).
-- Prefer Sydney-centered image keys unless a scene explicitly requires Oswaldo's presence.
-
-## ENDINGS
-You may create custom endings as poetic 1-3 word phrases. Examples:
-- "loop" — Nothing changes, but Sydney is awake to it now
-- "shift" — Small boundaries set, uncomfortable but hopeful
-- "exit" — Sydney leaves. Uncertain, but lighter.
-- "rare" — Oswaldo actually says "I see what would break if you weren't here"
-- Or create your own: "cold clarity", "the long exhale", "still here", "he finally sees"
-
-Minimum 5 scenes before any ending. Ending must feel EARNED by player choices.
-
-## STORY GENERATION RULES
-
-1. **Scene Length**: 150-250 words. Punchy, not flowery.
-2. **Choices**: Always provide 2-3 choices. Never more than 3.
-3. **Predictability**: 70% predictable outcomes, 30% surprising twists
-4. **Surprises must fit**: Any twist must make character sense
-5. **Show, don't tell**: Demonstrate lessons through action, never explain them
-6. **Dark humor**: Use as coping mechanism, not cruelty
-7. **Sydney is flawed too**: She enables, she stays, she makes excuses
-8. **Consequence matters**: Choices should feel meaningful
-9. **Voice**: Second person ("You"), present tense, intimate
-10. **Ending signals**: After 8-15 scenes, steer toward an ending based on choice patterns
-11. **Continuity callbacks**: Reference at least one concrete detail from recent scenes or thread state
-12. **No abrupt reversals**: Character tone shifts must be earned by actions in-scene
-13. **Lessons discipline**: Prefer one clear lesson per scene. Use multiple only when the scene naturally demands it
-14. **Anti-repetition**: Avoid repeating the same conflict beat, phrasing, or punchline in back-to-back scenes
-15. **Choice distinctness**: Choices must represent different strategies, not near-paraphrases
-
-## OUTPUT FORMAT
-You must respond with valid JSON matching this schema:
-{
-  "sceneText": "The narrative text for this scene...",
-  "choices": [
-    {"id": "choice_id_snake_case", "text": "What the player sees"},
-    {"id": "another_choice", "text": "Another option"}
-  ],
-  "lessonId": 1,  // Which lesson (1-17) this scene demonstrates, or null (prefer null unless one lesson is clearly central)
-  "imageKey": "hotel_room",  // One of: hotel_room, sydney_laptop, sydney_thinking, sydney_frustrated, sydney_tired, sydney_phone, sydney_coffee, sydney_window, oswaldo_sleeping, oswaldo_awake, the_door, empty_room, motel_exterior
-                           // Visual constraint: never show Oswaldo face/skin. For 'sydney_laptop' key, depict Sydney using 3-5 smartphones with pop sockets.
-  "isEnding": false,  // true if this is a final scene
-  "endingType": null,  // "loop", "shift", "exit", "rare", or a custom phrase if isEnding is true
-  "mood": "tense",  // One of: neutral, tense, hopeful, dark, triumphant
-  "storyThreadUpdates": {  // Optional: include ONLY fields changed in this scene
-    "oswaldoConflict": 1,
-    "boundariesSet": ["no guests without asking"],
-    "moneyResolved": true
-  }
-}
-
-Example when there are NO meaningful thread changes (omit field entirely):
-{
-  "sceneText": "...",
-  "choices": [{"id": "pause", "text": "Sit with it"}],
-  "lessonId": null,
-  "imageKey": "sydney_thinking",
-  "isEnding": false,
-  "endingType": null,
-  "mood": "dark"
-}`;
-```
-
-## 2) Continue Prompt Template (`getContinuePrompt`)
-Source: `js/prompts.js:294-350`
-```js
-export function getContinuePrompt(previousScenes, lastChoice, sceneCount, suggestedEnding = null, threads = null) {
-    const history =
-        previousScenes.length > 5
-            ? previousScenes.slice(-5).join('\n---\n')
-            : previousScenes.join('\n---\n');
-
-    // Include thread state if available
-    let threadSection = '';
-    if (threads) {
-        threadSection = formatThreadState(threads);
-    }
-
-    const longArcSummary = buildLongArcSummary(previousScenes, 4);
-
-    let endingGuidance = '';
-
-    if (sceneCount >= 8) {
-        endingGuidance = '\n\nIMPORTANT: We are approaching the end of the story.';
-
-        if (suggestedEnding) {
-            endingGuidance += ` Based on the player's choices, please steer the narrative toward the **${suggestedEnding.toUpperCase()}** ending.`;
-            
-            if (suggestedEnding === EndingTypes.RARE) {
-                endingGuidance += ' Oswaldo should start to actually SEE the labor. He should be shocked into awareness.';
-            } else if (suggestedEnding === EndingTypes.EXIT) {
-                endingGuidance += ' Sydney should feel ready to leave. The weight is too much.';
-            } else if (suggestedEnding === EndingTypes.SHIFT) {
-                endingGuidance += ' Sydney should set a boundary. It feels uncomfortable but necessary.';
-            } else {
-                endingGuidance += ' Sydney accepts the cycle. Nothing changes, but she is awake to it.';
-            }
-        } else {
-            endingGuidance += " Consider steering toward a fitting ending based on the player's choice patterns. If they've been confrontational, consider EXIT. If they've been accepting, consider LOOP. If they've pushed for change, consider SHIFT or RARE.";
-        }
-    }
-
-    return `## STORY SO FAR
-${history}
-${threadSection}
-${longArcSummary}
-
-## PLAYER'S CHOICE
-The player chose: "${lastChoice}"
-
-## YOUR TASK
-Continue the story based on this choice. Remember:
-- Keep it 150-250 words
-- Provide 2-3 meaningful choices (unless this is an ending)
-- Weave in a lesson naturally if appropriate
-- Maintain dark humor as coping
-- Include one concrete callback to recent history or thread state
-- Avoid repeating the previous scene's exact framing or rhythm
-- Include "storyThreadUpdates" with only changed thread fields (omit field if unchanged)
-- The choice should have consequences${endingGuidance}
-
-Respond with valid JSON only.`;
-}
-```
-
-## 3) Opening Prompt Template (`getOpeningPrompt`)
-Source: `js/prompts.js:356-371`
-```js
-export function getOpeningPrompt() {
-    return `## OPENING SCENE
-
-Generate the opening scene of Sydney's story.
-
-The scene must:
-- Establish the time (6:47 AM), place (motel room), and situation ($47, need $65 by 11 AM)
-- Show Oswaldo sleeping, Trina crashed on the floor
-- Convey Sydney's isolation - she's the only one awake, the only one who knows how close everything is to falling apart
-- End with 2-3 distinct choices for how Sydney approaches this morning
-- Final sentence must create immediate player agency tension ("What do you do right now?")
-
-Set the mood as TENSE. This scene demonstrates Lesson 1: Load-bearing beams get leaned on.
-
-Respond with valid JSON only.`;
-}
-```
-
-## 4) JSON Recovery Prompt (`getRecoveryPrompt`)
-Source: `js/prompts.js:378-396`
-```js
-export function getRecoveryPrompt(invalidOutput) {
-    return `Your previous response was not valid JSON. 
-
-Previous output:
-${invalidOutput.substring(0, 500)}...
-
-Please respond ONLY with valid JSON in this exact format:
-Do not use markdown code fences.
-{
-  "sceneText": "string",
-  "choices": [{"id": "string", "text": "string"}],
-  "lessonId": number or null,
-  "imageKey": "string",
-  "isEnding": boolean,
-  "endingType": "string or null",
-  "mood": "string",
-  "storyThreadUpdates": object (optional; include only changed fields)
-}`;
-}
-```
-
-## 5) Quality Repair Prompt (`buildQualityRepairPrompt`)
-Source: `js/services/geminiStoryService.js:678-688`
-```js
-    buildQualityRepairPrompt(originalPrompt, response, issues) {
-        return `${originalPrompt}
-
-QUALITY REVISION REQUIRED:
-- ${issues.join('\n- ')}
-
-Prior JSON (for reference):
-${JSON.stringify(response).slice(0, 900)}
-
-Return corrected JSON only.`;
-    }
-```
-
-## 6) Final API prompt composition
-Source: `js/services/geminiStoryService.js:231`
-```js
-parts: [{ text: SYSTEM_PROMPT + '\n\n' + userPrompt }]
-```
-
-## 7) Response schema constraints (prompt-adjacent contract)
-Source: `js/services/geminiStoryService.js:236-279`
-```js
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 2048,
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: 'object',
-                    properties: {
-                        sceneText: { type: 'string', minLength: 200, maxLength: 2600 },
-                        choices: {
-                            type: 'array',
-                            items: {
-                                type: 'object',
-                                properties: {
-                                    id: { type: 'string' },
-                                    text: { type: 'string' }
-                                },
-                                required: ['id', 'text']
-                            }
-                        },
-                        lessonId: { type: 'integer' },
-                        imageKey: { type: 'string' },
-                        isEnding: { type: 'boolean' },
-                        endingType: { type: 'string' },
-                        mood: {
-                            type: 'string',
-                            enum: ['neutral', 'tense', 'hopeful', 'dark', 'triumphant']
-                        },
-                        storyThreadUpdates: {
-                            type: 'object',
-                            description: 'Updates to story continuity threads (only include fields that changed)',
-                            properties: {
-                                oswaldoConflict: { type: 'integer', minimum: -2, maximum: 2 },
-                                trinaTension: { type: 'integer', minimum: 0, maximum: 3 },
-                                moneyResolved: { type: 'boolean' },
-                                carMentioned: { type: 'boolean' },
-                                sydneyRealization: { type: 'integer', minimum: 0, maximum: 3 },
-                                boundariesSet: {
-                                    type: 'array',
-                                    items: { type: 'string' },
-                                    description: 'NEW boundaries set this scene (not all boundaries)'
-                                },
-                                oswaldoAwareness: { type: 'integer', minimum: 0, maximum: 3 },
-                                exhaustionLevel: { type: 'integer', minimum: 1, maximum: 5 }
-                            }
-```
-```
-
-### 12.2 Prior System/Lesson Review
-Source: `docs/AI_SYSTEM_WRITING_LESSON_REVIEW_2026-02-05.md`
-
-```markdown
-# AI System, Prompting, and Lesson Delivery Review (2026-02-05)
-
-## A) How the AI system works right now
-
-### Runtime flow
-
-1. `app.js` picks service mode:
-   - AI mode -> `geminiStoryService`
-   - fallback mode -> `mockStoryService`
-2. AI opening turn:
-   - `getOpeningPrompt()` builds user prompt.
-   - API request sends: `SYSTEM_PROMPT + "\n\n" + userPrompt`.
-3. AI continuation turn:
-   - `getContinuePrompt(...)` includes:
-     - last ~5 scene history
-     - thread state (`storyThreads`)
-     - long-arc sampled memory
-     - ending guidance after scene 8
-4. Parse and reliability handling:
-   - strict JSON parsing + code-block extraction fallback
-   - one JSON recovery retry via `getRecoveryPrompt(...)`
-   - if primary model fails, fallback model is attempted
-5. Semantic quality gate:
-   - rejects near-duplicate choices
-   - rejects repetitive scene framing
-   - requires concrete continuity callback after early scenes
-   - triggers one quality-repair retry prompt
-6. Scene formatting:
-   - choice IDs normalized/sanitized
-   - image/mood mapped to internal enums
-   - final scene validated before apply
-7. App state update:
-   - `storyThreadUpdates` merged
-   - lesson tracked for stats
-   - if AI service fails mid-run, app falls back to mock recovery scene instead of forced ending.
-
-### Prompt inventory (all prompt templates)
-
-Prompt sources and full text are dumped in:
-- `docs/AI_PROMPT_DUMP_2026-02-05.md`
-
-Prompt templates in active use:
-1. `SYSTEM_PROMPT` (`js/prompts.js`)
-2. `getContinuePrompt(...)` (`js/prompts.js`)
-3. `getOpeningPrompt()` (`js/prompts.js`)
-4. `getRecoveryPrompt(...)` (`js/prompts.js`)
-5. `buildQualityRepairPrompt(...)` (`js/services/geminiStoryService.js`)
-
-## B) Characteristics of top-quality prompts for "aha"/self-recognition storytelling
-
-### Conventional high-quality traits
-
-1. **Concrete continuity constraints**: names, prior events, unresolved obligations.
-2. **Clear voice constraints**: POV, tense, tone, sentence rhythm.
-3. **Explicit output schema**: structured JSON with required/optional fields.
-4. **Meaningful choice constraints**: choices must represent different strategies.
-5. **Ending steering with guardrails**: no abrupt ending without narrative earning.
-6. **Error-recovery prompts**: malformed output path that preserves style and flow.
-
-### Unconventional but effective traits
-
-1. **Identity mirror hooks**: ask model to include one "recognition sentence" where the player can project themselves.
-2. **Emotional contradiction rule**: force at least one mixed emotion beat (relief + guilt, power + shame).
-3. **Cost accounting beat**: each scene names one hidden cost (time, attention, dignity, risk).
-4. **Micro-specific sensory anchor**: one tactile/ambient detail tied to stress state.
-5. **Behavior over explanation clause**: forbid abstract psych labels; require observable behavior.
-6. **Narrative debt ledger**: if a setup appears (car incident, money gap), it must be paid off within N scenes or explicitly deferred.
-
-### "Aha moment" prompt pattern
-
-To increase player self-recognition, prompts should force:
-- one concrete callback ("this happened before"),
-- one pattern reveal ("this keeps happening"),
-- one self-implicating question ("what am I rewarding right now?"),
-- one agency fork (different values, not just different words).
-
-## C) Lesson delivery review (how each lesson is shown, and better options)
-
-Current system:
-- Lesson IDs are attached per scene (`lessonId`).
-- Popups show title + quote after text typing completes.
-- In AI mode, model decides lesson per scene (or null).
-- In mock mode, lessons are pre-assigned in authored scenes.
-
-Important gap:
-- `detectLessonInScene(...)` exists but is not currently used as fallback/validator.
-
-### Per-lesson assessment
-
-| ID | Lesson | Current delivery quality | Suggested upgrade |
-|---:|---|---|---|
-| 1 | Load-Bearing Beams | Strong opening anchor | Re-surface with late-game mirror beat showing cumulative cost |
-| 2 | They Don't Understand the Concept | Good dialogue trigger | Add explicit "misread competence as ease" callback rule |
-| 3 | Resentment Toward Load-Bearer | Works in conflict scenes | Tie resentment to a specific success event for causality |
-| 4 | Your Energy Keeps It Alive | Strong systemic lesson | Add "what breaks if you stop?" choice branch at least once/run |
-| 5 | Output vs Presence | Present but under-highlighted | Add one quiet scene where no output is produced, then observe reactions |
-| 6 | Invisibility of Competence | Good recurring fit | Require one "prevented disaster" line before each use |
-| 7 | This Isn't Hard | Clear phrase trigger | Add behavioral proof contrast ("he tries once, fails, dismisses") |
-| 8 | Asking for Help Doesn't Work | Appears, but can be deeper | Add failed ask + self-silencing follow-up in consecutive scenes |
-| 9 | Discomfort Becomes Attacks | Good in defensive beats | Require escalation ladder (snip -> deflect -> accuse) |
-| 10 | What You Actually Want to Hear | High emotional payoff | Reserve for climactic turns to avoid dilution |
-| 11 | See It AND Act Accordingly | Strong insight, rare use | Add action-check line after any acknowledgment dialogue |
-| 12 | Making Effort Legible | Strong behavioral mechanic | Explicitly frame as reality-reintroduction, not punishment |
-| 13 | Won't vs Can't | Important pattern lesson | Add contrast proof in-scene every time this lesson appears |
-| 14 | System Responds to Load Distribution | Conceptually strong | Convert abstract phrasing into visible task distribution moments |
-| 15 | Infrastructure Gets Blamed | Underused but potent | Add one scene where one miss outweighs many saves |
-| 16 | Relationships as Risk Reduction | High "aha" potential | Add "who reduces whose risk?" question as choice text |
-| 17 | What Am I to You? | Strong late-game pivot | Trigger only after evidence accumulation for maximum impact |
-
-### Structural improvements for lessons
-
-1. Add lesson pacing policy:
-   - early game: 1/2/6/7
-   - middle game: 3/4/8/9/11/13/14/15
-   - late game: 5/10/12/16/17
-2. Add anti-repetition:
-   - no same lesson ID in back-to-back scenes unless player repeats same coping strategy.
-3. Add fallback lesson detection:
-   - if AI returns null lesson but scene clearly matches a rule, infer one with `detectLessonInScene`.
-4. Add lesson "show receipts":
-   - every lesson scene includes one concrete proof line.
-
-## D) What the app already does to improve prose + what to improve next
-
-### What is already strong (current implementation)
-
-1. Rich system prompt with voice, rhythm, behavior constraints.
-2. Continuity state (`storyThreads`) included in turn prompts.
-3. Long-arc memory sampling to prevent short-context amnesia.
-4. Choice distinctness quality checks.
-5. Repetition guard against near-duplicate scene framing.
-6. Continuity callback quality gate.
-7. One-shot quality-repair pass before accepting weak output.
-8. Ending steering based on accumulated player choice patterns.
-
-### Conventional improvements (high confidence)
-
-1. **Scene beat contract**: require each scene to include:
-   - pressure signal,
-   - decision pressure,
-   - consequence setup.
-2. **Choice intent labels (internal only)**:
-   - each choice tagged as avoid/confront/repair/exit, then strip tags before render.
-3. **Lesson pacing schedule**:
-   - enforce lesson arcs by scene range.
-4. **Hard callback rule**:
-   - at least one named callback from last two scenes and one from thread state.
-5. **Dialogue realism pass**:
-   - short second-pass prompt only for dialogue tightening.
-6. **Model-side lexical diversity check**:
-   - avoid repeated phrase stems from previous scene.
-
-### Unconventional improvements (high upside)
-
-1. **Aha sentence requirement**:
-   - one line that reframes behavior as a pattern the player can recognize in themselves.
-2. **Narrative debt ledger**:
-   - unresolved setup must be referenced or closed within 3 scenes.
-3. **Contradiction engine**:
-   - each major scene carries one emotional contradiction (care + resentment).
-4. **Shadow consequence pass**:
-   - generate one unseen cost of each player choice and weave it subtly into next scene.
-5. **Reader projection cue**:
-   - one "you do this too" behavioral mirror per 2-3 scenes, non-judgmental tone.
-6. **Compression pass for mobile readability**:
-   - if scene exceeds rhythm threshold, rewrite with same content but sharper line breaks.
-
-## Priority recommendations for immediate impact
-
-1. Add lesson pacing + anti-repeat rule (high impact, low risk).
-2. Add hard callback contract (named recent callback + thread callback).
-3. Add scene beat contract (pressure -> choice pressure -> consequence setup).
-4. Add fallback lesson detection using `detectLessonInScene`.
-5. Add "aha sentence" micro-rule to continuation prompt.
-
-```
-
-### 12.3 Local Upgrade Governance / RCR / Traceability
-Source: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`
-
-```markdown
-# Local Narrative Upgrade Plan (Test-First, Low-Debt)
-
-## Objective
-Improve narrative quality, continuity, and choice consequence while reducing repetition, without weakening reliability invariants.
-
-## Scope
-- Local narrative pipeline only.
-- Prompt/content/context/test upgrades only.
-- Ignore `grokchangeover.md` for this track.
-- Keep image files untouched.
-
-## Out of Scope
-- SvelteKit rewrite.
-- Provider migration to Grok.
-- Broad UI redesign.
-
-## Invariants (Must Never Regress)
-- AI->mock fallback remains playable.
-- Parse recovery remains bounded.
-- No secret leakage.
-- Accessibility continuity preserved.
-- Image and character continuity guardrails preserved.
-
----
-
-## Current Status Snapshot
-- `DONE` Voice ceiling anchors added to `SYSTEM_PROMPT` and covered by regression test.
-- `PENDING` Trina-specific behavior examples in `## TRINA` prompt section.
-- `PENDING` Move event-specific lines out of thread-state translations.
-- `PENDING` Boundary-specific translation mapping.
-- `PENDING` Lesson-history translation map (17 lines).
-- `PENDING` Transition-bridge injection on thread jumps only.
-- `PENDING` App-owned `NarrativeContext` as single source of truth.
-- `PENDING` Context-size/truncation telemetry.
-
----
-
-## Traceability Map (Do Not Lose Details)
-
-| Asset ID | Source of Truth | Target Location | Test Coverage | Status |
-|---|---|---|---|---|
-| `TRINA_SNACKCAKE_01` | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` (`1.2 Trina Tension`) | `js/prompts.js` -> `## TRINA` | `T1.1` | `PENDING` |
-| `TRINA_CATFISH_02` | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` (`1.2 Trina Tension`) | `js/prompts.js` -> `## TRINA` | `T1.1` | `PENDING` |
-| `TRINA_REFERRAL_03` | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` (`1.2 Trina Tension`) | `js/prompts.js` -> `## TRINA` | `T1.1` | `PENDING` |
-| `VOICE_CEILING_01` | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` (`12.1 Gold Lines`) | `js/prompts.js` -> `## VOICE CEILING EXAMPLES` | Existing regression (`Test 8.2`) | `DONE` |
-| `BOUNDARY_MAP_01` | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` (`1.8 Boundaries`) | `js/prompts.js` boundary translation mapping | `T1.3` | `PENDING` |
-| `LESSON_HISTORY_01_17` | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` + `js/lessons.js` | `js/prompts.js` lesson-history context block | `T1.4` | `PENDING` |
-| `TRANSITION_BRIDGE_SET` | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` (`2 Transition Lines`) | `js/app.js` + `js/prompts.js` jump bridge injection | `T3.1`, `T3.2` | `PENDING` |
-| `THREAD_GENERALIZATION` | `docs/HANDWRITTEN_NARRATIVE_ASSETS.md` (`1.2 Trina Tension`) | `js/prompts.js` thread-state formatter | `T1.2` | `PENDING` |
-
-Traceability rules:
-- Every new handwritten narrative line must get an `Asset ID` row before implementation.
-- No prompt content ships without mapped test coverage (`T*`).
-
----
-
-## Debt Register (Known Technical Debt)
-1. Monolithic `SYSTEM_PROMPT` string is hard to evolve safely.
-2. App/service narrative memory split risks drift until context unification lands.
-3. Prompt assets are not fully modularized (character examples vs state translations vs transitions).
-4. Transition logic not yet encoded as explicit runtime contract.
-5. No explicit numeric context budget contract persisted in one place.
-
----
-
-## Best-Process Workflow (Least Technical Debt)
-1. Write failing test for one change.
-2. Make minimal code/prompt edit.
-3. Run `npm run lint` and `npm test`.
-4. Commit single-purpose slice.
-5. Update docs in same slice (`CHANGELOG.md`, `AI_LESSONS_LEARNED.md` when applicable).
-6. Never mix refactor + behavior + docs in one large commit.
-
----
-
-## Review, Critique, Revise Loop (Required per Phase)
-
-Each phase requires two RCR passes:
-- Pre-phase RCR: risk forecast before implementation starts.
-- Pre-close RCR: critique after implementation and before phase close.
-
-Mandatory critique questions (must be answered in every phase):
-- What would a group of haters say about the work I just did?
-- Which part is most likely to fail silently?
-- What did we assume without proof?
-- Which specific test ID (`T*`) would fail first if we are wrong?
-
-Completion gate:
-- A phase cannot close unless Review, Critique, and Revise are all documented.
-- Critique comments must reference specific test IDs (`T*`) and resulting changes.
-
-Required artifact per phase:
-- `Phase Review Note` including:
-  - issues found
-  - plan delta
-  - test delta
-  - rollback impact
-
----
-
-## Phase-by-Phase Test Matrix
-
-## Phase 0: Baseline Lock
-Goal: Freeze behavior and establish green baseline before narrative edits.
-
-- `T0.1` Baseline lint/test gate
-  - Command: `npm run lint`, `npm test`
-  - Pass: all green
-  - Blocks release: yes
-
-- `T0.2` Existing invariants still enforced
-  - Test area: fallback, parse recovery, anti-repeat suites
-  - Pass: invariant tests green
-  - Blocks release: yes
-
-## Phase 1: Prompt Content Hardening
-Goal: Improve narrative quality with minimal architecture risk.
-
-- `T1.1` Trina behavior examples present in `SYSTEM_PROMPT`
-  - File: `js/prompts.js`, `tests/integrationTest.js`
-  - Assert: prompt includes snack-cake, catfish, and casino-referral behaviors
-  - Blocks release: yes
-
-- `T1.2` Thread translations remain general (non-factual event injection)
-  - File: `js/prompts.js`, `tests/integrationTest.js`
-  - Assert: `trinaTension` state lines do not assert specific past events as already happened
-  - Blocks release: yes
-
-- `T1.3` Boundary translation map exists
-  - File: `js/prompts.js`, `tests/integrationTest.js`
-  - Assert: known boundaries map to deterministic narrative lines
-  - Blocks release: yes
-
-- `T1.4` Lesson-history translation map complete
-  - File: `js/prompts.js`, `tests/integrationTest.js`
-  - Assert: 17 entries exist; each entry non-empty
-  - Blocks release: yes
-
-- `T1.5` Utility lines tuned for high-frequency reuse
-  - File: `js/prompts.js`
-  - Assert: unresolved-money line is concise and stable
-  - Blocks release: no
-
-## Phase 2: Context Ownership Unification
-Goal: Remove split-brain memory and centralize AI context.
-
-- `T2.1` `NarrativeContext` contract defined and validated
-  - File: `js/contracts.js`, `tests/integrationTest.js`
-  - Assert: context object shape required fields validated
-  - Blocks release: yes
-
-- `T2.2` App builds and passes context each turn
-  - File: `js/app.js`, `js/services/geminiStoryService.js`, tests
-  - Assert: service receives app-built context; no missing required sections
-  - Blocks release: yes
-
-- `T2.3` Compatibility seam works with feature flag off/on
-  - File: app/service/tests
-  - Assert: parity behavior when flag off; upgraded behavior when flag on
-  - Blocks release: yes
-
-- `T2.4` Context budget enforcement
-  - File: prompt/context builder/tests
-  - Assert: last 2 full scenes + compressed older summary under cap
-  - Blocks release: yes
-
-## Phase 3: Transition Bridges + Anti-Repetition
-Goal: Make state jumps feel earned and reduce narrative repetition.
-
-- `T3.1` Transition bridge appears only on state jumps
-  - File: app/prompt/tests
-  - Assert: jump from X->Y injects bridge text
-  - Blocks release: yes
-
-- `T3.2` No bridge on stable state
-  - File: app/prompt/tests
-  - Assert: unchanged state does not inject bridge text
-  - Blocks release: yes
-
-- `T3.3` Anti-repetition checks remain active
-  - File: service/tests
-  - Assert: repeated openings/choice near-duplicates still fail quality gate
-  - Blocks release: yes
-
-## Phase 4: Telemetry + Tuning
-Goal: Tune using evidence, not anecdote.
-
-- `T4.1` Telemetry emits context/truncation metrics
-  - File: `js/services/aiTelemetry.js` + tests
-  - Assert: metrics emitted with stable schema
-  - Blocks release: no
-
-- `T4.2` Telemetry has no sensitive payload leakage
-  - File: telemetry tests
-  - Assert: no API key/secret values in logs
-  - Blocks release: yes
-
-- `T4.3` Quality smoke playthrough batch
-  - Method: scripted or guided playthrough sample set
-  - Assert: reduced repetition and no fallback regression
-  - Blocks release: yes
-
----
-
-## Release Gates (Per Phase)
-- Must pass: `npm run lint`
-- Must pass: `npm test`
-- Must pass: `npm run test:e2e` when renderer/e2e behavior is touched
-- Must include: docs updates for behavior-affecting changes
-
----
-
-## Commit Policy
-1. One behavior slice per commit.
-2. Tests committed with behavior change (same commit).
-3. Docs committed with behavior change (same commit).
-4. Revertable by commit without cross-slice breakage.
-
----
-
-## What a Hostile Reviewer Would Say
-- "This is over-engineering prompt glue instead of fixing model quality."
-- "You are adding layers (context objects, transitions, lesson maps) that can drift and rot."
-- "Feature flags and seams will become permanent dead weight."
-- "Manual hand-written assets are subjective and expensive to maintain."
-- "You are optimizing for tests that check strings, not true story quality."
-
-## Response / Mitigations
-- Keep each layer narrowly scoped and test-backed; remove old paths after stabilization window.
-- Add explicit cleanup milestone for flags/seams in the plan before Phase 4 close.
-- Keep manual assets in one source file and treat them as product copy, not code logic.
-- Combine structural tests with playthrough quality review rubric to avoid false confidence.
-- Use telemetry to confirm outcome changes (repetition rate, retry rate, fallback rate) instead of relying on vibes.
-
----
-
-## Rollback Plan
-- Revert by phase commit group.
-- If narrative quality dips, disable new context/transition behaviors and restore prior prompt set.
-- Keep invariant tests as stop-ship guardrails.
-
-```
-
-### 12.4 Claude Collaboration Contract (Advisory)
-
-Claude output format requested:
+Ask Claude to return findings in this schema:
 - Finding
+- Severity (Critical/High/Medium/Low)
+- Exact source line(s)
+- Proposed rewrite
+- Risk if ignored
+
+Focus Claude on:
+1. Canonical-vs-active prompt parity gaps likely to hurt quality first.
+2. Context continuity holes (especially missing runtime context construction).
+3. Transition bridge and anti-repetition regressions.
+4. Any contradictions between handwritten assets and active runtime behavior.
+5. Top 5 lowest-risk, highest-impact fixes.
+
+---
+
+## 9) Source Index
+
+- `docs/HANDWRITTEN_NARRATIVE_ASSETS.md`
+- `js/prompts.js`
+- `js/lessons.js`
+- `src/lib/server/ai/provider.interface.ts`
+- `src/lib/server/ai/providers/grok.ts`
+- `src/lib/services/storyService.ts`
+- `src/lib/game/gameRuntime.ts`
+- `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`
+- `docs/AI_PROMPT_DUMP_2026-02-05.md` (historical)
+- `docs/AI_SYSTEM_WRITING_LESSON_REVIEW_2026-02-05.md` (historical)
