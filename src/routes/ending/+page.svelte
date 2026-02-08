@@ -25,7 +25,10 @@
 
 {#if !ending}
 	<p>No ending has been reached in this session yet.</p>
-	<a class="btn btn-primary" href="/play">Go to Play</a>
+	<div class="ending-actions">
+		<a class="btn btn-primary" href="/play">Go to Play</a>
+		<a class="btn btn-secondary" href="/debug">Open Debug (Temp)</a>
+	</div>
 {:else}
 	<div class="ending-card">
 		<p class="ending-title">{ending.endingType}</p>
@@ -36,6 +39,7 @@
 		<div class="ending-actions">
 			<button class="btn btn-primary" on:click={playAgain}>Play Again</button>
 			<a class="btn btn-secondary" href="/play">Back to Play</a>
+			<a class="btn btn-secondary" href="/debug">Open Debug (Temp)</a>
 		</div>
 	</div>
 {/if}

@@ -14,12 +14,17 @@
 	}
 
 	function addTestEntry(): void {
-		appendDebugError({
+		const entry = appendDebugError({
 			scope: 'debug.manual',
 			message: 'Manual test entry',
 			details: { source: 'debug-page' }
 		});
 		refresh();
+
+		// If storage writes are unavailable (quota/privacy mode), keep the entry visible for this session.
+		if (!entries.some((existing) => existing.id === entry.id)) {
+			entries = [entry, ...entries];
+		}
 	}
 
 	onMount(() => {

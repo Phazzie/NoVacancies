@@ -103,3 +103,18 @@
 
 **Insight:** Keeping a browser API-key input after moving to server-only env auth creates false debugging paths and user confusion.
 **Lesson:** When provider auth is server-only, delete client key entry/persistence flows and replace them with explicit hard-fail guidance tied to environment setup.
+
+## 20. Keep Legacy Findings Out of Active Incident Triage
+
+**Insight:** Security/reliability reports against legacy files can look urgent even when those paths are not part of the running stack.
+**Lesson:** Reconcile findings into `ACTIVE` vs `LEGACY` quickly, fix active issues immediately, and attach legacy findings to a decommission checklist so the team does not lose focus.
+
+## 21. CSP in SvelteKit Must Account for Hydration Bootstrap
+
+**Insight:** A strict `script-src 'self'` CSP can silently break SvelteKit client hydration because startup bootstrapping may include inline script content.
+**Lesson:** Roll out CSP with runtime verification (SSR + hydrated UI + e2e interaction tests), and prefer incremental hardening over “max strict” policies that disable app behavior.
+
+## 22. Debug Surfaces Should Degrade Gracefully When Storage Fails
+
+**Insight:** Local debug tooling that depends only on localStorage can appear broken in privacy/quota-constrained contexts.
+**Lesson:** Keep an in-memory fallback path so manual debug actions still produce visible feedback even when persistence is unavailable.

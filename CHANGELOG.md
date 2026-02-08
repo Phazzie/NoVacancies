@@ -4,6 +4,11 @@
 
 ### Changed
 
+- **Ending Debug Shortcut (Temp):** Added `Open Debug (Temp)` button on `/ending` so runtime errors are one click away during demo validation.
+- **CSP Hardening:** Added a baseline Content Security Policy in `src/app.html` for the SvelteKit runtime, then tuned `script-src` compatibility so SvelteKit client hydration remains functional.
+- **Debug UX Resilience:** `/debug` manual test entries now stay visible even when localStorage writes fail (quota/privacy mode), instead of silently no-oping.
+- **Service Worker Cleanup:** Removed legacy root `service-worker.js` and stripped stale Gemini endpoint exception from `static/service-worker.js`.
+- **Gemini Verification Reconciliation:** Added `docs/GEMINI_VERIFICATION_RECONCILIATION_2026-02-08.md` to classify each reported issue as active vs legacy and tie findings to decommission steps.
 - **Demo Readiness Indicator:** Added Home-page visual readiness dashboard with weighted progress bar and checklist, backed by `/api/demo/readiness` runtime checks.
 - **Readiness Edge Coverage:** Expanded e2e assertions for `/api/demo/readiness` to validate weighted check IDs, total score weighting, and blocked-vs-ready behavior when `XAI_API_KEY` is missing/present.
 - **Debug Error Surface:** Added `/debug` page with persisted runtime/API error log, manual test entry, and clear/reset actions for fast play-session triage.
