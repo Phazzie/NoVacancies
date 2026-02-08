@@ -16,7 +16,6 @@ test.describe('Live Grok canary (opt-in)', () => {
         await expect(page.getByRole('heading', { level: 2, name: 'Settings' })).toBeVisible({
             timeout: 20000
         });
-        await page.getByRole('button', { name: 'AI Generated' }).click();
 
         const apiKeyInput = page.getByPlaceholder('Enter AI key');
         await expect(apiKeyInput).toBeVisible();

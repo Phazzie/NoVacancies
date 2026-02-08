@@ -4,9 +4,13 @@
 
 ### Changed
 
+- **Grok-Only Runtime:** Disabled mock runtime fallback paths for story/image server routes; requests now fail fast when Grok is unavailable or misconfigured.
+- **Outage Policy:** Restricted `AI_OUTAGE_MODE` to `hard_fail` in runtime config and rejected `mock_fallback`/`AI_PROVIDER=mock` for active app flow.
+- **UX Lock-In:** Removed `Static Story` toggle from Svelte settings and pinned `/play` mode indicator to `AI Mode`.
+- **E2E Contract Shift:** Replaced mock-playthrough e2e assertions with Grok-only behavior checks (explicit error assertions when `XAI_API_KEY` is missing).
 - **Provider Defaults:** Set Grok as the default text provider path (`AI_PROVIDER=grok` when unset) while keeping image generation on pre-generated/static assets by default unless `ENABLE_GROK_IMAGES=1`.
 - **Runtime Defaults:** Switched game settings/opening request defaults to AI mode (`useMocks=false`) so new sessions start in AI Generated mode.
-- **Credential Guard:** Provider selection now requires `XAI_API_KEY` before activating Grok adapters and otherwise degrades to mock adapters to preserve local/dev playability.
+- **Credential Guard:** Provider configuration now requires `XAI_API_KEY` in Grok-only mode and hard-fails when missing.
 - **Framework Migration:** Added SvelteKit TypeScript scaffold with split routes (`/`, `/settings`, `/play`, `/ending`) and shared layout navigation.
 - **Gameplay Runtime Port:** Added typed `src/lib` game/runtime/service modules to support mock-mode playthrough in SvelteKit while preserving scene/state contracts and fallback-safe behavior.
 - **PWA Preservation:** Added SvelteKit static manifest/service worker pathing and client-side registration helper under `src/lib/client/pwa.ts`.

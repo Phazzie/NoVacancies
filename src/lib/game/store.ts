@@ -37,15 +37,13 @@ function getRuntime(): GameRuntime {
 		browser
 			? {
 				storyService: createApiStoryService(),
-				fallbackStoryService: mockStoryService,
 				storageBindings: {
 					local: window.localStorage,
 					session: window.sessionStorage
 				}
 			}
 			: {
-				storyService: mockStoryService,
-				fallbackStoryService: mockStoryService
+				storyService: mockStoryService
 			}
 	);
 
@@ -82,7 +80,7 @@ export const gameStore = {
 
 		try {
 			const result = await engine.startGame({
-				useMocks: settings.useMocks,
+				useMocks: false,
 				apiKey: settings.apiKey,
 				featureFlags: settings.featureFlags
 			});

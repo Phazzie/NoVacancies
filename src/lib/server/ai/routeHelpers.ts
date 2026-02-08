@@ -22,7 +22,7 @@ export function buildOpeningInput(payload: {
 	featureFlags?: unknown;
 }): GenerateSceneInput {
 	const gameState = createGameState({
-		useMocks: payload.useMocks ?? false,
+		useMocks: false,
 		featureFlags: safeFeatureFlags(payload.featureFlags)
 	});
 	return {
@@ -34,28 +34,13 @@ export function buildOpeningInput(payload: {
 
 export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
 	const baseState = payload.gameState ?? createGameState();
+	baseState.useMocks = false;
 	return {
 		currentSceneId: payload.currentSceneId ?? baseState.currentSceneId,
 		choiceId: payload.choiceId ?? null,
 		gameState: baseState,
 		narrativeContext: payload.narrativeContext ?? null
 	};
-}
-
-function shouldBypassAuthError(error: unknown, authBypass: boolean): boolean {
-	return authBypass && error instanceof AiProviderError && error.code === 'auth';
-}
-
-function shouldFallbackToMock(
-	error: unknown,
-	authBypass: boolean,
-	providerName: string,
-	outageMode: 'mock_fallback' | 'hard_fail'
-): boolean {
-	if (providerName === 'mock' || outageMode !== 'mock_fallback') return false;
-	if (!(error instanceof AiProviderError)) return true;
-	if (error.code === 'auth') return authBypass;
-	return true;
 }
 
 function assertImagePromptGuardrails(prompt: string): void {
@@ -94,32 +79,6 @@ export async function resolveTextScene(input: GenerateSceneInput, mode: 'opening
 		});
 		return scene;
 	} catch (error) {
-		const bypassedAuth = shouldBypassAuthError(error, config.aiAuthBypass);
-		const shouldFallback = shouldFallbackToMock(
-			error,
-			config.aiAuthBypass,
-			provider.name,
-			config.outageMode
-		);
-
-		if (bypassedAuth) {
-			emitAiServerTelemetry('auth_bypass_used', {
-				mode,
-				provider: provider.name
-			});
-		}
-
-		if (shouldFallback) {
-			emitAiServerTelemetry('story_fallback', {
-				from: provider.name,
-				to: 'mock',
-				mode,
-				error: sanitizeForErrorMessage(error)
-			});
-			return mode === 'opening'
-				? registry.mock.getOpeningScene(input)
-				: registry.mock.getNextScene(input);
-		}
 		throw error;
 	}
 }
@@ -134,35 +93,14 @@ export async function resolveImagePayload(prompt: string) {
 	try {
 		return await provider.generateImage?.({ prompt });
 	} catch (error) {
-		const bypassedAuth = shouldBypassAuthError(error, config.aiAuthBypass);
-		const shouldFallback = shouldFallbackToMock(
-			error,
-			config.aiAuthBypass,
-			provider.name,
-			config.outageMode
-		);
-		if (bypassedAuth) {
-			emitAiServerTelemetry('auth_bypass_used', {
-				mode: 'image',
-				provider: provider.name
-			});
-		}
-		if (shouldFallback) {
-			emitAiServerTelemetry('image_fallback', {
-				from: provider.name,
-				to: 'mock',
-				error: sanitizeForErrorMessage(error)
-			});
-			return registry.mock.generateImage?.({ prompt });
-		}
 		throw error;
 	}
 }
 
 function mapErrorStatus(error: unknown, fallbackStatus = 500): number {
-	if (!(error instanceof AiProviderError)) return fallbackStatus;
-	if (typeof error.status === 'number') return error.status;
-	switch (error.code) {
+	const typed = error as { status?: unknown; code?: unknown };
+	if (typeof typed.status === 'number') return typed.status;
+	switch (typed.code) {
 		case 'auth':
 			return 401;
 		case 'rate_limit':

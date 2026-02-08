@@ -106,7 +106,7 @@ export function createApiStoryService(config: ApiStoryServiceConfig = {}): Story
 			const payload = await postJson<{ scene: unknown }>(
 				fetchImpl,
 				endpoint('/story/opening'),
-				{ useMocks: true }
+				{ useMocks: false }
 			);
 			return ensureSceneShape(payload.scene, '/story/opening');
 		},

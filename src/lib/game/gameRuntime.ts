@@ -46,7 +46,6 @@ export interface StartGameOptions {
 
 export interface GameRuntimeOptions {
 	storyService?: StoryService;
-	fallbackStoryService?: StoryService;
 	settingsStorage?: SettingsStorage;
 	storageBindings?: StorageBindings;
 	now?: () => number;
@@ -83,7 +82,6 @@ function normalizeEndingList(endings: EndingType[]): EndingType[] {
 export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime {
 	const now = options.now ?? Date.now;
 	const storyService = options.storyService ?? mockStoryService;
-	const fallbackStoryService = options.fallbackStoryService ?? mockStoryService;
 	const settingsStorage =
 		options.settingsStorage ??
 		createSettingsStorage({
@@ -185,62 +183,26 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		lastEnding = scene.isEnding ? buildEndingPayload(scene) : null;
 	};
 
-	const getFallbackScene = async (choiceId: string): Promise<Scene> => {
-		if (!gameState) {
-			throw new Error('Cannot load fallback scene without active game state');
-		}
-
-		const sceneProbe = fallbackStoryService.getSceneById?.(gameState.currentSceneId);
-		if (sceneProbe) {
-			return fallbackStoryService.getNextScene(gameState.currentSceneId, choiceId, gameState);
-		}
-
-		if (fallbackStoryService.getRecoveryScene) {
-			return fallbackStoryService.getRecoveryScene();
-		}
-
-		return fallbackStoryService.getOpeningScene();
-	};
-
 	const startGame = async (startOptions: StartGameOptions = {}): Promise<GameTurnResult> => {
 		const effectiveFlags = normalizeFeatureFlags({
 			...settings.featureFlags,
 			...startOptions.featureFlags
 		});
-		const useMocks = startOptions.useMocks ?? settings.useMocks;
 		const apiKey = (startOptions.apiKey ?? settings.apiKey).trim();
 
 		gameState = createGameState({
 			featureFlags: effectiveFlags,
 			apiKey: apiKey || null,
-			useMocks,
+			useMocks: false,
 			now
 		});
 
-		const openingService = useMocks ? fallbackStoryService : storyService;
-		let openingScene: Scene;
-		try {
-			openingScene = await openingService.getOpeningScene({
-				useMocks,
-				featureFlags: effectiveFlags
-			});
-			if (!validateScene(openingScene)) {
-				throw new Error('Story service returned invalid opening scene');
-			}
-		} catch (error) {
-			if (!useMocks) {
-				const fallbackOpening = await fallbackStoryService.getOpeningScene({
-					useMocks: true,
-					featureFlags: effectiveFlags
-				});
-				if (!validateScene(fallbackOpening)) {
-					throw new Error('Fallback story service returned invalid opening scene');
-				}
-				openingScene = fallbackOpening;
-				gameState.useMocks = true;
-			} else {
-				throw error;
-			}
+		const openingScene = await storyService.getOpeningScene({
+			useMocks: false,
+			featureFlags: effectiveFlags
+		});
+		if (!validateScene(openingScene)) {
+			throw new Error('Story service returned invalid opening scene');
 		}
 
 		gameState.currentSceneId = openingScene.sceneId;
@@ -283,25 +245,12 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		});
 
 		try {
-			const activeService = gameState.useMocks ? fallbackStoryService : storyService;
-			const nextScene = await activeService.getNextScene(gameState.currentSceneId, choiceId, gameState);
+			const nextScene = await storyService.getNextScene(gameState.currentSceneId, choiceId, gameState);
 			if (!validateScene(nextScene)) {
 				throw new Error('Story service returned invalid scene payload');
 			}
 			applyScene(nextScene);
 			return buildTurnResult(nextScene);
-		} catch (error) {
-			if (!gameState.useMocks) {
-				const fallbackScene = await getFallbackScene(choiceId);
-				if (!validateScene(fallbackScene)) {
-					throw new Error('Fallback story service returned invalid scene');
-				}
-				gameState.useMocks = true;
-				applyScene(fallbackScene);
-				return buildTurnResult(fallbackScene);
-			}
-
-			throw error;
 		} finally {
 			processing = false;
 		}

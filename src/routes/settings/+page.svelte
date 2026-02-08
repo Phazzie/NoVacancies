@@ -14,11 +14,6 @@
 		return () => unsubscribe();
 	});
 
-	function updateUseMocks(value: boolean): void {
-		if (!settings) return;
-		gameStore.updateSettings({ useMocks: value });
-	}
-
 	function updateShowLessons(value: boolean): void {
 		if (!settings) return;
 		gameStore.updateSettings({ showLessons: value });
@@ -37,21 +32,7 @@
 {:else}
 	<section class="settings-section">
 		<h3>Story Mode</h3>
-		<div class="toggle-row">
-			<button
-				class="btn {settings.useMocks ? 'btn-primary' : 'btn-secondary'}"
-				on:click={() => updateUseMocks(true)}
-			>
-				Static Story
-			</button>
-			<button
-				class="btn {!settings.useMocks ? 'btn-primary' : 'btn-secondary'}"
-				on:click={() => updateUseMocks(false)}
-			>
-				AI Generated
-			</button>
-		</div>
-		<p class="hint">AI mode is routed through server-side providers with mock fallback safety.</p>
+		<p class="hint">AI Generated only. No mock fallback path is active.</p>
 	</section>
 
 	<section class="settings-section">

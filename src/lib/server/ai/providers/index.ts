@@ -1,5 +1,6 @@
 import type { GameState } from '$lib/contracts';
 import type { AiConfig } from '$lib/server/ai/config';
+import { AiProviderError } from '$lib/server/ai/provider.interface';
 import { GrokAiProvider } from '$lib/server/ai/providers/grok';
 import { mockAiProvider } from '$lib/server/ai/providers/mock';
 import type { AiProvider } from '$lib/server/ai/provider.interface';
@@ -21,16 +22,30 @@ export function selectTextProvider(
 	registry: ProviderRegistry,
 	gameState: Pick<GameState, 'useMocks'>
 ): AiProvider {
-	if (gameState.useMocks) return registry.mock;
-	if (config.provider === 'grok' && config.enableGrokText && config.xaiApiKey.length > 0) {
+	if (gameState.useMocks) {
+		throw new AiProviderError('Mock mode is disabled in Grok-only runtime', {
+			code: 'provider_down',
+			retryable: false,
+			status: 503
+		});
+	}
+	if (config.provider === 'grok' && config.enableGrokText) {
 		return registry.grok;
 	}
-	return registry.mock;
+	throw new AiProviderError('Grok text provider is not enabled', {
+		code: 'provider_down',
+		retryable: false,
+		status: 503
+	});
 }
 
 export function selectImageProvider(config: AiConfig, registry: ProviderRegistry): AiProvider {
-	if (config.provider === 'grok' && config.enableGrokImages && config.xaiApiKey.length > 0) {
+	if (config.provider === 'grok' && config.enableGrokImages) {
 		return registry.grok;
 	}
-	return registry.mock;
+	throw new AiProviderError('Grok image provider is not enabled (using static images)', {
+		code: 'provider_down',
+		retryable: false,
+		status: 503
+	});
 }

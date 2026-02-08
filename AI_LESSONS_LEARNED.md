@@ -88,3 +88,8 @@
 
 **Insight:** Building `NarrativeContext` but not injecting it into provider prompts silently degrades continuity while all schema checks still pass.
 **Lesson:** Enforce context-to-prompt wiring tests so continuity assets are always consumed by the active provider path.
+
+## 17. If Product Chooses "Burn the Boats," Enforce It in Code, Not Just Env
+
+**Insight:** Leaving mock fallback branches available while saying "Grok-only" creates split-brain runtime behavior and confusion during incidents.
+**Lesson:** When hard-fail is the product decision, disable mock runtime selection, block fallback outage modes, and make tests assert explicit provider errors instead of implicit fallback playability.
