@@ -30,6 +30,28 @@ const appGameStateStore = writable<AppGameState>(initialState);
 
 let runtime: GameRuntime | null = null;
 
+function mapUserFacingError(error: unknown): string {
+	const raw = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+	const normalized = raw.toLowerCase();
+
+	if (normalized.includes('xai_api_key') || normalized.includes('required in grok-only mode')) {
+		return 'AI is not configured yet. Add XAI_API_KEY to the server environment, then redeploy.';
+	}
+	if (normalized.includes('auth') || normalized.includes('unauthorized')) {
+		return 'AI authentication failed. Check the server API key configuration.';
+	}
+	if (normalized.includes('rate_limit') || normalized.includes('rate limit') || normalized.includes('429')) {
+		return 'AI is rate-limited right now. Wait a moment and try again.';
+	}
+	if (normalized.includes('timeout') || normalized.includes('timed out')) {
+		return 'AI timed out. Please try again.';
+	}
+	if (normalized.includes('provider_down') || normalized.includes('service unavailable')) {
+		return 'AI provider is unavailable right now. Please try again in a minute.';
+	}
+	return raw || 'Something went wrong while loading AI.';
+}
+
 function getRuntime(): GameRuntime {
 	if (runtime) return runtime;
 
@@ -81,13 +103,12 @@ export const gameStore = {
 		try {
 			const result = await engine.startGame({
 				useMocks: false,
-				apiKey: settings.apiKey,
 				featureFlags: settings.featureFlags
 			});
 			applyTurnResult(result);
 			return result;
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to start game';
+			const message = mapUserFacingError(error);
 			appGameStateStore.update((state) => ({ ...state, isProcessing: false, error: message }));
 			throw error;
 		}
@@ -101,7 +122,7 @@ export const gameStore = {
 			applyTurnResult(result);
 			return result;
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to process choice';
+			const message = mapUserFacingError(error);
 			appGameStateStore.update((state) => ({ ...state, isProcessing: false, error: message }));
 			throw error;
 		}

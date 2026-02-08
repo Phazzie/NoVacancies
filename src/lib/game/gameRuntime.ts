@@ -40,7 +40,6 @@ export interface GameTurnResult {
 
 export interface StartGameOptions {
 	useMocks?: boolean;
-	apiKey?: string;
 	featureFlags?: Partial<RuntimeFeatureFlags>;
 }
 
@@ -112,10 +111,6 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		if (patch.unlockedEndings) {
 			normalizedPatch.unlockedEndings = normalizeEndingList(patch.unlockedEndings);
 		}
-		if (typeof patch.apiKey === 'string') {
-			normalizedPatch.apiKey = patch.apiKey.trim();
-		}
-
 		settings = settingsStorage.saveSettings(normalizedPatch);
 		return cloneSettings(settings);
 	};
@@ -188,11 +183,10 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			...settings.featureFlags,
 			...startOptions.featureFlags
 		});
-		const apiKey = (startOptions.apiKey ?? settings.apiKey).trim();
 
 		gameState = createGameState({
 			featureFlags: effectiveFlags,
-			apiKey: apiKey || null,
+			apiKey: null,
 			useMocks: false,
 			now
 		});

@@ -18,11 +18,6 @@
 		if (!settings) return;
 		gameStore.updateSettings({ showLessons: value });
 	}
-
-	function updateApiKey(value: string): void {
-		if (!settings) return;
-		gameStore.updateSettings({ apiKey: value });
-	}
 </script>
 
 <h2>Settings</h2>
@@ -51,17 +46,5 @@
 				Off
 			</button>
 		</div>
-	</section>
-
-	<section class="settings-section">
-		<h3>API Key</h3>
-		<input
-			class="text-input"
-			type="password"
-			value={settings.apiKey}
-			on:change={(event) => updateApiKey((event.currentTarget as HTMLInputElement).value)}
-			placeholder="Enter AI key"
-		/>
-		<p class="hint">Stored in session storage only.</p>
 	</section>
 {/if}

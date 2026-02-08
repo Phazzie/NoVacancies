@@ -12,15 +12,6 @@ test.describe('Live Grok canary (opt-in)', () => {
     test('AI mode can generate opening and one continuation scene', async ({ page }) => {
         test.setTimeout(180000);
 
-        await page.goto('/settings');
-        await expect(page.getByRole('heading', { level: 2, name: 'Settings' })).toBeVisible({
-            timeout: 20000
-        });
-
-        const apiKeyInput = page.getByPlaceholder('Enter AI key');
-        await expect(apiKeyInput).toBeVisible();
-        await apiKeyInput.fill(LIVE_GROK_API_KEY);
-        await apiKeyInput.blur();
         await page.goto('/play');
         await expect(page.getByRole('heading', { level: 2, name: 'Play' })).toBeVisible({
             timeout: 20000

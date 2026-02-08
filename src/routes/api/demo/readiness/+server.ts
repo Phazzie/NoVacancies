@@ -1,9 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry } from '$lib/server/ai/providers';
-import { asRouteError } from '$lib/server/ai/routeHelpers';
 
 type CheckId =
+	| 'config_valid'
 	| 'provider_grok'
 	| 'text_enabled'
 	| 'api_key_present'
@@ -33,6 +33,24 @@ function summarize(payload: ReadinessPayload): string {
 	if (payload.status === 'ready') return 'Ready to demo Grok mode.';
 	if (!missing.length) return 'Almost ready. Run one full playthrough check.';
 	return `Blocked by: ${missing.join(', ')}.`;
+}
+
+function buildConfigFailurePayload(errorMessage: string): ReadinessPayload {
+	return {
+		score: 0,
+		status: 'blocked',
+		summary: 'Blocked by: AI runtime config is invalid.',
+		updatedAt: new Date().toISOString(),
+		checks: [
+			{
+				id: 'config_valid',
+				label: 'AI runtime config is valid',
+				ok: false,
+				details: errorMessage,
+				weight: 100
+			}
+		]
+	};
 }
 
 function buildPayload(): ReadinessPayload {
@@ -154,6 +172,7 @@ export const GET: RequestHandler = async (event) => {
 
 		return json(payload);
 	} catch (error) {
-		return asRouteError(event, error);
+		const errorMessage = error instanceof Error ? error.message : 'Failed to load AI runtime config';
+		return json(buildConfigFailurePayload(errorMessage));
 	}
 };

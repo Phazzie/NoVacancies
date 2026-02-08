@@ -64,7 +64,7 @@ npm run test:e2e
 Notes:
 - `npm test` runs Node suites for contracts, integration, and renderer-node compatibility checks.
 - `npm run test:e2e` runs Playwright against the SvelteKit app.
-- `tests/e2e/gemini-live.spec.js` is now a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
+- `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
 
 ## PWA
 

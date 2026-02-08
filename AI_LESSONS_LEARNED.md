@@ -98,3 +98,8 @@
 
 **Insight:** Teams lose time asking "are we demo-ready?" when readiness is spread across env vars, docs, and memory.
 **Lesson:** Expose a small readiness API + UI progress card with weighted checks so demo risk is visible at a glance.
+
+## 19. Remove Dead Credential UX Once Server-Side Secrets Are Required
+
+**Insight:** Keeping a browser API-key input after moving to server-only env auth creates false debugging paths and user confusion.
+**Lesson:** When provider auth is server-only, delete client key entry/persistence flows and replace them with explicit hard-fail guidance tied to environment setup.

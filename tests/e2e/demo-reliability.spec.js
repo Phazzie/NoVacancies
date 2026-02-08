@@ -49,6 +49,39 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		expect(['ready', 'almost', 'blocked']).toContain(body.status);
 		expect(Array.isArray(body.checks)).toBeTruthy();
 		expect(body.checks.length).toBeGreaterThan(0);
+
+		const checkIds = body.checks.map((check) => check.id);
+		const totalWeight = body.checks.reduce((sum, check) => sum + Number(check.weight || 0), 0);
+		expect(totalWeight).toBe(100);
+
+		if (checkIds.includes('config_valid')) {
+			const configCheck = body.checks.find((check) => check.id === 'config_valid');
+			expect(configCheck.ok).toBeFalsy();
+			expect(body.status).toBe('blocked');
+			return;
+		}
+
+		expect(checkIds).toEqual(
+			expect.arrayContaining([
+				'provider_grok',
+				'text_enabled',
+				'api_key_present',
+				'outage_hard_fail',
+				'auth_bypass_disabled',
+				'image_mode_static_default',
+				'provider_probe'
+			])
+		);
+
+		const apiKeyCheck = body.checks.find((check) => check.id === 'api_key_present');
+		expect(Boolean(apiKeyCheck)).toBeTruthy();
+		if (HAS_XAI_KEY) {
+			expect(apiKeyCheck.ok).toBeTruthy();
+			expect(['ready', 'almost']).toContain(body.status);
+		} else {
+			expect(apiKeyCheck.ok).toBeFalsy();
+			expect(body.status).toBe('blocked');
+		}
 	});
 
 	test('image endpoint enforces guardrails before provider call', async ({ request }) => {
@@ -77,7 +110,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 			expect(body.scene.choices.length).toBeGreaterThan(0);
 		} else {
 			expect(response.ok()).toBeFalsy();
-			expect(String(body.error || '')).toMatch(/xai_api_key|required|grok-only/i);
+			expect(String(body.error || '')).toMatch(/configured|xai_api_key|grok-only/i);
 		}
 	});
 
@@ -99,7 +132,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 			await expect(page.getByTestId('mode-pill')).toContainText(/AI Mode/i);
 			await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 20000 });
 		} else {
-			await expect(page.locator('.error-banner')).toContainText(/xai_api_key|required|grok-only/i);
+			await expect(page.locator('.error-banner')).toContainText(/configured|api key|grok/i);
 		}
 	});
 
