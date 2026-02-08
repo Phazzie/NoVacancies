@@ -137,3 +137,8 @@
 - opening/continue/recovery prompt builders must be used in generation flow
 - `NarrativeContext` must be built/passed at runtime
 - sanity checks must enforce voice constraints (not only JSON shape)
+
+## 26. No-Shortcut Type Hardening Prevents Quiet Prompt Regressions
+
+**Insight:** `@ts-nocheck` and broad cast workarounds in narrative modules hide integration drift until runtime.
+**Lesson:** Keep prompt/context modules strict-typed in `src` so function signatures, thread/context fields, and prompt wiring fail fast during `npm run check` instead of during live story generation.

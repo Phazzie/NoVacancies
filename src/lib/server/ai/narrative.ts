@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * No Vacancies - AI Prompts
  *
@@ -7,13 +6,24 @@
  */
 
 import { lessons } from '$lib/server/ai/lessons';
-import { EndingTypes, ImageKeys } from '$lib/contracts';
+import { EndingTypes, ImageKeys, type GameState, type NarrativeContext, type StoryThreads } from '$lib/contracts';
+
+type TransitionBridgeMap = Record<string, Record<string, string>>;
+type ThreadKey =
+	| 'oswaldoConflict'
+	| 'trinaTension'
+	| 'exhaustionLevel'
+	| 'sydneyRealization'
+	| 'oswaldoAwareness'
+	| 'moneyResolved';
+
+type TransitionBridge = { keys: string[]; lines: string[] } | null;
 
 export const NARRATIVE_CONTEXT_CHAR_BUDGET = 12000;
 const MAX_RECENT_SCENE_PROSE = 2;
 const MAX_OLDER_SCENE_SUMMARIES = 6;
 
-const OSWALDO_CONFLICT_TRANSLATIONS = Object.freeze({
+const OSWALDO_CONFLICT_TRANSLATIONS: Record<string, string> = Object.freeze({
     '-2': "He's weirdly helpful today, like he wants credit for doing the bare minimum without being asked.",
     '-1': "He's not fighting, but every answer has an attitude tucked inside it.",
     '0': "Oswaldo hasn't been challenged. The resentment is still underground.",
@@ -21,38 +31,38 @@ const OSWALDO_CONFLICT_TRANSLATIONS = Object.freeze({
     '2': "Things with Oswaldo are actively hostile. He's in full deflection mode."
 });
 
-const TRINA_TENSION_TRANSLATIONS = Object.freeze({
+const TRINA_TENSION_TRANSLATIONS: Record<string, string> = Object.freeze({
     '0': "Trina's just furniture. Annoying furniture, but furniture.",
     '1': 'The snack cake wrappers are piling up. The entitlement is starting to show.',
     '2': "Trina's taking and taking and does not even see it as taking.",
     '3': "Something has to happen with Trina. The math does not work anymore."
 });
 
-const MONEY_TRANSLATIONS = Object.freeze({
+const MONEY_TRANSLATIONS: Record<string, string> = Object.freeze({
     true: 'The room is paid. One less fire to put out.',
     false: 'Still eighteen short. The clock does not care.'
 });
 
-const CAR_TRANSLATIONS = Object.freeze({
+const CAR_TRANSLATIONS: Record<string, string> = Object.freeze({
     true: 'Once the car incident is named, the air changes. Nobody can pretend this is random bad luck.',
     false: 'Nobody says the car thing out loud, but it sits in the room anyway.'
 });
 
-const SYDNEY_REALIZATION_TRANSLATIONS = Object.freeze({
+const SYDNEY_REALIZATION_TRANSLATIONS: Record<string, string> = Object.freeze({
     '0': "She thinks Oswaldo cannot help. He's just not built for this.",
     '1': "She's starting to see it is not 'can't.' It's 'won't.'",
     '2': 'He helps other people. He rides five miles for other people. So why not her?',
     '3': 'He helps everyone except her. On purpose. That is not neglect. That is a choice.'
 });
 
-const OSWALDO_AWARENESS_TRANSLATIONS = Object.freeze({
+const OSWALDO_AWARENESS_TRANSLATIONS: Record<string, string> = Object.freeze({
     '0': 'He treats rent money like weather. It happens around him, not because of him.',
     '1': "He gets flashes that she's carrying this place, then slides back into convenience.",
     '2': 'He can name what she does now, but still acts like naming it is the same as helping.',
     '3': 'He finally sees her labor as labor, not mood, and changes behavior without being managed.'
 });
 
-const EXHAUSTION_TRANSLATIONS = Object.freeze({
+const EXHAUSTION_TRANSLATIONS: Record<string, string> = Object.freeze({
     '0': "She's awake, alert, and has not spent herself yet.",
     '1': "She is steady enough to run the board, but only because she's forcing it.",
     '2': 'Her fuse is shorter and her patience now costs interest.',
@@ -61,7 +71,7 @@ const EXHAUSTION_TRANSLATIONS = Object.freeze({
     '5': 'Her body clocks out before her responsibilities do. Survival mode takes over the room.'
 });
 
-export const BOUNDARY_TRANSLATIONS = Object.freeze({
+export const BOUNDARY_TRANSLATIONS: Record<string, string> = Object.freeze({
     'no guests without asking': 'She told him the room is not a lobby.',
     'no lending money to dex': 'The bank of Sydney is closed for Dex. Out loud, on record.',
     'no eating saved food': "She labeled her food. That sentence should not need to exist.",
@@ -70,7 +80,7 @@ export const BOUNDARY_TRANSLATIONS = Object.freeze({
     'no bringing krystal around': 'Krystal is now a hard no. No nostalgia loopholes.'
 });
 
-export const LESSON_HISTORY_TRANSLATIONS = Object.freeze({
+export const LESSON_HISTORY_TRANSLATIONS: Record<string, string> = Object.freeze({
     1: "She's already felt the weight of being the only one holding this place up.",
     2: 'She has already watched people miss the load right in front of them.',
     3: 'She has already tasted resentment from the same people she is carrying.',
@@ -90,7 +100,7 @@ export const LESSON_HISTORY_TRANSLATIONS = Object.freeze({
     17: 'She has already asked what she is to them if her presence changes nothing.'
 });
 
-export const TRANSITION_BRIDGE_MAP = Object.freeze({
+export const TRANSITION_BRIDGE_MAP: TransitionBridgeMap = Object.freeze({
     oswaldoConflict: {
         '0->2': "It goes from swallowed comments to open war after he calls her 'dramatic' while she's counting rent money.",
         '2->1': 'He backs off only after she stops negotiating and starts enforcing.'
@@ -116,7 +126,7 @@ export const TRANSITION_BRIDGE_MAP = Object.freeze({
 /**
  * Format lessons for the AI prompt
  */
-function formatLessonsForPrompt() {
+function formatLessonsForPrompt(): string {
     return lessons
         .map((l) => {
             const stakes = Array.isArray(l.emotionalStakes)
@@ -137,18 +147,18 @@ function formatLessonsForPrompt() {
         .join('\n\n');
 }
 
-function summarizeNarrativeArc(sceneCount) {
+function summarizeNarrativeArc(sceneCount: number): string {
     if (sceneCount <= 3) return 'opening pressure';
     if (sceneCount <= 7) return 'rising pressure';
     if (sceneCount <= 11) return 'consequence phase';
     return 'endgame pressure';
 }
 
-function normalizeBoundary(boundary) {
+function normalizeBoundary(boundary: string): string {
     return typeof boundary === 'string' ? boundary.trim().toLowerCase() : '';
 }
 
-export function translateBoundaries(boundaries = []) {
+export function translateBoundaries(boundaries: string[] = []): string[] {
     if (!Array.isArray(boundaries) || boundaries.length === 0) {
         return ['Anything goes means Sydney pays for everything, including everybody else\'s bad habits.'];
     }
@@ -162,7 +172,7 @@ export function translateBoundaries(boundaries = []) {
     });
 }
 
-export function translateLessonHistory(lessonsEncountered = []) {
+export function translateLessonHistory(lessonsEncountered: number[] = []): string[] {
     if (!Array.isArray(lessonsEncountered) || lessonsEncountered.length === 0) {
         return ['No lesson has clearly landed yet; keep discovery mode active.'];
     }
@@ -178,7 +188,7 @@ export function translateLessonHistory(lessonsEncountered = []) {
     });
 }
 
-export function translateThreadStateNarrative(threads) {
+export function translateThreadStateNarrative(threads: StoryThreads | null): string[] {
     if (!threads) {
         return ['Thread state unavailable; keep continuity conservative.'];
     }
@@ -208,7 +218,7 @@ export function translateThreadStateNarrative(threads) {
     ];
 }
 
-function compressSceneForSummary(sceneText = '') {
+function compressSceneForSummary(sceneText = ''): string {
     const oneLine = sceneText.replace(/\s+/g, ' ').trim();
     if (!oneLine) return '';
 
@@ -216,7 +226,7 @@ function compressSceneForSummary(sceneText = '') {
     return firstSentence.slice(0, 160);
 }
 
-function estimateContextChars(context) {
+function estimateContextChars(context: unknown): number {
     try {
         return JSON.stringify(context).length;
     } catch {
@@ -224,7 +234,7 @@ function estimateContextChars(context) {
     }
 }
 
-function applyContextBudget(context, maxChars) {
+function applyContextBudget(context: NarrativeContext, maxChars: number): NarrativeContext {
     const budgeted = {
         ...context,
         recentSceneProse: [...context.recentSceneProse],
@@ -266,7 +276,7 @@ function applyContextBudget(context, maxChars) {
  * @param {import('./contracts.js').StoryThreads} threads
  * @returns {string}
  */
-export function formatThreadState(threads) {
+export function formatThreadState(threads: StoryThreads | null | undefined): string {
     if (!threads) {
         return '(No thread data available)';
     }
@@ -316,7 +326,7 @@ ${boundaryRead}
  * @param {number} cadence
  * @returns {string}
  */
-function buildLongArcSummary(previousScenes, cadence = 4) {
+function buildLongArcSummary(previousScenes: string[], cadence = 4): string {
     if (!Array.isArray(previousScenes) || previousScenes.length < cadence) return '';
 
     const sampled = [];
@@ -344,15 +354,18 @@ function buildLongArcSummary(previousScenes, cadence = 4) {
  * @param {import('./contracts.js').StoryThreads|null|undefined} currentThreads
  * @returns {{keys: string[], lines: string[]}}
  */
-export function detectThreadTransitions(previousThreads, currentThreads) {
+export function detectThreadTransitions(
+	previousThreads: StoryThreads | null | undefined,
+	currentThreads: StoryThreads | null | undefined
+): { keys: string[]; lines: string[] } {
     if (!previousThreads || !currentThreads) {
         return { keys: [], lines: [] };
     }
 
-    const changedKeys = [];
-    const lines = [];
+    const changedKeys: string[] = [];
+    const lines: string[] = [];
 
-    const maybeAddTransition = (field, fromValue, toValue) => {
+    const maybeAddTransition = (field: ThreadKey, fromValue: number | boolean, toValue: number | boolean) => {
         if (fromValue === toValue) return;
         changedKeys.push(field);
         const map = TRANSITION_BRIDGE_MAP[field];
@@ -373,7 +386,7 @@ export function detectThreadTransitions(previousThreads, currentThreads) {
     return { keys: changedKeys, lines };
 }
 
-function resolveTransitionBridge(gameState) {
+function resolveTransitionBridge(gameState: GameState | null | undefined): TransitionBridge {
     const bridge = gameState?.pendingTransitionBridge;
     if (!bridge || !Array.isArray(bridge.lines) || bridge.lines.length === 0) {
         return null;
@@ -390,7 +403,10 @@ function resolveTransitionBridge(gameState) {
  * @param {{lastChoiceText?: string, maxChars?: number}} [options]
  * @returns {import('./contracts.js').NarrativeContext}
  */
-export function buildNarrativeContext(gameState, options = {}) {
+export function buildNarrativeContext(
+	gameState: GameState | null | undefined,
+	options: { lastChoiceText?: string; maxChars?: number } = {}
+): NarrativeContext {
     const {
         lastChoiceText = '',
         maxChars = NARRATIVE_CONTEXT_CHAR_BUDGET
@@ -433,7 +449,7 @@ export function buildNarrativeContext(gameState, options = {}) {
     return applyContextBudget(context, maxChars);
 }
 
-function formatNarrativeContextSection(context) {
+function formatNarrativeContextSection(context: NarrativeContext): string {
     const recentText = context.recentSceneProse.length > 0
         ? context.recentSceneProse
               .map((entry, idx) => {
@@ -701,7 +717,13 @@ Example when there are NO meaningful thread changes (omit field entirely):
  * @param {import('./contracts.js').StoryThreads} [threads] - Current story continuity threads
  * @returns {string}
  */
-export function getContinuePrompt(previousScenes, lastChoice, sceneCount, suggestedEnding = null, threads = null) {
+export function getContinuePrompt(
+	previousScenes: string[],
+	lastChoice: string,
+	sceneCount: number,
+	suggestedEnding: string | null = null,
+	threads: StoryThreads | null = null
+): string {
     const history =
         previousScenes.length > 5
             ? previousScenes.slice(-5).join('\n---\n')
@@ -765,7 +787,10 @@ Respond with valid JSON only.`;
  * @param {string|null} suggestedEnding
  * @returns {string}
  */
-export function getContinuePromptFromContext(narrativeContext, suggestedEnding = null) {
+export function getContinuePromptFromContext(
+	narrativeContext: NarrativeContext,
+	suggestedEnding: string | null = null
+): string {
     const contextSection = formatNarrativeContextSection(narrativeContext);
     let endingGuidance = '';
 
@@ -810,7 +835,7 @@ Respond with valid JSON only.`;
  * Template for the opening scene
  * @returns {string}
  */
-export function getOpeningPrompt() {
+export function getOpeningPrompt(): string {
     return `## OPENING SCENE
 
 Generate the opening scene of Sydney's story.
@@ -832,7 +857,7 @@ Respond with valid JSON only.`;
  * @param {string} invalidOutput - What the AI generated
  * @returns {string}
  */
-export function getRecoveryPrompt(invalidOutput) {
+export function getRecoveryPrompt(invalidOutput: string): string {
     return `Your previous response was not valid JSON. 
 
 Previous output:
@@ -860,14 +885,14 @@ If uncertain about lesson mapping, set lessonId to null.
 /**
  * Image keys that the AI can reference
  */
-export const VALID_IMAGE_KEYS = Object.values(ImageKeys);
+export const VALID_IMAGE_KEYS: string[] = Object.values(ImageKeys);
 
 /**
  * Validate and fix the AI's image key choice
  * @param {string} imageKey
  * @returns {string}
  */
-export function validateImageKey(imageKey) {
+export function validateImageKey(imageKey: string): string {
     if (VALID_IMAGE_KEYS.includes(imageKey)) {
         return imageKey;
     }
@@ -880,10 +905,10 @@ export function validateImageKey(imageKey) {
  * @param {Array<{choiceId: string}>} history
  * @returns {string}
  */
-export function suggestEndingFromHistory(history) {
+export function suggestEndingFromHistory(history: Array<{ choiceId: string }>): string {
     const choices = history.map((h) => h.choiceId.toLowerCase());
 
-    const tokenizeChoiceId = (id) => id.split(/[^a-z]+/).filter(Boolean);
+    const tokenizeChoiceId = (id: string) => id.split(/[^a-z]+/).filter(Boolean);
 
     // Weighted pattern evidence
     const exitPatterns = ['leave', 'exit', 'walk', 'door', 'out'];

@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Type Hardening (Narrative Runtime):** Removed `@ts-nocheck` from `src/lib/server/ai/narrative.ts` and `src/lib/server/ai/lessons.ts`, added strict function/shape typing, and removed the Grok prompt-call cast workaround so prompt wiring compiles under strict TS without escape hatches.
 - **Narrative Parity Activation:** Added `src/lib/server/ai/narrative.ts` + `src/lib/server/ai/lessons.ts` as active runtime copies of canonical prompt/context assets, and switched Grok text generation to use the full system/opening/continue/recovery prompt set (instead of the single-line system stub).
 - **Context + Transition Wiring:** Updated `src/lib/game/gameRuntime.ts` to build/pass `NarrativeContext` on each turn and to set `pendingTransitionBridge` from real thread deltas via `detectThreadTransitions`, preserving intended next-turn bridge behavior.
 - **Sanity Guard Upgrade:** Expanded `src/lib/server/ai/sanity.ts` with banned-phrase checks, therapy-speak detection, and dual word-budget thresholds (soft/hard, ending vs non-ending) plus retryable-vs-blocking issue classification.

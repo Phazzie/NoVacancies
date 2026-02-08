@@ -138,7 +138,7 @@ function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): 
 		entry.viaChoiceText ? `[Choice: ${entry.viaChoiceText}]\n${entry.sceneText}` : entry.sceneText
 	);
 
-	return (getContinuePrompt as (...args: any[]) => string)(
+	return getContinuePrompt(
 		previousScenes,
 		lastChoice?.choiceText || input.choiceId || '',
 		input.gameState.sceneCount,
