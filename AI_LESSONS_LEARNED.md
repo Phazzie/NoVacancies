@@ -93,3 +93,8 @@
 
 **Insight:** Leaving mock fallback branches available while saying "Grok-only" creates split-brain runtime behavior and confusion during incidents.
 **Lesson:** When hard-fail is the product decision, disable mock runtime selection, block fallback outage modes, and make tests assert explicit provider errors instead of implicit fallback playability.
+
+## 18. Demo Confidence Needs a Runtime Indicator, Not a Gut Feel
+
+**Insight:** Teams lose time asking "are we demo-ready?" when readiness is spread across env vars, docs, and memory.
+**Lesson:** Expose a small readiness API + UI progress card with weighted checks so demo risk is visible at a glance.

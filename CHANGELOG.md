@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Demo Readiness Indicator:** Added Home-page visual readiness dashboard with weighted progress bar and checklist, backed by `/api/demo/readiness` runtime checks.
 - **Grok-Only Runtime:** Disabled mock runtime fallback paths for story/image server routes; requests now fail fast when Grok is unavailable or misconfigured.
 - **Outage Policy:** Restricted `AI_OUTAGE_MODE` to `hard_fail` in runtime config and rejected `mock_fallback`/`AI_PROVIDER=mock` for active app flow.
 - **UX Lock-In:** Removed `Static Story` toggle from Svelte settings and pinned `/play` mode indicator to `AI Mode`.

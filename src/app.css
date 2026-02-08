@@ -65,6 +65,11 @@ header h1 {
 	flex-wrap: wrap;
 }
 
+.btn-sm {
+	padding: 6px 10px;
+	font-size: 0.85rem;
+}
+
 .btn {
 	appearance: none;
 	border-radius: 10px;
@@ -211,4 +216,120 @@ header h1 {
 	font-weight: 700;
 	margin: 0 0 8px;
 	text-transform: capitalize;
+}
+
+.readiness-card {
+	margin-top: 18px;
+	padding: 14px;
+	border: 1px solid #e6e8f1;
+	border-radius: 10px;
+	background: #fbfcff;
+}
+
+.readiness-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.readiness-head h3 {
+	margin: 0;
+}
+
+.readiness-progress-wrap {
+	margin-bottom: 8px;
+}
+
+.readiness-progress-label {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-weight: 600;
+	font-size: 0.9rem;
+	margin-bottom: 4px;
+}
+
+.readiness-status {
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	border: 1px solid transparent;
+}
+
+.readiness-ready {
+	background: #dcfce7;
+	color: #166534;
+	border-color: #86efac;
+}
+
+.readiness-almost {
+	background: #fef3c7;
+	color: #92400e;
+	border-color: #fcd34d;
+}
+
+.readiness-blocked {
+	background: #fee2e2;
+	color: #991b1b;
+	border-color: #fca5a5;
+}
+
+.readiness-progress-track {
+	height: 10px;
+	border-radius: 999px;
+	background: #e5e7eb;
+	overflow: hidden;
+}
+
+.readiness-progress-fill {
+	height: 100%;
+	transition: width 180ms ease-out;
+}
+
+.readiness-list {
+	margin: 10px 0 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 8px;
+}
+
+.readiness-list li {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 10px;
+	align-items: start;
+	padding: 8px;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	background: #fff;
+}
+
+.readiness-list li.ok {
+	border-color: #bbf7d0;
+}
+
+.readiness-list li.notok {
+	border-color: #fecaca;
+}
+
+.readiness-mark {
+	font-size: 0.75rem;
+	font-weight: 700;
+	padding: 2px 7px;
+	border-radius: 999px;
+	background: #f3f4f6;
+	color: #374151;
+}
+
+.readiness-item-title {
+	font-weight: 600;
+	font-size: 0.9rem;
+}
+
+.readiness-item-detail {
+	font-size: 0.82rem;
+	color: #4b5563;
 }

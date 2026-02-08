@@ -6,8 +6,12 @@ No Vacancies is an interactive narrative game about invisible labor and relation
 
 - Framework: SvelteKit (TypeScript)
 - Deployment target: Vercel
-- Story runtime: Mock story service (SvelteKit migration phase)
+- Story runtime: Grok-only text runtime with hard-fail outage policy
 - PWA assets: `static/manifest.json`, `static/service-worker.js`
+
+Demo readiness UX:
+- Home route (`/`) now includes a "Demo Readiness" progress dashboard backed by `/api/demo/readiness`.
+- Score/checks are runtime-derived (provider mode, key presence, outage mode, probe state) so you can quickly gauge demo readiness.
 
 ## Run
 

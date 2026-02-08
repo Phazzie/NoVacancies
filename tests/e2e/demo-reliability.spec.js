@@ -39,6 +39,18 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		expect([200, 403, 500]).toContain(response.status());
 	});
 
+	test('demo readiness endpoint returns score + checks payload', async ({ request }) => {
+		const response = await request.get('/api/demo/readiness');
+		expect(response.ok()).toBeTruthy();
+		const body = await response.json();
+		expect(typeof body.score).toBe('number');
+		expect(body.score).toBeGreaterThanOrEqual(0);
+		expect(body.score).toBeLessThanOrEqual(100);
+		expect(['ready', 'almost', 'blocked']).toContain(body.status);
+		expect(Array.isArray(body.checks)).toBeTruthy();
+		expect(body.checks.length).toBeGreaterThan(0);
+	});
+
 	test('image endpoint enforces guardrails before provider call', async ({ request }) => {
 		const blocked = await request.post('/api/image', {
 			data: {
@@ -73,6 +85,8 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await page.goto('/');
 		await expectPathname(page, '/');
 		await expect(page.getByRole('heading', { level: 2, name: 'Carry What Matters' })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 3, name: 'Demo Readiness' })).toBeVisible();
+		await expect(page.getByRole('progressbar')).toBeVisible();
 
 		await page.goto('/settings');
 		await expectPathname(page, '/settings');
