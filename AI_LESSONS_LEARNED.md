@@ -142,3 +142,8 @@
 
 **Insight:** `@ts-nocheck` and broad cast workarounds in narrative modules hide integration drift until runtime.
 **Lesson:** Keep prompt/context modules strict-typed in `src` so function signatures, thread/context fields, and prompt wiring fail fast during `npm run check` instead of during live story generation.
+
+## 27. Split Narrative CI Into Deterministic Gates and Subjective Scoring
+
+**Insight:** Narrative quality has both objective failure modes (broken prompt wiring, missing context fields, banned phrasing) and subjective quality signals (voice strength, emotional resonance, novelty).
+**Lesson:** Keep Tier 1 blocking checks deterministic and fixture-backed (`npm run test:narrative`), then layer subjective rubric scoring (Tier 2) as non-blocking CI artifacts so creative evaluation informs iteration without destabilizing release gates.

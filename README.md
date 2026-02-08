@@ -59,11 +59,13 @@ Core quality gate:
 ```bash
 npm run lint
 npm test
+npm run test:narrative
 npm run test:e2e
 ```
 
 Notes:
 - `npm test` enforces the active-runtime decommission guard (`src/**`, `js/**`, `tests/e2e/**`, and `package.json` must stay free of legacy provider markers).
+- `npm run test:narrative` runs deterministic Tier 1 narrative quality gates (prompt wiring, context coverage, continuity dimensions, sanity contract, and fixture-based adversarial checks).
 - `npm run test:e2e` runs Playwright against the SvelteKit app.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
 

@@ -4,6 +4,10 @@
 
 ### Changed
 
+- **Narrative CI Gate:** Added deterministic `test:narrative` Tier 1 quality suite with fixture-backed sanity assertions, canonical prompt/context wiring checks, continuity-dimension coverage, and regression guardrails.
+- **CI Workflow:** Added `.github/workflows/narrative-quality.yml` with blocking Tier 1 gate, optional Tier 2 Claude rubric evaluation artifact upload, and non-blocking live Grok canary job.
+- **Repo Hygiene:** Added `artifacts/` to `.gitignore` for generated narrative quality reports and retained local artifact output for CI/debug inspection.
+- **Collaboration Rule:** Updated `AGENTS.md` with explicit narrative decision policy: prefer AI-guided narrative judgment over brittle taste heuristics, while keeping code guards structural.
 - **Type Hardening (Narrative Runtime):** Removed `@ts-nocheck` from `src/lib/server/ai/narrative.ts` and `src/lib/server/ai/lessons.ts`, added strict function/shape typing, and removed the Grok prompt-call cast workaround so prompt wiring compiles under strict TS without escape hatches.
 - **Narrative Parity Activation:** Added `src/lib/server/ai/narrative.ts` + `src/lib/server/ai/lessons.ts` as active runtime copies of canonical prompt/context assets, and switched Grok text generation to use the full system/opening/continue/recovery prompt set (instead of the single-line system stub).
 - **Context + Transition Wiring:** Updated `src/lib/game/gameRuntime.ts` to build/pass `NarrativeContext` on each turn and to set `pendingTransitionBridge` from real thread deltas via `detectThreadTransitions`, preserving intended next-turn bridge behavior.

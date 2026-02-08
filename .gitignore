@@ -40,3 +40,4 @@ coverage/
 .playwright-browsers/
 test-results/
 test_output.txt
+artifacts/

@@ -1,0 +1,207 @@
+name: Narrative Quality CI
+
+on:
+  push:
+    branches: [main, feat/narrative-*]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gate:
+    name: Blocking Quality Gate (Tier 1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Legacy marker guard
+        run: npm test
+
+      - name: Narrative quality — Tier 1 blocking gates
+        run: npm run test:narrative
+
+      - name: Upload Tier 1 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: narrative-quality-tier1
+          path: artifacts/
+          retention-days: 30
+
+  narrative-eval:
+    name: Claude Narrative Evaluation (Tier 2)
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create artifacts directory
+        run: mkdir -p artifacts
+
+      - name: Evaluate golden fixtures
+        uses: anthropics/claude-code-action@v1
+        with:
+          prompt: |
+            ## What You're Reading
+
+            "No Vacancies" is an interactive fiction game about a woman named Sydney who holds everything together in a daily-rate motel room while everyone around her sleeps, eats her food, and calls her "dramatic" for asking where the rent money went.
+
+            Sydney is 44. She's a functional meth addict — the only functional one in the room. She wakes at 5 AM, runs scams on five phones with pop sockets, pays the $65/day room, manages Oswaldo's ego, manages Trina's entitlement, and nobody notices because competence is invisible. The game is written in second person present tense. The humor is dark and dry. The prose is punchy — short sentences for tension, longer ones when Sydney's brain is spiraling.
+
+            Oswaldo is her boyfriend. He will ride his bike five miles to bring a stranger a pack of smokes but "can't" walk five feet to hand Sydney her charger. He ate the last Hot Pocket she was saving. He let a girl named Krystal total Sydney's car three months ago. He has never once said "my bad."
+
+            Trina stayed "one night" a week ago. She drops snack cake wrappers like confetti and asks why there's nothing better to eat.
+
+            The voice ceiling sounds like this:
+            - "He will ride five miles for strangers and five inches for nobody in this room."
+            - "The bill got paid, but respect is still in collections."
+            - "You don't owe coordinates to someone who couldn't find the rent money with both hands and a map."
+
+            The game's thesis is invisible labor — the work that holds everything together gets no credit because it looks like stability, and stability looks like nothing is wrong.
+
+            ## Your Task
+
+            1. Read the golden scene fixtures from tests/narrative/fixtures/goldenScenes.json
+            2. For each fixture, evaluate fixture.scene against both rubrics below
+            3. Write results as JSON to artifacts/tier2-scores.json
+
+            ## Conventional Rubric (craft quality)
+
+            Score 1-5. A 3 is adequate. A 5 is exceptional. Don't grade on a curve.
+
+            1. **grammar** (10%): Is the text well-formed English?
+            2. **pacing** (10%): Is scene length 150-300 words? Not rushed, not padded? Does rhythm shift with tension?
+            3. **characterVoice** (15%): Does Sydney sound like Sydney — dry, exhausted, competent, resentful, darkly funny? Not generic literary fiction?
+            4. **emotionalResonance** (15%): Does the scene deliver what the mood tag promises? If it says "tense," do you feel the walls closing in?
+            5. **dialogue** (10%): When characters speak, does it reveal who they are? Oswaldo deflects. Trina demands passively. Sydney says little or nothing.
+            6. **plotCoherence** (20%): Does this scene follow logically from what came before? Would it make sense to a player who just chose something?
+            7. **descriptiveDetail** (10%): Is atmosphere built with one sharp sensory detail — the hum of the ice machine, stale menthol smoke, cold coffee — not purple prose?
+            8. **choiceQuality** (10%): Are offered choices distinct and forward-moving? Would a player pause before picking?
+
+            ## Unconventional Rubric (does it serve THIS game specifically?)
+
+            9. **emergence** (15%): Does the scene feel like it responded to the player's choice, or would it exist regardless of what they picked?
+            10. **loadBearingDynamics** (20%): Does the scene show Sydney doing invisible labor that others depend on without noticing? This is the thesis. Highest weight.
+            11. **agencyAuthenticity** (15%): Are the choices genuinely different paths — different costs, different currencies (money, dignity, relationship, safety, time) — or the same outcome reworded?
+            12. **narrativeDebt** (15%): Are earlier story promises being paid off? The $18 gap, the toilet handle, the car incident, the boundaries — do threads get acknowledged?
+            13. **subtextDensity** (15%): How much character work happens between the lines? "He ate the last Hot Pocket she was saving" says more about the relationship than any paragraph of explanation.
+            14. **constraintSatisfaction** (10%): Given 150-300 words, how much story is packed in? Density matters. Every sentence should carry weight.
+            15. **complexityGradient** (10%): Does moral and emotional complexity increase as the game progresses? Early scenes establish. Late scenes should complicate.
+
+            ## Output Format
+
+            Write artifacts/tier2-scores.json with this exact structure:
+            {
+              "evaluator": "claude",
+              "timestamp": "<ISO timestamp>",
+              "fixtures": [
+                {
+                  "id": "<fixture id>",
+                  "description": "<fixture description>",
+                  "scores": {
+                    "conventional": {
+                      "grammar": <1-5>,
+                      "pacing": <1-5>,
+                      "characterVoice": <1-5>,
+                      "emotionalResonance": <1-5>,
+                      "dialogue": <1-5>,
+                      "plotCoherence": <1-5>,
+                      "descriptiveDetail": <1-5>,
+                      "choiceQuality": <1-5>
+                    },
+                    "unconventional": {
+                      "emergence": <1-5>,
+                      "loadBearingDynamics": <1-5>,
+                      "agencyAuthenticity": <1-5>,
+                      "narrativeDebt": <1-5>,
+                      "subtextDensity": <1-5>,
+                      "constraintSatisfaction": <1-5>,
+                      "complexityGradient": <1-5>
+                    },
+                    "summary": {
+                      "conventionalAvg": <weighted average>,
+                      "unconventionalAvg": <weighted average>,
+                      "overallAvg": <average of both>,
+                      "totalCriteria": 15,
+                      "maxPossible": 75
+                    }
+                  }
+                }
+              ],
+              "baselineComparison": {
+                "baselineAvg": 3.5,
+                "currentAvg": <average of all fixture overallAvg>,
+                "delta": <currentAvg - 3.5>,
+                "regression": <true if currentAvg < 3.5>
+              }
+            }
+
+            Use weighted averages per category. overallAvg = mean of both category averages.
+            Evaluate each fixture independently. Score what you see, not what you hope is there.
+
+      - name: Upload Tier 2 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: narrative-quality-tier2
+          path: artifacts/tier2-scores.json
+          retention-days: 30
+
+  canary:
+    name: Live Provider Canary
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: quality-gate
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for API key
+        id: check-key
+        run: |
+          if [ -z "$XAI_API_KEY" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+
+      - name: Live provider canary
+        if: steps.check-key.outputs.available == 'true'
+        run: npx playwright test tests/e2e/grok-live.spec.js --reporter=list 2>&1 || true
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+
+      - name: Skip notice
+        if: steps.check-key.outputs.available == 'false'
+        run: echo "Skipping live canary — XAI_API_KEY not available"
