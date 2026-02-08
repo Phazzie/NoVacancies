@@ -9,7 +9,7 @@ These skills are designed to make scenes feel less generic, more emotionally sti
 
 Each skill can be integrated in one or both ways:
 - Prompt-level: Add rules/examples to `js/prompts.js`.
-- Runtime-level: Add state, checks, or repair logic in `js/services/geminiStoryService.js` and contracts/tests.
+- Runtime-level: Add state, checks, or repair logic in the active provider/runtime layer (`src/lib/server/ai/providers/grok.ts`, contracts, and tests).
 
 ## Original 12 Skills
 

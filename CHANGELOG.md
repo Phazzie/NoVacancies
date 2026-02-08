@@ -13,6 +13,7 @@
 - **Quality Gate Realignment:** Moved default `lint`/`test` scripts to active-runtime checks (`tests/e2e/**` lint + legacy-provider marker guard) and removed Gemini-era test/lint scripts from the default workflow.
 - **Legacy Gemini Runtime Removal:** Deleted `js/services/geminiStoryService.js`, retired Gemini-coupled legacy integration tests, and scrubbed remaining Gemini markers from legacy JS runtime comments/telemetry assumptions.
 - **Guard Expansion:** Extended decommission guard coverage to include `js/**` (in addition to `src/**`, `tests/e2e/**`, and `package.json`) so Gemini markers cannot silently return in code paths.
+- **Legacy Artifact Archival:** Moved root Gemini reference files (`GEMINI_TEST_SPEC.md`, `PROMPT_FOR_GEMINI.txt`) into `docs/archive/2026-02-08_gemini_legacy/`.
 - **Demo Readiness Indicator:** Added Home-page visual readiness dashboard with weighted progress bar and checklist, backed by `/api/demo/readiness` runtime checks.
 - **Readiness Edge Coverage:** Expanded e2e assertions for `/api/demo/readiness` to validate weighted check IDs, total score weighting, and blocked-vs-ready behavior when `XAI_API_KEY` is missing/present.
 - **Debug Error Surface:** Added `/debug` page with persisted runtime/API error log, manual test entry, and clear/reset actions for fast play-session triage.

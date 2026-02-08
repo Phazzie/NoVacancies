@@ -78,3 +78,4 @@ Notes:
 - Migration plan: `docs/SVELTEKIT_MIGRATION_PLAN.md`
 - Grok follow-up plan: `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md`
 - Narrative upgrade plan: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`
+- Gemini decommission plan: `docs/GEMINI_DECOMMISSION_EXECUTION_PLAN.md`
