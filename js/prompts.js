@@ -1,7 +1,7 @@
 /**
  * No Vacancies - AI Prompts
  *
- * System prompts and templates for Gemini story generation.
+ * System prompts and templates for AI story generation.
  * Contains all the context needed for consistent, thematic storytelling.
  */
 

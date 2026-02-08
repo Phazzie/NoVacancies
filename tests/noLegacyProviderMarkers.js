@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
-const PATHS_TO_SCAN = ['src', 'tests/e2e', 'package.json'];
+const PATHS_TO_SCAN = ['src', 'js', 'tests/e2e', 'package.json'];
 const FILE_EXTENSIONS = new Set(['.ts', '.js', '.svelte', '.json']);
 const BANNED_PATTERNS = [
 	{ name: 'gemini keyword', regex: /\bgemini\b/i },

@@ -2,7 +2,7 @@ import globals from 'globals';
 
 export default [
     {
-        files: ['tests/e2e/**/*.js', 'tests/noGeminiActivePaths.js'],
+        files: ['tests/e2e/**/*.js', 'tests/noLegacyProviderMarkers.js'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',

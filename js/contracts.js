@@ -46,7 +46,7 @@
  * @property {Array<{sceneId: string, sceneText: string, viaChoiceText?: string, isEnding?: boolean}>} sceneLog - Ordered scene prose log
  * @property {{keys: string[], lines: string[]} | null} pendingTransitionBridge - One-turn transition bridge payload
  * @property {{narrativeContextV2: boolean, transitionBridges: boolean}} featureFlags - Runtime feature flags
- * @property {string} [apiKey] - Gemini API key if using real AI
+ * @property {string} [apiKey] - API key if using real AI
  * @property {boolean} useMocks - Whether to use mock service
  * @property {number} sceneCount - Number of scenes visited
  * @property {number} startTime - Timestamp when game started

@@ -1140,7 +1140,7 @@ class MockStoryService {
     }
 
     /**
-     * Get a recovery scene for when Gemini fails mid-game and
+     * Get a recovery scene for when AI fails mid-game and
      * the current scene ID is incompatible with mock service.
      * Returns a non-ending scene that keeps the game going.
      * @returns {Promise<import('../contracts.js').Scene>}

@@ -123,3 +123,8 @@
 
 **Insight:** Keeping `npm test`/`npm run lint` pointed at legacy folders makes decommission work look incomplete forever and blocks objective progress.
 **Lesson:** Align default gates with the live runtime first, and keep legacy checks as explicitly named transitional scripts (`*:legacy`) until deletion is complete.
+
+## 24. Marker Guards Work Best When They Cover Every Runtime Code Root
+
+**Insight:** A marker guard limited to `src/**` can still miss old code roots (`js/**`) that remain in the repo and reintroduce banned provider assumptions.
+**Lesson:** Expand guard scope to every runtime code directory that still exists, then shrink scope only after those directories are fully deleted.

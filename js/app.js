@@ -46,7 +46,6 @@ const settings = {
     unlockedEndings: []
 };
 let storyService = mockStoryService;
-let geminiService = null;
 let isProcessing = false;
 let currentRecap = null;
 let pendingEndingPayload = null;
@@ -54,14 +53,14 @@ const SETTINGS_STORAGE_KEY = 'sydney-story-settings';
 const ENDINGS_STORAGE_KEY = 'sydney-story-endings';
 const FEATURE_FLAGS_STORAGE_KEY = 'sydney-story-feature-flags';
 const API_KEY_SESSION_KEY = 'sydney-story-api-key-session';
-const API_KEY_PATTERN = /^AIza[A-Za-z0-9_-]{20,120}$/;
+const API_KEY_PATTERN = /^(xai-)?[A-Za-z0-9_-]{20,160}$/;
 const FEATURE_FLAG_QUERY_KEYS = Object.freeze({
     narrativeContextV2: 'ffNarrativeContextV2',
     transitionBridges: 'ffTransitionBridges'
 });
 
 /**
- * Normalize and validate a Gemini API key.
+ * Normalize and validate an API key.
  * @param {string} value
  * @returns {string} normalized key or empty string if invalid
  */
@@ -246,20 +245,6 @@ function clearLoadingThresholdTimers(timerIds) {
 }
 
 /**
- * Load Gemini service dynamically
- */
-async function loadGeminiService() {
-    try {
-        const module = await import('./services/geminiStoryService.js');
-        geminiService = module.geminiStoryService;
-        return geminiService;
-    } catch (error) {
-        console.warn('[App] Could not load Gemini service:', error);
-        return null;
-    }
-}
-
-/**
  * Initialize the application
  */
 async function init() {
@@ -270,9 +255,6 @@ async function init() {
 
     // Load settings from localStorage
     loadSettings();
-
-    // Pre-load Gemini service
-    loadGeminiService();
 
     // Bind event listeners
     bindEvents();
@@ -480,22 +462,9 @@ async function startGame() {
         storyService = mockStoryService;
         console.log('[App] Using mock story service');
     } else {
-        // Try to use Gemini service
-        const gemini = await loadGeminiService();
-        if (gemini && settings.apiKey) {
-            if (gemini.setApiKey(settings.apiKey)) {
-                storyService = gemini;
-                console.log('[App] Using Gemini story service');
-            } else {
-                console.warn('[App] Invalid API key; falling back to mock mode');
-                storyService = mockStoryService;
-                gameState.useMocks = true;
-            }
-        } else {
-            console.warn('[App] No API key or Gemini unavailable, falling back to mocks');
-            storyService = mockStoryService;
-            gameState.useMocks = true;
-        }
+        console.warn('[App] Legacy runtime does not provide an AI adapter. Falling back to mock mode.');
+        storyService = mockStoryService;
+        gameState.useMocks = true;
     }
 
     // Get opening scene
@@ -622,14 +591,14 @@ async function handleChoice(choiceId, choiceText = '') {
     } catch (error) {
         console.error('[App] Failed to get next scene:', error);
 
-        // Auto-fallback to mock service if Gemini failed
+        // Auto-fallback to mock service if non-mock provider failed
         if (!gameState.useMocks && storyService !== mockStoryService) {
-            console.warn('[App] Gemini unavailable, continuing in mock recovery mode');
+            console.warn('[App] Provider unavailable, continuing in mock recovery mode');
             updateChoicesLoadingMessage('AI is unavailable. Switching to backup story mode...');
             emitAiTelemetry('fallback_trigger', {
-                fromService: 'gemini',
+                fromService: 'ai-provider',
                 toService: 'mock',
-                reason: error?.name || 'gemini_unavailable'
+                reason: error?.name || 'provider_unavailable'
             });
             storyService = mockStoryService;
             gameState.useMocks = true;
@@ -657,8 +626,8 @@ async function handleChoice(choiceId, choiceText = '') {
 }
 
 /**
- * Get a fallback scene from mock service when Gemini fails mid-game.
- * Handles incompatible scene IDs (Gemini IDs don't exist in mock graph).
+ * Get a fallback scene from mock service when AI fails mid-game.
+ * Handles incompatible scene IDs (external provider IDs don't exist in mock graph).
  * @param {string} choiceId
  * @returns {Promise<import('./contracts.js').Scene>}
  */
@@ -671,7 +640,7 @@ async function getFallbackScene(choiceId) {
         return mockStoryService.getNextScene(gameState.currentSceneId, choiceId, gameState);
     }
 
-    // Gemini scene ID not in mock graph — use recovery scene to keep playing
+    // External scene ID not in mock graph — use recovery scene to keep playing
     console.warn('[App] Scene ID incompatible with mock service, using recovery scene');
     return mockStoryService.getRecoveryScene();
 }

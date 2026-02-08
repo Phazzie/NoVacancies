@@ -7,7 +7,7 @@
  * @returns {{stage: string, timestamp: string, payload: Object}}
  */
 const REDACTED = '[REDACTED]';
-const API_KEY_PATTERN = /^AIza[A-Za-z0-9_-]{20,120}$/;
+const API_KEY_PATTERN = /^xai-[A-Za-z0-9_-]{10,200}$/;
 const SENSITIVE_KEY_PATTERN = /(api.?key|secret|token|authorization|password)/i;
 
 function sanitizeTelemetryPayload(value, parentKey = '') {
