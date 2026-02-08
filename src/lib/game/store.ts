@@ -4,6 +4,7 @@ import type { GameSettings, GameState, Scene } from '$lib/contracts';
 import type { GameTurnResult } from '$lib/game/gameRuntime';
 import { createGameRuntime, type GameRuntime } from '$lib/game/gameRuntime';
 import { resolveImagePath } from '$lib/game/imagePaths';
+import { appendDebugError } from '$lib/debug/errorLog';
 import { createApiStoryService, mockStoryService } from '$lib/services';
 
 export interface AppGameState {
@@ -109,6 +110,15 @@ export const gameStore = {
 			return result;
 		} catch (error) {
 			const message = mapUserFacingError(error);
+			appendDebugError({
+				scope: 'game.start',
+				message,
+				details: {
+					raw:
+						error instanceof Error ? error.message : String(error ?? 'Unknown start error'),
+					sceneCount: current.gameState?.sceneCount ?? 0
+				}
+			});
 			appGameStateStore.update((state) => ({ ...state, isProcessing: false, error: message }));
 			throw error;
 		}
@@ -123,6 +133,16 @@ export const gameStore = {
 			return result;
 		} catch (error) {
 			const message = mapUserFacingError(error);
+			appendDebugError({
+				scope: 'game.choice',
+				message,
+				details: {
+					raw:
+						error instanceof Error ? error.message : String(error ?? 'Unknown choice error'),
+					choiceId,
+					sceneCount: get(appGameStateStore).gameState?.sceneCount ?? 0
+				}
+			});
 			appGameStateStore.update((state) => ({ ...state, isProcessing: false, error: message }));
 			throw error;
 		}

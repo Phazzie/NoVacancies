@@ -21,6 +21,7 @@
 			<a href="/play" class:active={$page.url.pathname === '/play'}>Play</a>
 			<a href="/settings" class:active={$page.url.pathname === '/settings'}>Settings</a>
 			<a href="/ending" class:active={$page.url.pathname === '/ending'}>Ending</a>
+			<a href="/debug" class:active={$page.url.pathname === '/debug'}>Debug</a>
 		</nav>
 	</header>
 

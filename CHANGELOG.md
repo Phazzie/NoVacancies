@@ -6,6 +6,8 @@
 
 - **Demo Readiness Indicator:** Added Home-page visual readiness dashboard with weighted progress bar and checklist, backed by `/api/demo/readiness` runtime checks.
 - **Readiness Edge Coverage:** Expanded e2e assertions for `/api/demo/readiness` to validate weighted check IDs, total score weighting, and blocked-vs-ready behavior when `XAI_API_KEY` is missing/present.
+- **Debug Error Surface:** Added `/debug` page with persisted runtime/API error log, manual test entry, and clear/reset actions for fast play-session triage.
+- **Error Event Logging:** Wired client error logging for `startGame`, `choose`, network failures, and non-200 API responses with timestamped scope/details payloads.
 - **Grok-Only Runtime:** Disabled mock runtime fallback paths for story/image server routes; requests now fail fast when Grok is unavailable or misconfigured.
 - **Outage Policy:** Restricted `AI_OUTAGE_MODE` to `hard_fail` in runtime config and rejected `mock_fallback`/`AI_PROVIDER=mock` for active app flow.
 - **UX Lock-In:** Removed `Static Story` toggle from Svelte settings and pinned `/play` mode indicator to `AI Mode`.

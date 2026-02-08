@@ -134,6 +134,10 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		} else {
 			await expect(page.locator('.error-banner')).toContainText(/configured|api key|grok/i);
 		}
+
+		await page.goto('/debug');
+		await expectPathname(page, '/debug');
+		await expect(page.getByRole('heading', { level: 2, name: 'Debug' })).toBeVisible();
 	});
 
 	test('settings no longer exposes Static Story toggle', async ({ page }) => {
@@ -147,5 +151,14 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		if (HAS_XAI_KEY) {
 			await expect(page.getByTestId('mode-pill')).toContainText('AI Mode');
 		}
+	});
+
+	test('debug page supports manual test entry', async ({ page }) => {
+		await page.goto('/debug');
+		await expect(page.getByRole('heading', { level: 2, name: 'Debug' })).toBeVisible();
+		await page.getByRole('button', { name: 'Add Test Entry' }).click();
+		await expect(page.locator('.debug-log-item').first()).toBeVisible();
+		await page.getByRole('button', { name: 'Clear Log' }).click();
+		await expect(page.getByText(/No debug errors recorded yet/i)).toBeVisible();
 	});
 });

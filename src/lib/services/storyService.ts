@@ -1,4 +1,5 @@
 import type { GameState, NarrativeContext, Scene, StoryThreads } from '$lib/contracts';
+import { appendDebugError } from '$lib/debug/errorLog';
 
 export interface OpeningSceneRequest {
 	useMocks: boolean;
@@ -50,11 +51,24 @@ async function postJson<TResponse>(
 	url: string,
 	payload: Record<string, unknown>
 ): Promise<TResponse> {
-	const response = await fetchImpl(url, {
-		method: 'POST',
-		headers: { 'content-type': 'application/json' },
-		body: JSON.stringify(payload)
-	});
+	let response: Response;
+	try {
+		response = await fetchImpl(url, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(payload)
+		});
+	} catch (error) {
+		appendDebugError({
+			scope: 'api.network',
+			message: 'Network request failed',
+			details: {
+				url,
+				error: error instanceof Error ? error.message : String(error ?? 'Unknown network error')
+			}
+		});
+		throw error;
+	}
 
 	let body: unknown = null;
 	try {
@@ -68,6 +82,15 @@ async function postJson<TResponse>(
 			typeof (body as { error?: unknown } | null)?.error === 'string'
 				? ((body as { error: string }).error ?? 'request failed')
 				: `request failed (${response.status})`;
+		appendDebugError({
+			scope: 'api.http',
+			message,
+			details: {
+				url,
+				status: response.status,
+				statusText: response.statusText
+			}
+		});
 		throw new Error(message);
 	}
 
