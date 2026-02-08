@@ -9,6 +9,8 @@
 - **Debug UX Resilience:** `/debug` manual test entries now stay visible even when localStorage writes fail (quota/privacy mode), instead of silently no-oping.
 - **Service Worker Cleanup:** Removed legacy root `service-worker.js` and stripped stale Gemini endpoint exception from `static/service-worker.js`.
 - **Gemini Verification Reconciliation:** Added `docs/GEMINI_VERIFICATION_RECONCILIATION_2026-02-08.md` to classify each reported issue as active vs legacy and tie findings to decommission steps.
+- **Gemini Decommission Plan:** Added `docs/GEMINI_DECOMMISSION_EXECUTION_PLAN.md` with file-level work breakdown, critique loop output (haters + Wu-Bob), and phased execution order.
+- **Quality Gate Realignment:** Moved default `lint`/`test` scripts to active-runtime checks (`tests/**` lint + Gemini-free runtime guard), and preserved old vanilla/Gemini suites behind `test:legacy` and `lint:legacy`.
 - **Demo Readiness Indicator:** Added Home-page visual readiness dashboard with weighted progress bar and checklist, backed by `/api/demo/readiness` runtime checks.
 - **Readiness Edge Coverage:** Expanded e2e assertions for `/api/demo/readiness` to validate weighted check IDs, total score weighting, and blocked-vs-ready behavior when `XAI_API_KEY` is missing/present.
 - **Debug Error Surface:** Added `/debug` page with persisted runtime/API error log, manual test entry, and clear/reset actions for fast play-session triage.

@@ -118,3 +118,8 @@
 
 **Insight:** Local debug tooling that depends only on localStorage can appear broken in privacy/quota-constrained contexts.
 **Lesson:** Keep an in-memory fallback path so manual debug actions still produce visible feedback even when persistence is unavailable.
+
+## 23. Test Gates Must Follow the Active Runtime, Not Legacy Convenience
+
+**Insight:** Keeping `npm test`/`npm run lint` pointed at legacy folders makes decommission work look incomplete forever and blocks objective progress.
+**Lesson:** Align default gates with the live runtime first, and keep legacy checks as explicitly named transitional scripts (`*:legacy`) until deletion is complete.

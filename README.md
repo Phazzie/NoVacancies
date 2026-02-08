@@ -63,7 +63,8 @@ npm run test:e2e
 ```
 
 Notes:
-- `npm test` runs Node suites for contracts, integration, and renderer-node compatibility checks.
+- `npm test` enforces the active-runtime decommission guard (`src/**`, `tests/e2e/**`, and `package.json` must stay Gemini-clean).
+- Legacy vanilla-runtime suites remain available under `npm run test:legacy` during transition cleanup only.
 - `npm run test:e2e` runs Playwright against the SvelteKit app.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
 
