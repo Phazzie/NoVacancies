@@ -20,6 +20,7 @@
 - **Runtime Pinning:** Added Node.js engine requirement `22.x` in `package.json` for deploy/runtime consistency.
 - **Vercel Hygiene:** Added `.vercel/` to `.gitignore` to avoid committing local deployment artifacts.
 - **E2E Reliability:** Removed legacy static-server branch from Playwright config, pinned e2e runtime defaults to safe mock mode, updated route-shell heading expectation, and migrated opt-in live canary flow to Grok/SvelteKit selectors.
+- **Pregenerated Image Rotation:** Updated `/play` image rendering to use deterministic randomized selection from `static/images`, so each scene resolves to a stable pre-generated art frame without requiring live image generation.
 
 ## [Unreleased] - 2026-02-05
 
