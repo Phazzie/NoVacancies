@@ -3,6 +3,7 @@
 	import { appendDebugError, clearDebugErrors, readDebugErrors, type DebugErrorEntry } from '$lib/debug/errorLog';
 
 	let entries: DebugErrorEntry[] = [];
+	let hydrated = false;
 
 	function refresh(): void {
 		entries = readDebugErrors();
@@ -14,11 +15,25 @@
 	}
 
 	function addTestEntry(): void {
-		const entry = appendDebugError({
-			scope: 'debug.manual',
-			message: 'Manual test entry',
-			details: { source: 'debug-page' }
-		});
+		let entry: DebugErrorEntry;
+		try {
+			entry = appendDebugError({
+				scope: 'debug.manual',
+				message: 'Manual test entry',
+				details: { source: 'debug-page' }
+			});
+		} catch (error) {
+			entry = {
+				id: `dbg_manual_${Date.now()}`,
+				timestamp: new Date().toISOString(),
+				scope: 'debug.manual',
+				message: 'Manual test entry',
+				details: {
+					source: 'debug-page',
+					appendError: error instanceof Error ? error.message : String(error)
+				}
+			};
+		}
 		refresh();
 
 		// If storage writes are unavailable (quota/privacy mode), keep the entry visible for this session.
@@ -28,12 +43,14 @@
 	}
 
 	onMount(() => {
+		hydrated = true;
 		refresh();
 	});
 </script>
 
 <h2>Debug</h2>
 <p class="hint">Runtime error log for play/session troubleshooting.</p>
+<p class="hint" data-testid="debug-ready" aria-live="polite">{hydrated ? 'ready' : 'pending'}</p>
 
 <div class="debug-actions">
 	<button class="btn btn-secondary btn-sm" on:click={refresh}>Refresh</button>

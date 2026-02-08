@@ -161,6 +161,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('debug page supports manual test entry', async ({ page }) => {
 		await page.goto('/debug');
 		await expect(page.getByRole('heading', { level: 2, name: 'Debug' })).toBeVisible();
+		await expect(page.getByTestId('debug-ready')).toHaveText('ready');
 		await page.getByRole('button', { name: 'Add Test Entry' }).click();
 		await expect(page.locator('.debug-log-item').first()).toBeVisible();
 		await page.getByRole('button', { name: 'Clear Log' }).click();

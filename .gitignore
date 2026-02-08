@@ -38,6 +38,7 @@ coverage/
 
 # Playwright local browser/cache artifacts
 .playwright-browsers/
+.playwright-browsers-win/
 test-results/
 test_output.txt
 artifacts/

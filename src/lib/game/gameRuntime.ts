@@ -12,7 +12,7 @@ import {
 	type RuntimeFeatureFlags,
 	type Scene
 } from '$lib/contracts';
-import { buildNarrativeContext, detectThreadTransitions } from '$lib/server/ai/narrative';
+import { buildNarrativeContext, detectThreadTransitions } from '$lib/game/narrativeContext';
 import {
 	createSettingsStorage,
 	type SettingsStorage,

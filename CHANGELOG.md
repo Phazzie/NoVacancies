@@ -4,6 +4,8 @@
 
 ### Changed
 
+- **Browser-Safe Narrative Context:** Moved runtime context/transition helpers into `src/lib/game/narrativeContext.ts` and switched `gameRuntime` imports away from `$lib/server/*` to fix SvelteKit client/server boundary violations during `/play` and route-shell rendering.
+- **Debug E2E Hydration Gate:** Added a debug-page hydration readiness marker and updated e2e sequencing so manual test-entry assertions only fire after client hydration, removing SSR-click race flakes.
 - **Narrative CI Gate:** Added deterministic `test:narrative` Tier 1 quality suite with fixture-backed sanity assertions, canonical prompt/context wiring checks, continuity-dimension coverage, and regression guardrails.
 - **CI Workflow:** Added `.github/workflows/narrative-quality.yml` with blocking Tier 1 gate, optional Tier 2 Claude rubric evaluation artifact upload, and non-blocking live Grok canary job.
 - **Repo Hygiene:** Added `artifacts/` to `.gitignore` for generated narrative quality reports and retained local artifact output for CI/debug inspection.

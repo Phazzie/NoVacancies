@@ -173,28 +173,33 @@ function testContextBuilderContract() {
 	suite('Context Builder Contract');
 
 	const narrativeSource = readSource('src/lib/server/ai/narrative.ts');
+	const contextSource = readSource('src/lib/game/narrativeContext.ts');
 	const runtimeSource = readSource('src/lib/game/gameRuntime.ts');
 
 	// buildNarrativeContext exists and is exported
-	assert(/export\s+function\s+buildNarrativeContext/.test(narrativeSource),
-		'buildNarrativeContext exported from narrative.ts');
+	assert(/export\s+function\s+buildNarrativeContext/.test(contextSource),
+		'buildNarrativeContext exported from narrativeContext.ts');
+	assert(/export\s+function\s+getContinuePromptFromContext/.test(narrativeSource),
+		'continue prompt builder exported from narrative.ts');
 
 	// Runtime calls it
 	assert(/buildNarrativeContext\(/.test(runtimeSource),
 		'gameRuntime.ts calls buildNarrativeContext');
+	assert(/from\s+['"]\$lib\/game\/narrativeContext['"]/.test(runtimeSource),
+		'gameRuntime.ts imports build helpers from browser-safe module');
 
 	// Context builder references required blocks
-	assert(narrativeSource.includes('threadNarrativeLines'), 'Context includes thread narrative lines');
-	assert(narrativeSource.includes('boundaryNarrativeLines'), 'Context includes boundary narrative lines');
-	assert(narrativeSource.includes('lessonHistoryLines'), 'Context includes lesson history lines');
-	assert(narrativeSource.includes('recentSceneProse'), 'Context includes recent scene prose');
-	assert(narrativeSource.includes('olderSceneSummaries'), 'Context includes older scene summaries');
-	assert(narrativeSource.includes('transitionBridge'), 'Context includes transition bridge');
+	assert(contextSource.includes('threadNarrativeLines'), 'Context includes thread narrative lines');
+	assert(contextSource.includes('boundaryNarrativeLines'), 'Context includes boundary narrative lines');
+	assert(contextSource.includes('lessonHistoryLines'), 'Context includes lesson history lines');
+	assert(contextSource.includes('recentSceneProse'), 'Context includes recent scene prose');
+	assert(contextSource.includes('olderSceneSummaries'), 'Context includes older scene summaries');
+	assert(contextSource.includes('transitionBridge'), 'Context includes transition bridge');
 
 	// Budget enforcement
-	assert(/NARRATIVE_CONTEXT_CHAR_BUDGET/.test(narrativeSource),
+	assert(/NARRATIVE_CONTEXT_CHAR_BUDGET/.test(contextSource),
 		'Character budget constant defined');
-	assert(/applyContextBudget/.test(narrativeSource),
+	assert(/applyContextBudget/.test(contextSource),
 		'Context budget enforcement function present');
 }
 
@@ -206,6 +211,7 @@ function testContinuityDimensions() {
 	suite('Continuity Dimensions');
 
 	const narrativeSource = readSource('src/lib/server/ai/narrative.ts');
+	const contextSource = readSource('src/lib/game/narrativeContext.ts');
 	const contractsSource = readSource('src/lib/contracts/game.ts');
 
 	// All 8 thread dimensions in StoryThreads type
@@ -229,22 +235,22 @@ function testContinuityDimensions() {
 		'EXHAUSTION_TRANSLATIONS'
 	];
 	for (const map of translationMaps) {
-		assert(narrativeSource.includes(map),
-			`Translation map '${map}' present in narrative.ts`);
+		assert(contextSource.includes(map),
+			`Translation map '${map}' present in narrativeContext.ts`);
 	}
 
 	// Boundary translations
-	assert(narrativeSource.includes('BOUNDARY_TRANSLATIONS'),
+	assert(contextSource.includes('BOUNDARY_TRANSLATIONS'),
 		'BOUNDARY_TRANSLATIONS map present');
 
 	// Lesson history translations
-	assert(narrativeSource.includes('LESSON_HISTORY_TRANSLATIONS'),
+	assert(contextSource.includes('LESSON_HISTORY_TRANSLATIONS'),
 		'LESSON_HISTORY_TRANSLATIONS map present');
 
 	// Translation map completeness: spot-check key ranges
 	// Oswaldo conflict: -2 to +2 (5 keys)
 	for (let i = -2; i <= 2; i++) {
-		assert(narrativeSource.includes(`'${i}':`),
+		assert(contextSource.includes(`'${i}':`),
 			`OSWALDO_CONFLICT has key '${i}'`);
 	}
 
@@ -252,13 +258,13 @@ function testContinuityDimensions() {
 	for (let i = 0; i <= 5; i++) {
 		const pattern = new RegExp(`['"]${i}['"]\\s*:`);
 		// This is a loose check — exhaustion translations have keys 0-5
-		assert(pattern.test(narrativeSource),
+		assert(pattern.test(contextSource),
 			`Exhaustion translation has key '${i}'`);
 	}
 
 	// Lesson history: 1-17
 	for (let i = 1; i <= 17; i++) {
-		assert(new RegExp(`\\b${i}:\\s*['"$]`).test(narrativeSource),
+		assert(new RegExp(`\\b${i}:\\s*['"$]`).test(contextSource),
 			`LESSON_HISTORY_TRANSLATIONS has key ${i}`);
 	}
 }
@@ -270,16 +276,16 @@ function testContinuityDimensions() {
 function testTransitionBridgeLogic() {
 	suite('Transition Bridge Logic');
 
-	const narrativeSource = readSource('src/lib/server/ai/narrative.ts');
+	const contextSource = readSource('src/lib/game/narrativeContext.ts');
 	const runtimeSource = readSource('src/lib/game/gameRuntime.ts');
 
 	// Transition bridge map exists
-	assert(narrativeSource.includes('TRANSITION_BRIDGE_MAP'),
-		'TRANSITION_BRIDGE_MAP present in narrative.ts');
+	assert(contextSource.includes('TRANSITION_BRIDGE_MAP'),
+		'TRANSITION_BRIDGE_MAP present in narrativeContext.ts');
 
 	// detectThreadTransitions exported
-	assert(/export\s+function\s+detectThreadTransitions/.test(narrativeSource),
-		'detectThreadTransitions exported from narrative.ts');
+	assert(/export\s+function\s+detectThreadTransitions/.test(contextSource),
+		'detectThreadTransitions exported from narrativeContext.ts');
 
 	// Runtime uses it
 	assert(/detectThreadTransitions\(/.test(runtimeSource),
@@ -293,7 +299,7 @@ function testTransitionBridgeLogic() {
 	const bridgedFields = ['oswaldoConflict', 'trinaTension', 'exhaustionLevel',
 		'sydneyRealization', 'oswaldoAwareness', 'moneyResolved'];
 	for (const field of bridgedFields) {
-		assert(narrativeSource.includes(`${field}:`),
+		assert(contextSource.includes(`${field}:`),
 			`TRANSITION_BRIDGE_MAP covers '${field}'`);
 	}
 
@@ -377,6 +383,7 @@ function testSecurityHygiene() {
 	suite('Security Hygiene');
 
 	const narrativeSource = readSource('src/lib/server/ai/narrative.ts');
+	const contextSource = readSource('src/lib/game/narrativeContext.ts');
 	const grokSource = readSource('src/lib/server/ai/providers/grok.ts');
 
 	// No hardcoded API keys
@@ -386,6 +393,8 @@ function testSecurityHygiene() {
 		'No Google API key patterns in grok.ts');
 	assert(!/xai-[A-Za-z0-9]{20,}/.test(grokSource),
 		'No xAI API key patterns in grok.ts');
+	assert(!/xai-[A-Za-z0-9]{20,}/.test(contextSource),
+		'No xAI API key patterns in narrativeContext.ts');
 
 	// No secrets in fixture files
 	const goldenSource = readSource('tests/narrative/fixtures/goldenScenes.json');
@@ -396,6 +405,8 @@ function testSecurityHygiene() {
 	// No localhost/internal URLs leaked in prompts
 	assert(!/localhost:\d+/.test(narrativeSource),
 		'No localhost URLs in narrative.ts');
+	assert(!/localhost:\d+/.test(contextSource),
+		'No localhost URLs in narrativeContext.ts');
 }
 
 // ---------------------------------------------------------------------------
@@ -429,8 +440,8 @@ function testRegressionGuard() {
 	// Runtime imports from narrative.ts (not hardcoded prompts)
 	assert(/from\s+['"]\$lib\/server\/ai\/narrative['"]/.test(grokSource),
 		'grok.ts imports from canonical narrative module');
-	assert(/from\s+['"]\$lib\/server\/ai\/narrative['"]/.test(runtimeSource),
-		'gameRuntime.ts imports from canonical narrative module');
+	assert(/from\s+['"]\$lib\/game\/narrativeContext['"]/.test(runtimeSource),
+		'gameRuntime.ts imports from browser-safe narrativeContext module');
 }
 
 // ---------------------------------------------------------------------------

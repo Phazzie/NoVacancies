@@ -147,3 +147,13 @@
 
 **Insight:** Narrative quality has both objective failure modes (broken prompt wiring, missing context fields, banned phrasing) and subjective quality signals (voice strength, emotional resonance, novelty).
 **Lesson:** Keep Tier 1 blocking checks deterministic and fixture-backed (`npm run test:narrative`), then layer subjective rubric scoring (Tier 2) as non-blocking CI artifacts so creative evaluation informs iteration without destabilizing release gates.
+
+## 28. Never Import `$lib/server/*` From Client Runtime Modules
+
+**Insight:** `gameRuntime` is consumed by browser routes; importing server-only modules into that path can pass static checks but fail at runtime/hydration with SvelteKit boundary errors.
+**Lesson:** Keep context/transition helpers in browser-safe shared modules (`$lib/game/*` or `$lib/shared/*`) and reserve `$lib/server/*` for provider/routes-only code.
+
+## 29. Gate UI Click Assertions Behind Hydration Readiness
+
+**Insight:** SSR route markup can appear before client handlers bind, causing false-negative e2e failures when tests click immediately after heading visibility.
+**Lesson:** Expose a tiny hydration-ready marker for interactive debug/admin surfaces and make e2e wait for it before click/assert sequences.
