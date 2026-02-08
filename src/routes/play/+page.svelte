@@ -48,7 +48,7 @@
 	}
 
 	function imagePath(): string {
-		return gameStore.getImagePath(scene?.imageKey);
+		return gameStore.getImagePath(scene?.imageKey, scene?.sceneId);
 	}
 </script>
 

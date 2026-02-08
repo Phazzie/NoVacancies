@@ -117,7 +117,7 @@ export const gameStore = {
 	clearError(): void {
 		appGameStateStore.update((state) => ({ ...state, error: '' }));
 	},
-	getImagePath(imageKey: string | null | undefined): string {
-		return resolveImagePath(imageKey);
+	getImagePath(imageKey: string | null | undefined, sceneId?: string | null): string {
+		return resolveImagePath(imageKey, sceneId);
 	}
 };
