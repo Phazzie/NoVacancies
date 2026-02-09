@@ -27,14 +27,14 @@ export const OSWALDO_CONFLICT_TRANSLATIONS: Record<string, string> = Object.free
 
 export const TRINA_TENSION_TRANSLATIONS: Record<string, string> = Object.freeze({
 	'0': "Trina's just furniture. Annoying furniture, but furniture.",
-	'1': 'The snack cake wrappers are piling up. The entitlement is starting to show.',
-	'2': "Trina's taking and taking and does not even see it as taking.",
-	'3': "Something has to happen with Trina. The math does not work anymore."
+	'1': 'The snack cake wrappers are piling up. The entitlement is starting to show. She wakes up every hour on the hour to eat a snack cake and throws the wrapper on the floor.',
+	'2': "Trina's taking and taking and doesn't even see it as taking. She catfishes a guy on Facebook Dating for forty dollars, buys smokes, orders DoorDash for herself, and calls that survival.",
+	'3': "Something has to happen with Trina. The math doesn't work anymore. Sydney gives her the referral link and fronts her ten bucks to get started. Trina hits six hundred at the casino, vanishes without a thank-you, then comes back broke two days later."
 });
 
 export const MONEY_TRANSLATIONS: Record<string, string> = Object.freeze({
 	true: 'The room is paid. One less fire to put out.',
-	false: 'Still eighteen short. The clock does not care.'
+	false: 'The eighteen-dollar gap is still open, and the clock keeps moving like it gets paid to panic her.'
 });
 
 export const CAR_TRANSLATIONS: Record<string, string> = Object.freeze({
@@ -43,17 +43,17 @@ export const CAR_TRANSLATIONS: Record<string, string> = Object.freeze({
 });
 
 export const SYDNEY_REALIZATION_TRANSLATIONS: Record<string, string> = Object.freeze({
-	'0': "She thinks Oswaldo cannot help. He's just not built for this.",
-	'1': "She's starting to see it is not 'can't.' It's 'won't.'",
-	'2': 'He helps other people. He rides five miles for other people. So why not her?',
-	'3': 'He helps everyone except her. On purpose. That is not neglect. That is a choice.'
+	'0': "She thinks Oswaldo can't help. He's just not built for this.",
+	'1': "She's starting to see it's not 'can't.' It's 'won't.'",
+	'2': 'He helps other people. He rides his bike five miles for other people. So why not her?',
+	'3': "He helps everyone except her. On purpose. That's not neglect. That's a choice."
 });
 
 export const OSWALDO_AWARENESS_TRANSLATIONS: Record<string, string> = Object.freeze({
 	'0': 'He treats rent money like weather. It happens around him, not because of him.',
 	'1': "He gets flashes that she's carrying this place, then slides back into convenience.",
-	'2': 'He can name what she does now, but still acts like naming it is the same as helping.',
-	'3': 'He finally sees her labor as labor, not mood, and changes behavior without being managed.'
+	'2': 'He can name what she does now, but he still acts like naming it is the same as helping.',
+	'3': 'He finally sees her labor as labor, not mood, and he changes behavior without being managed.'
 });
 
 export const EXHAUSTION_TRANSLATIONS: Record<string, string> = Object.freeze({
@@ -62,7 +62,7 @@ export const EXHAUSTION_TRANSLATIONS: Record<string, string> = Object.freeze({
 	'2': 'Her fuse is shorter and her patience now costs interest.',
 	'3': 'Small disrespect lands big. She can still perform, but the seams are visible.',
 	'4': 'Sydney is running on fumes. Every interaction costs more than it should.',
-	'5': 'Her body clocks out before her responsibilities do. Survival mode takes over the room.'
+	'5': 'Her body clocks out before her responsibilities do. Survival mode takes over the whole room.'
 });
 
 export const BOUNDARY_TRANSLATIONS: Record<string, string> = Object.freeze({
@@ -100,20 +100,20 @@ export const TRANSITION_BRIDGE_MAP: TransitionBridgeMap = Object.freeze({
 		'2->1': 'He backs off only after she stops negotiating and starts enforcing.'
 	},
 	trinaTension: {
-		'1->3': 'Wrappers on the floor turns into open disrespect, and the room finally says the quiet part out loud.'
+		'1->3': 'Wrappers on the floor turns into open disrespect when Sydney gives her the referral link, Trina scores six hundred, disappears, then reappears broke and entitled.'
 	},
 	exhaustionLevel: {
 		'2->4': "One missed hour of sleep and three fresh asks push her from tired to done pretending she's fine.",
-		'4->3': 'A paid room and one uninterrupted hour lower the heat, but not the history.'
+		'4->3': 'A paid room and one uninterrupted hour lowers the heat, but not the history.'
 	},
 	sydneyRealization: {
 		'1->3': 'The pattern gets too clean to deny: he can show up for everybody else, just not for her.'
 	},
 	oswaldoAwareness: {
-		'0->2': 'He overhears the hustle, the rent math, and the cleanup, and loses the excuse that he did not know.'
+		'0->2': 'He overhears the referral hustle, the rent math, the cleanup, and finally has no excuse to claim he didn't know.'
 	},
 	moneyResolved: {
-		'false->true': 'She patches it with one ugly move, buys one day of air, and everyone mistakes that for stability.'
+		'false->true': 'She patches it with one ugly move, buys one day of air, and everyone else mistakes that for stability.'
 	}
 });
 
@@ -130,7 +130,7 @@ function normalizeBoundary(boundary: string): string {
 
 export function translateBoundaries(boundaries: string[] = []): string[] {
 	if (!Array.isArray(boundaries) || boundaries.length === 0) {
-		return ["Anything goes means Sydney pays for everything, including everybody else's bad habits."];
+		return ["Anything goes means Sydney pays for everything, including everybody's bad habits."];
 	}
 
 	return boundaries.map((boundary) => {
@@ -164,7 +164,7 @@ export function translateThreadStateNarrative(threads: StoryThreads | null): str
 	}
 
 	const boundariesCount = Array.isArray(threads.boundariesSet) ? threads.boundariesSet.length : 0;
-	let boundaryCountLine = "Anything goes means Sydney pays for everything, including everybody else's bad habits.";
+	let boundaryCountLine = "Anything goes means Sydney pays for everything, including everybody's bad habits.";
 	if (boundariesCount === 1) {
 		boundaryCountLine = "One line in the sand changes the room's weather, even if nobody likes it.";
 	} else if (boundariesCount > 1) {
