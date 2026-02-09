@@ -4,6 +4,14 @@
 
 ### Changed
 
+- **Narrative Pipeline Lock-In:** Removed runtime feature-flag gating for `narrativeContextV2` and `transitionBridges` inside `gameRuntime`; context building and transition bridge detection now run as always-on behavior in active play flow.
+- **Opening Thread Parity:** `startGame()` now merges opening-scene `storyThreadUpdates`, preventing first-turn continuity deltas from being silently dropped.
+- **Provider Prompt Path Simplification:** Grok text generation now requires `NarrativeContext` for non-opening scenes and no longer falls back to the legacy continue-prompt builder.
+- **Context Budget Hardening:** Strengthened context budgeting to trim older summaries first and then deterministically trim recent-scene prose when required, instead of silently overrunning cap targets.
+- **Heuristic Reduction (Full Pass):** Removed all taste/semantic heuristics from `sanity.ts`: apology-loop pattern, 4 banned didactic phrases (`lesson_is`, `teaches_us`, `in_the_end_realized`, `everything_happens_for_reason`), 3 therapy-speak detectors (`validate_feelings`, `safe_space`, `process_trauma`), and evasion-attempt regex. Retained only deterministic structural guards (text length, choice count, duplicate choices, word-count hard/soft limits). Updated `sanityMirror.js` and 3 adversarial fixtures to match. All 153 Tier 1 tests pass.
+- **Adapter Type Tightening:** Added `sceneId` to the Grok scene-candidate shape and removed cast-based access in scene normalization.
+- **Narrative Test Alignment:** Updated narrative regression fixtures/guards to match the reduced-heuristic sanity policy and unflagged transition bridge runtime.
+- **Playwright Scope Fix:** Restored Playwright discovery to `tests/e2e` only so end-to-end runs do not accidentally execute non-e2e suites.
 - **Browser-Safe Narrative Context:** Moved runtime context/transition helpers into `src/lib/game/narrativeContext.ts` and switched `gameRuntime` imports away from `$lib/server/*` to fix SvelteKit client/server boundary violations during `/play` and route-shell rendering.
 - **Debug E2E Hydration Gate:** Added a debug-page hydration readiness marker and updated e2e sequencing so manual test-entry assertions only fire after client hydration, removing SSR-click race flakes.
 - **Narrative CI Gate:** Added deterministic `test:narrative` Tier 1 quality suite with fixture-backed sanity assertions, canonical prompt/context wiring checks, continuity-dimension coverage, and regression guardrails.

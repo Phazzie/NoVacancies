@@ -157,3 +157,18 @@
 
 **Insight:** SSR route markup can appear before client handlers bind, causing false-negative e2e failures when tests click immediately after heading visibility.
 **Lesson:** Expose a tiny hydration-ready marker for interactive debug/admin surfaces and make e2e wait for it before click/assert sequences.
+
+## 30. Remove Taste Heuristics, Keep Structural Guards
+
+**Insight:** Regex-heavy voice policing (therapy-speak detectors, banned phrase lists, apology-loop counters, evasion regex) adds brittle false positives, fights prompt intent, and creates blind-retry loops where the provider gets no feedback about what was wrong.
+**Lesson:** Keep sanity gates deterministic and structural only (text length, choice count, duplicate choices, word-count hard/soft limits). Let the system prompt and Tier 2 AI-evaluated scoring carry narrative taste enforcement — those surfaces are tunable without code changes and can explain *why* something fails, unlike a regex.
+
+## 31. A "Hard Cap" Must Have a Final Deterministic Trim Path
+
+**Insight:** Declaring a context budget is not enough if protected sections can silently push payload size beyond target.
+**Lesson:** Enforce deterministic trim order to stay within budget (older summaries first, then controlled recent-prose clipping) and expose truncation metadata for observability.
+
+## 32. Canonical Prompt Paths Reduce Drift Risk
+
+**Insight:** Keeping both legacy and v2 continue-prompt paths doubles maintenance surface and creates flag-dependent narrative divergence.
+**Lesson:** Use one canonical context-driven continue path in active runtime/provider flow; treat alternate prompt paths as temporary migration scaffolding only.
