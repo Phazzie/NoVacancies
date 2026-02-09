@@ -16,8 +16,8 @@ import {
 	cloneScene,
 	type GameState,
 	type Scene
-} from '$lib/contracts';
-import type { OpeningSceneRequest, StoryService } from '$lib/services/storyService';
+} from '../contracts';
+import type { OpeningSceneRequest, StoryService } from './storyService';
 
 const scenes: Record<string, Scene> = {
     // ============================================

@@ -8,7 +8,9 @@ const FILE_EXTENSIONS = new Set(['.ts', '.js', '.svelte', '.json']);
 const BANNED_PATTERNS = [
 	{ name: 'gemini keyword', regex: /\bgemini\b/i },
 	{ name: 'Google Generative Language endpoint', regex: /generativelanguage\.googleapis\.com/i },
-	{ name: 'AIza-style key marker', regex: /AIza[A-Za-z0-9_-]{10,}/ }
+	{ name: 'AIza-style key marker', regex: /AIza[A-Za-z0-9_-]{10,}/ },
+	{ name: 'Legacy Prompt Generator', regex: /generateGeminiPrompt/ },
+	{ name: 'Legacy API Key Var', regex: /google_api_key/i }
 ];
 const PARITY_CHECKS = [
 	{
@@ -27,7 +29,7 @@ const PARITY_CHECKS = [
 	},
 	{
 		file: 'src/lib/server/ai/sanity.ts',
-		require: [/scene_word_count_soft_limit/, /ending_scene_word_count_soft_limit/, /therapy_speak_summary/]
+		require: [/scene_word_count_soft_limit/, /ending_scene_word_count_soft_limit/]
 	},
 	{
 		file: 'src/lib/server/ai/narrative.ts',

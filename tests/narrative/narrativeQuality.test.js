@@ -69,13 +69,13 @@ function testCanonicalPromptWiring() {
 	assert(grokSource !== null, 'grok.ts exists');
 
 	// Grok imports canonical prompt functions
-	assert(/import\s*\{[^}]*SYSTEM_PROMPT[^}]*\}\s*from/.test(grokSource),
+	assert(/import\s*\{[\s\S]*?SYSTEM_PROMPT[\s\S]*?\}\s*from/.test(grokSource),
 		'grok.ts imports SYSTEM_PROMPT');
-	assert(/import\s*\{[^}]*getOpeningPrompt[^}]*\}\s*from/.test(grokSource),
+	assert(/import\s*\{[\s\S]*?getOpeningPrompt[\s\S]*?\}\s*from/.test(grokSource),
 		'grok.ts imports getOpeningPrompt');
-	assert(/import\s*\{[^}]*getContinuePromptFromContext[^}]*\}\s*from/.test(grokSource),
+	assert(/import\s*\{[\s\S]*?getContinuePromptFromContext[\s\S]*?\}\s*from/.test(grokSource),
 		'grok.ts imports getContinuePromptFromContext');
-	assert(/import\s*\{[^}]*getRecoveryPrompt[^}]*\}\s*from/.test(grokSource),
+	assert(/import\s*\{[\s\S]*?getRecoveryPrompt[\s\S]*?\}\s*from/.test(grokSource),
 		'grok.ts imports getRecoveryPrompt');
 
 	// System prompt is used in chat call (not the one-line stub)
@@ -85,10 +85,13 @@ function testCanonicalPromptWiring() {
 		'grok.ts does NOT contain stub system prompt',
 		'Found one-line stub "interactive fiction engine. output json only"');
 
-	// Canonical prompts are called in scene generation
-	assert(/getOpeningPrompt\(\)/.test(grokSource), 'grok.ts calls getOpeningPrompt()');
-	assert(/getContinuePromptFromContext\(/.test(grokSource), 'grok.ts calls getContinuePromptFromContext()');
-	assert(/getRecoveryPrompt\(/.test(grokSource), 'grok.ts calls getRecoveryPrompt()');
+	// Canonical prompts are called in scene generation (Robust Regex)
+	assert(/getOpeningPrompt\s*\(\s*\)/.test(grokSource), 
+		'grok.ts calls getOpeningPrompt()');
+	assert(/getContinuePromptFromContext\s*\(\s*[^)]*\)/.test(grokSource), 
+		'grok.ts calls getContinuePromptFromContext(...)');
+	assert(/getRecoveryPrompt\s*\(/.test(grokSource), 
+		'grok.ts calls getRecoveryPrompt(...)');
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +188,7 @@ function testContextBuilderContract() {
 	// Runtime calls it
 	assert(/buildNarrativeContext\(/.test(runtimeSource),
 		'gameRuntime.ts calls buildNarrativeContext');
-	assert(/from\s+['"]\$lib\/game\/narrativeContext['"]/.test(runtimeSource),
+	assert(/from\s+['"](\$lib\/game\/narrativeContext|\.\/narrativeContext)['"]/.test(runtimeSource),
 		'gameRuntime.ts imports build helpers from browser-safe module');
 
 	// Context builder references required blocks
@@ -303,9 +306,9 @@ function testTransitionBridgeLogic() {
 			`TRANSITION_BRIDGE_MAP covers '${field}'`);
 	}
 
-	// Feature flag gating
-	assert(/featureFlags\.transitionBridges/.test(runtimeSource),
-		'Transition bridges gated by feature flag');
+	// Transition bridges should run unconditionally once a scene applies
+	assert(!/featureFlags\.transitionBridges/.test(runtimeSource),
+		'Transition bridges are no longer feature-flag gated');
 }
 
 // ---------------------------------------------------------------------------
@@ -322,7 +325,6 @@ function testSanityGateContract() {
 	// Verify the mirror matches the source (structural check, not byte-exact)
 	assert(sanitySource.includes('blockingIssues'), 'sanity.ts has blockingIssues classification');
 	assert(sanitySource.includes('retryableIssues'), 'sanity.ts has retryableIssues classification');
-	assert(sanitySource.includes('therapy_speak_summary'), 'sanity.ts checks therapy speak');
 	assert(sanitySource.includes('scene_word_count_hard_limit'), 'sanity.ts has word count hard limit');
 	assert(sanitySource.includes('scene_word_count_soft_limit'), 'sanity.ts has word count soft limit');
 	assert(sanitySource.includes('ending_scene_word_count_hard_limit'), 'sanity.ts has ending word count hard limit');
@@ -440,7 +442,7 @@ function testRegressionGuard() {
 	// Runtime imports from narrative.ts (not hardcoded prompts)
 	assert(/from\s+['"]\$lib\/server\/ai\/narrative['"]/.test(grokSource),
 		'grok.ts imports from canonical narrative module');
-	assert(/from\s+['"]\$lib\/game\/narrativeContext['"]/.test(runtimeSource),
+	assert(/from\s+['"](\$lib\/game\/narrativeContext|\.\/narrativeContext)['"]/.test(runtimeSource),
 		'gameRuntime.ts imports from browser-safe narrativeContext module');
 }
 

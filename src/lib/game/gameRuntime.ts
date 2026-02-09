@@ -11,15 +11,15 @@ import {
 	type GameState,
 	type RuntimeFeatureFlags,
 	type Scene
-} from '$lib/contracts';
-import { buildNarrativeContext, detectThreadTransitions } from '$lib/game/narrativeContext';
+} from '../contracts';
+import { buildNarrativeContext, detectThreadTransitions } from './narrativeContext';
 import {
 	createSettingsStorage,
 	type SettingsStorage,
 	type StorageBindings,
 	type StoryService
-} from '$lib/services';
-import { mockStoryService } from '$lib/services/mockStoryService';
+} from '../services';
+import { mockStoryService } from '../services/mockStoryService';
 
 export interface EndingPayload {
 	endingType: EndingType;
@@ -164,13 +164,8 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			gameState.storyThreads = mergeThreadUpdates(gameState.storyThreads, scene.storyThreadUpdates);
 		}
 
-		if (gameState.featureFlags.transitionBridges) {
-			const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
-			gameState.pendingTransitionBridge =
-				transitionBridge.lines.length > 0 ? transitionBridge : null;
-		} else {
-			gameState.pendingTransitionBridge = null;
-		}
+		const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
+		gameState.pendingTransitionBridge = transitionBridge.lines.length > 0 ? transitionBridge : null;
 		gameState.currentSceneId = scene.sceneId;
 		gameState.sceneCount += 1;
 
@@ -195,9 +190,14 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			...settings.featureFlags,
 			...startOptions.featureFlags
 		});
+		const lockedFeatureFlags: RuntimeFeatureFlags = {
+			...effectiveFlags,
+			narrativeContextV2: true,
+			transitionBridges: true
+		};
 
 		gameState = createGameState({
-			featureFlags: effectiveFlags,
+			featureFlags: lockedFeatureFlags,
 			apiKey: null,
 			useMocks: false,
 			now
@@ -205,7 +205,7 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 
 		const openingScene = await storyService.getOpeningScene({
 			useMocks: false,
-			featureFlags: effectiveFlags
+			featureFlags: lockedFeatureFlags
 		});
 		if (!validateScene(openingScene)) {
 			throw new Error('Story service returned invalid opening scene');
@@ -224,6 +224,13 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 
 		if (openingScene.lessonId) {
 			gameState.lessonsEncountered.push(openingScene.lessonId);
+		}
+
+		if (openingScene.storyThreadUpdates) {
+			gameState.storyThreads = mergeThreadUpdates(
+				gameState.storyThreads,
+				openingScene.storyThreadUpdates
+			);
 		}
 
 		currentScene = cloneScene(openingScene);
@@ -251,17 +258,15 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		});
 
 		try {
-			const narrativeContext = gameState.featureFlags.narrativeContextV2
-				? buildNarrativeContext(gameState, { lastChoiceText: choiceText })
-				: null;
+			const narrativeContext = buildNarrativeContext(gameState, { lastChoiceText: choiceText });
 			const nextScene = await storyService.getNextScene(
 				gameState.currentSceneId,
 				choiceId,
 				gameState,
 				narrativeContext,
 				{
-					useNarrativeContext: gameState.featureFlags.narrativeContextV2,
-					enableTransitionBridges: gameState.featureFlags.transitionBridges
+					useNarrativeContext: true,
+					enableTransitionBridges: true
 				}
 			);
 			if (!validateScene(nextScene)) {
@@ -275,7 +280,12 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 	};
 
 	const setFeatureFlags = (overrides: Partial<RuntimeFeatureFlags>): RuntimeFeatureFlags => {
-		const normalized = settingsStorage.saveFeatureFlags({ ...settings.featureFlags, ...overrides });
+		const normalized = settingsStorage.saveFeatureFlags({
+			...settings.featureFlags,
+			...overrides,
+			narrativeContextV2: true,
+			transitionBridges: true
+		});
 		settings.featureFlags = normalized;
 		return { ...normalized };
 	};

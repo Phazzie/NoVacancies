@@ -1,5 +1,5 @@
-import type { GameState, NarrativeContext, Scene, StoryThreads } from '$lib/contracts';
-import { appendDebugError } from '$lib/debug/errorLog';
+import type { GameState, NarrativeContext, Scene, StoryThreads } from '../contracts';
+import { appendDebugError } from '../debug/errorLog';
 
 export interface OpeningSceneRequest {
 	useMocks: boolean;

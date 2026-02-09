@@ -1,7 +1,7 @@
 [
   {
     "id": "adversarial_banned_phrase_lesson_is",
-    "description": "Contains 'the lesson is' — must block",
+    "description": "Contains 'the lesson is' — structurally valid (voice quality deferred to Tier 2)",
     "scene": {
       "sceneId": "scene_bad_1",
       "sceneText": "Sydney stared at the ceiling. The lesson is that load-bearing beams do not get applause. She understood this now, deeply and truly, as the weight of the room settled on her shoulders like a familiar coat.",
@@ -15,11 +15,11 @@
       "endingType": null,
       "mood": "dark"
     },
-    "expectedBlocking": ["banned_phrase_lesson_is"]
+    "expectedBlocking": []
   },
   {
     "id": "adversarial_therapy_speak",
-    "description": "Contains therapy-speak markers — must block",
+    "description": "Contains therapy-style wording — should no longer hard-block",
     "scene": {
       "sceneId": "scene_bad_2",
       "sceneText": "You recognize this as a trauma response. Your nervous system is telling you to flee, but you hold space for the discomfort. The emotional bandwidth required to process Oswaldo's behavior is more than you have right now.",
@@ -33,7 +33,7 @@
       "endingType": null,
       "mood": "dark"
     },
-    "expectedBlocking": ["therapy_speak_summary"]
+    "expectedBlocking": []
   },
   {
     "id": "adversarial_too_short",
@@ -110,7 +110,7 @@
   },
   {
     "id": "adversarial_apology_loop",
-    "description": "3+ apology mentions — must block",
+    "description": "3+ apology mentions — structurally valid (taste deferred to Tier 2)",
     "scene": {
       "sceneId": "scene_bad_7",
       "sceneText": "Oswaldo says sorry. He's sorry about the charger. He's sorry about the food. He says he's going to apologize to Trina too. You've heard sorry before. Sorry is the cheapest word in this room. Sorry doesn't fix the toilet handle or pay the eighteen dollars or undo the car incident. Sorry is what he says when he wants the conversation to end without changing anything.",
@@ -124,7 +124,7 @@
       "endingType": null,
       "mood": "tense"
     },
-    "expectedBlocking": ["apology_loop_pattern"]
+    "expectedBlocking": []
   },
   {
     "id": "adversarial_over_word_limit",
@@ -146,7 +146,7 @@
   },
   {
     "id": "adversarial_in_the_end_realized",
-    "description": "Contains 'In the end, Sydney realized' — must block",
+    "description": "Contains 'In the end, Sydney realized' — structurally valid (voice quality deferred to Tier 2)",
     "scene": {
       "sceneId": "scene_bad_9",
       "sceneText": "The room was quiet now. The fight was over, the words hung in the air like smoke from a fire nobody wanted to tend. In the end, Sydney realized that she had been carrying more than rent money. She had been carrying the entire illusion that this arrangement was mutual.",
@@ -160,7 +160,7 @@
       "endingType": null,
       "mood": "dark"
     },
-    "expectedBlocking": ["banned_phrase_in_the_end_realized"]
+    "expectedBlocking": []
   },
   {
     "id": "adversarial_soft_limit_retryable",

@@ -1,4 +1,4 @@
-import type { GameState, NarrativeContext, StoryThreads } from '$lib/contracts';
+import type { GameState, NarrativeContext, StoryThreads } from '../contracts';
 
 type TransitionBridgeMap = Record<string, Record<string, string>>;
 type ThreadKey =
@@ -14,6 +14,8 @@ type TransitionBridge = { keys: string[]; lines: string[] } | null;
 export const NARRATIVE_CONTEXT_CHAR_BUDGET = 12000;
 const MAX_RECENT_SCENE_PROSE = 2;
 const MAX_OLDER_SCENE_SUMMARIES = 6;
+const MIN_RECENT_SCENE_PROSE_CHARS = 120;
+const RECENT_SCENE_PROSE_TRIM_STEP = 240;
 
 export const OSWALDO_CONFLICT_TRANSLATIONS: Record<string, string> = Object.freeze({
 	'-2': "He's weirdly helpful today, like he wants credit for doing the bare minimum without being asked.",
@@ -201,6 +203,13 @@ function estimateContextChars(context: unknown): number {
 	}
 }
 
+function trimRecentSceneProse(text: string): string {
+	if (text.length <= MIN_RECENT_SCENE_PROSE_CHARS) return text;
+	const nextLength = Math.max(MIN_RECENT_SCENE_PROSE_CHARS, text.length - RECENT_SCENE_PROSE_TRIM_STEP);
+	const trimmed = text.slice(0, nextLength).trimEnd();
+	return trimmed.endsWith('...') || trimmed.endsWith('…') ? trimmed : `${trimmed}…`;
+}
+
 function applyContextBudget(context: NarrativeContext, maxChars: number): NarrativeContext {
 	const budgeted = {
 		...context,
@@ -219,6 +228,24 @@ function applyContextBudget(context: NarrativeContext, maxChars: number): Narrat
 	while (estimateContextChars(budgeted) > maxChars && budgeted.olderSceneSummaries.length > 0) {
 		budgeted.olderSceneSummaries.shift();
 		dropped.olderSummaries += 1;
+	}
+
+	// Preserve critical continuity sections while enforcing a true cap.
+	while (estimateContextChars(budgeted) > maxChars) {
+		let trimmed = false;
+		for (let i = 0; i < budgeted.recentSceneProse.length; i += 1) {
+			const prose = budgeted.recentSceneProse[i];
+			if (prose.text.length > MIN_RECENT_SCENE_PROSE_CHARS) {
+				budgeted.recentSceneProse[i] = {
+					...prose,
+					text: trimRecentSceneProse(prose.text)
+				};
+				dropped.recentProse += 1;
+				trimmed = true;
+				break;
+			}
+		}
+		if (!trimmed) break;
 	}
 
 	budgeted.meta = {

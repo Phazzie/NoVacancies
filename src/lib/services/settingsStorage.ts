@@ -5,7 +5,7 @@ import {
 	type EndingType,
 	type GameSettings,
 	type RuntimeFeatureFlags
-} from '$lib/contracts';
+} from '../contracts';
 
 export interface StorageLike {
 	getItem(key: string): string | null;

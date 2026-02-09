@@ -2,7 +2,6 @@ import { validateEndingType, validateScene, type Scene, type StoryThreads } from
 import type { AiConfig } from '$lib/server/ai/config';
 import {
 	SYSTEM_PROMPT,
-	getContinuePrompt,
 	getContinuePromptFromContext,
 	getOpeningPrompt,
 	getRecoveryPrompt
@@ -32,6 +31,7 @@ interface ChatResponse {
 }
 
 interface SceneCandidate {
+	sceneId?: unknown;
 	sceneText?: unknown;
 	choices?: Array<{ id?: unknown; text?: unknown; outcome?: unknown }>;
 	lessonId?: unknown;
@@ -101,10 +101,7 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 	const endingType = isEnding ? validateEndingType(candidate.endingType) : null;
 
 	return {
-		sceneId:
-			typeof (candidate as { sceneId?: unknown }).sceneId === 'string'
-				? ((candidate as { sceneId: string }).sceneId || fallbackSceneId)
-				: fallbackSceneId,
+		sceneId: typeof candidate.sceneId === 'string' ? candidate.sceneId || fallbackSceneId : fallbackSceneId,
 		sceneText: typeof candidate.sceneText === 'string' ? candidate.sceneText.trim() : '',
 		choices,
 		lessonId: typeof candidate.lessonId === 'number' ? candidate.lessonId : null,
@@ -129,22 +126,13 @@ function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): 
 		return getOpeningPrompt();
 	}
 
-	if (input.narrativeContext) {
-		return getContinuePromptFromContext(input.narrativeContext, null);
+	if (!input.narrativeContext) {
+		throw new AiProviderError('Narrative context is required for non-opening scene generation', {
+			code: 'invalid_response',
+			retryable: false
+		});
 	}
-
-	const lastChoice = input.gameState.history[input.gameState.history.length - 1];
-	const previousScenes = (input.gameState.sceneLog || []).map((entry) =>
-		entry.viaChoiceText ? `[Choice: ${entry.viaChoiceText}]\n${entry.sceneText}` : entry.sceneText
-	);
-
-	return getContinuePrompt(
-		previousScenes,
-		lastChoice?.choiceText || input.choiceId || '',
-		input.gameState.sceneCount,
-		null,
-		input.gameState.storyThreads
-	);
+	return getContinuePromptFromContext(input.narrativeContext, null);
 }
 
 export class GrokAiProvider implements AiProvider {

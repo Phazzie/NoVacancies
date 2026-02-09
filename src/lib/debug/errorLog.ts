@@ -1,4 +1,5 @@
-import { browser } from '$app/environment';
+// import { browser } from '$app/environment';
+const browser = typeof window !== 'undefined';
 
 const DEBUG_ERROR_STORAGE_KEY = 'sydney-story-debug-errors';
 const MAX_DEBUG_ERRORS = 200;
