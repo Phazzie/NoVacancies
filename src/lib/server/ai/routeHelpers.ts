@@ -17,12 +17,8 @@ function safeFeatureFlags(value: unknown): Partial<RuntimeFeatureFlags> {
 	return value as Partial<RuntimeFeatureFlags>;
 }
 
-export function buildOpeningInput(payload: {
-	useMocks?: boolean;
-	featureFlags?: unknown;
-}): GenerateSceneInput {
+export function buildOpeningInput(payload: { featureFlags?: unknown }): GenerateSceneInput {
 	const gameState = createGameState({
-		useMocks: false,
 		featureFlags: safeFeatureFlags(payload.featureFlags)
 	});
 	return {
@@ -34,7 +30,6 @@ export function buildOpeningInput(payload: {
 
 export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
 	const baseState = payload.gameState ?? createGameState();
-	baseState.useMocks = false;
 	return {
 		currentSceneId: payload.currentSceneId ?? baseState.currentSceneId,
 		choiceId: payload.choiceId ?? null,
@@ -64,7 +59,7 @@ function assertImagePromptGuardrails(prompt: string): void {
 export async function resolveTextScene(input: GenerateSceneInput, mode: 'opening' | 'next') {
 	const config = loadAiConfig();
 	const registry = createProviderRegistry(config);
-	const provider = selectTextProvider(config, registry, input.gameState);
+	const provider = selectTextProvider(config, registry);
 
 	try {
 		const scene =

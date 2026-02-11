@@ -19,7 +19,6 @@ import {
 	type StorageBindings,
 	type StoryService
 } from '../services';
-import { mockStoryService } from '../services/mockStoryService';
 
 export interface EndingPayload {
 	endingType: EndingType;
@@ -40,7 +39,6 @@ export interface GameTurnResult {
 }
 
 export interface StartGameOptions {
-	useMocks?: boolean;
 	featureFlags?: Partial<RuntimeFeatureFlags>;
 }
 
@@ -81,7 +79,10 @@ function normalizeEndingList(endings: EndingType[]): EndingType[] {
 
 export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime {
 	const now = options.now ?? Date.now;
-	const storyService = options.storyService ?? mockStoryService;
+	const storyService = options.storyService;
+	if (!storyService) {
+		throw new Error('GameRuntime requires an explicit storyService in Grok-only mode');
+	}
 	const settingsStorage =
 		options.settingsStorage ??
 		createSettingsStorage({
@@ -199,12 +200,10 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		gameState = createGameState({
 			featureFlags: lockedFeatureFlags,
 			apiKey: null,
-			useMocks: false,
 			now
 		});
 
 		const openingScene = await storyService.getOpeningScene({
-			useMocks: false,
 			featureFlags: lockedFeatureFlags
 		});
 		if (!validateScene(openingScene)) {

@@ -4,6 +4,15 @@
 
 ### Changed
 
+- **Legacy Runtime Deletion:** Removed the entire legacy `js/` runtime tree (`app/contracts/prompts/renderer/services`) from the repo to eliminate duplicate architecture and prompt drift risk.
+- **Game Runtime Dependency Cleanup:** Removed active mock-service wiring from `src/lib/game/gameRuntime.ts` and `src/lib/game/store.ts`; runtime now requires an explicit API story service path.
+- **Provider Selection Simplification:** Removed remaining `useMocks` provider branching in server-side provider selection and opening/probe route helpers.
+- **Mock-Mode Contract Removal:** Removed `useMocks` from active `GameState`/`GameSettings` contracts and settings persistence; runtime and API story opening now operate on Grok-only shape without mock-mode fields.
+- **Legacy Test/Script Cleanup:** Removed legacy JS-coupled test files (`tests/rendererTest.js`, `tests/rendererNodeTest.js`, `tests/smokeTest.js`, `tests/threadTest.js`) and retired `test:renderer` script.
+- **Decommission Guard Update:** Updated legacy-provider marker scan scope to active paths only (`src/**`, `tests/e2e/**`, `package.json`) after removing `js/`.
+- **Narrative Context Deduplication:** Removed duplicated translation/context-builder logic from `src/lib/server/ai/narrative.ts`; server prompt generation now reuses the canonical implementations exported by `src/lib/game/narrativeContext.ts`.
+- **Server Provider Registry Cleanup:** Removed the unused server-side mock provider adapter path (`src/lib/server/ai/providers/mock.ts`), narrowed provider registry/probe flow to Grok-only, and tightened provider type unions accordingly.
+- **Canon Voice Restoration:** Restored thread/transition/boundary wording in active runtime mappings (`src/lib/server/ai/narrative.ts`, `src/lib/game/narrativeContext.ts`) and legacy prompt duplicate (`js/prompts.js`) to match handwritten canonical phrasing.
 - **Narrative Pipeline Lock-In:** Removed runtime feature-flag gating for `narrativeContextV2` and `transitionBridges` inside `gameRuntime`; context building and transition bridge detection now run as always-on behavior in active play flow.
 - **Opening Thread Parity:** `startGame()` now merges opening-scene `storyThreadUpdates`, preventing first-turn continuity deltas from being silently dropped.
 - **Provider Prompt Path Simplification:** Grok text generation now requires `NarrativeContext` for non-opening scenes and no longer falls back to the legacy continue-prompt builder.
@@ -27,13 +36,13 @@
 - **Ending Debug Shortcut (Temp):** Added `Open Debug (Temp)` button on `/ending` so runtime errors are one click away during demo validation.
 - **CSP Hardening:** Added a baseline Content Security Policy in `src/app.html` for the SvelteKit runtime, then tuned `script-src` compatibility so SvelteKit client hydration remains functional.
 - **Debug UX Resilience:** `/debug` manual test entries now stay visible even when localStorage writes fail (quota/privacy mode), instead of silently no-oping.
-- **Service Worker Cleanup:** Removed legacy root `service-worker.js` and stripped stale Gemini endpoint exception from `static/service-worker.js`.
-- **Gemini Verification Reconciliation:** Added `docs/GEMINI_VERIFICATION_RECONCILIATION_2026-02-08.md` to classify each reported issue as active vs legacy and tie findings to decommission steps.
-- **Gemini Decommission Plan:** Added `docs/GEMINI_DECOMMISSION_EXECUTION_PLAN.md` with file-level work breakdown, critique loop output (haters + Wu-Bob), and phased execution order.
-- **Quality Gate Realignment:** Moved default `lint`/`test` scripts to active-runtime checks (`tests/e2e/**` lint + legacy-provider marker guard) and removed Gemini-era test/lint scripts from the default workflow.
-- **Legacy Gemini Runtime Removal:** Deleted `js/services/geminiStoryService.js`, retired Gemini-coupled legacy integration tests, and scrubbed remaining Gemini markers from legacy JS runtime comments/telemetry assumptions.
-- **Guard Expansion:** Extended decommission guard coverage to include `js/**` (in addition to `src/**`, `tests/e2e/**`, and `package.json`) so Gemini markers cannot silently return in code paths.
-- **Legacy Artifact Archival:** Moved root Gemini reference files (`GEMINI_TEST_SPEC.md`, `PROMPT_FOR_GEMINI.txt`) into `docs/archive/2026-02-08_gemini_legacy/`.
+- **Service Worker Cleanup:** Removed legacy root `service-worker.js` and stripped stale legacy provider endpoint exception from `static/service-worker.js`.
+- **Legacy Provider Verification Reconciliation:** Added archival reconciliation notes classifying active vs legacy findings and tying each to decommission steps.
+- **Legacy Provider Decommission Plan:** Added archival execution plan with file-level work breakdown, critique loop output (haters + Wu-Bob), and phased execution order.
+- **Quality Gate Realignment:** Moved default `lint`/`test` scripts to active-runtime checks (`tests/e2e/**` lint + legacy-provider marker guard) and removed legacy provider-era test/lint scripts from the default workflow.
+- **Legacy Provider Runtime Removal:** Deleted the legacy AI story-service runtime, retired legacy-provider-coupled integration tests, and scrubbed provider markers from legacy JS runtime comments/telemetry assumptions.
+- **Guard Expansion:** Extended decommission guard coverage to include `js/**` (in addition to `src/**`, `tests/e2e/**`, and `package.json`) so legacy provider markers cannot silently return in code paths.
+- **Legacy Artifact Archival:** Moved root legacy-provider reference files into `docs/archive/2026-02-08_legacy_provider/`.
 - **Demo Readiness Indicator:** Added Home-page visual readiness dashboard with weighted progress bar and checklist, backed by `/api/demo/readiness` runtime checks.
 - **Readiness Edge Coverage:** Expanded e2e assertions for `/api/demo/readiness` to validate weighted check IDs, total score weighting, and blocked-vs-ready behavior when `XAI_API_KEY` is missing/present.
 - **Debug Error Surface:** Added `/debug` page with persisted runtime/API error log, manual test entry, and clear/reset actions for fast play-session triage.
@@ -44,7 +53,7 @@
 - **Dead Client Key Flow Removed:** Deleted Settings-page API key input + session persistence path so runtime no longer implies browser-side key entry.
 - **Hard-Fail UX Copy:** Added user-facing error mapping for common provider/config failures (missing key, auth, rate limit, timeout, provider down).
 - **E2E Contract Shift:** Replaced mock-playthrough e2e assertions with Grok-only behavior checks (explicit error assertions when `XAI_API_KEY` is missing).
-- **Canary Naming Cleanup:** Renamed live provider canary spec from `gemini-live.spec.js` to `grok-live.spec.js` and updated docs references.
+- **Canary Naming Cleanup:** Renamed the live provider canary spec to `grok-live.spec.js` and updated docs references.
 - **Provider Defaults:** Set Grok as the default text provider path (`AI_PROVIDER=grok` when unset) while keeping image generation on pre-generated/static assets by default unless `ENABLE_GROK_IMAGES=1`.
 - **Runtime Defaults:** Switched game settings/opening request defaults to AI mode (`useMocks=false`) so new sessions start in AI Generated mode.
 - **Credential Guard:** Provider configuration now requires `XAI_API_KEY` in Grok-only mode and hard-fails when missing.
@@ -75,9 +84,9 @@
 - **Prompt Hardening:** Added Trina behavior examples to `SYSTEM_PROMPT`, introduced generalized thread-state narrative lines, boundary-specific translation mapping, and 17-line lesson-history mapping.
 - **Transition Bridges:** Moved transition-bridge enforcement to same-turn generation checks using current-scene `storyThreadUpdates` (instead of one-turn-late pending bridge injection).
 - **Telemetry Guardrails:** Added context-size/truncation/transition usage telemetry and payload sanitization/redaction to prevent key/token leakage.
-- **Contracts + App Flow:** Added `NarrativeContext` contract validation; app now builds/passes validated context to Gemini service through a compatibility seam.
+- **Contracts + App Flow:** Added `NarrativeContext` contract validation; app now builds/passes validated context through a provider compatibility seam.
 - **Feature Flag Operations:** Added runtime feature-flag normalization plus localStorage/query override support so `narrativeContextV2` and `transitionBridges` can be toggled without code edits.
-- **Lesson Nullability:** Updated Gemini structured response schema so `lessonId` can be `null` (matching prompt and contract intent).
+- **Lesson Nullability:** Updated structured response schema so `lessonId` can be `null` (matching prompt and contract intent).
 - **Tests:** Expanded integration coverage with T1-T4 narrative-upgrade gates (prompt assets, context contract/budget, transition-only-on-jump behavior, telemetry redaction).
 - **Auth Bypass Control:** Added non-production `AI_AUTH_BYPASS` handling so auth failures can intentionally route through mock fallback during local/preview debugging while remaining blocked in production.
 - **Opening Fallback Parity:** Added opening-scene fallback in runtime start flow so first-turn AI failures degrade to playable mock mode instead of hard-stopping.
@@ -87,7 +96,7 @@
 - **E2E Regression:** Added Playwright coverage proving transition bridges are requested in the same turn as a detected thread jump, and aligned telemetry stage contract assertions with current AI instrumentation.
 - **Prompt Regression:** Added coverage that enforces prompt instructions to label `lessonId` only after scene writing (system + legacy + context prompt paths).
 - **Prompt Depth:** Expanded lesson payload in `SYSTEM_PROMPT` formatting to include per-lesson emotional stakes, common triggers, and unconventional angle (in addition to title/quote/insight).
-- **Continuity Language:** Replaced stale `laptop` continuity anchor with `phone/phones/popsocket` anchors in Gemini quality checks.
+- **Continuity Language:** Replaced stale `laptop` continuity anchor with `phone/phones/popsocket` anchors in provider quality checks.
 - **Voice Anchors:** Added two high-signal narrative lines to `SYSTEM_PROMPT` as explicit voice-ceiling examples so model tone targets stay sharp across generations.
 
 ## [Unreleased] - 2026-02-03
@@ -104,7 +113,7 @@
 
 - **Writing Craft Rules:** System prompt now includes specific instructions for "Show Don't Tell", "Sensory Grounding", and "Voice" to reduce AI-sounding prose.
 - **Validation:** Added `validateEndingType` in `contracts.js` to support custom endings while preventing garbage output.
-- **Schema:** Implemented strict JSON `responseSchema` in `geminiStoryService.js` for reliability.
+- **Schema:** Implemented strict JSON `responseSchema` in the legacy AI service for reliability.
 - **Assets:** 5 new generated images in `images/`.
 
 ### Fixed
@@ -113,3 +122,4 @@
 - **Ending UX:** Endings no longer auto-jump to recap mid-typewriter. Players now click `View Recap` after ending text completes.
 - **Lesson Timing:** Lesson insight popup now appears only after scene text has finished typing.
 - **Regression Coverage:** Added renderer + e2e checks for delayed lesson display and recap transition/copy/download flow.
+

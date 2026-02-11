@@ -117,13 +117,11 @@ export interface GameState {
 	pendingTransitionBridge: { keys: string[]; lines: string[] } | null;
 	featureFlags: RuntimeFeatureFlags;
 	apiKey: string | null;
-	useMocks: boolean;
 	sceneCount: number;
 	startTime: number;
 }
 
 export interface GameSettings {
-	useMocks: boolean;
 	showLessons: boolean;
 	apiKey: string;
 	unlockedEndings: EndingType[];
@@ -136,7 +134,6 @@ export const DEFAULT_FEATURE_FLAGS: RuntimeFeatureFlags = Object.freeze({
 });
 
 export const DEFAULT_SETTINGS: GameSettings = Object.freeze({
-	useMocks: false,
 	showLessons: true,
 	apiKey: '',
 	unlockedEndings: [],
@@ -174,7 +171,6 @@ export function createStoryThreads(): StoryThreads {
 export function createGameState(options?: {
 	featureFlags?: Partial<RuntimeFeatureFlags>;
 	apiKey?: string | null;
-	useMocks?: boolean;
 	now?: () => number;
 }): GameState {
 	const now = options?.now ?? Date.now;
@@ -187,7 +183,6 @@ export function createGameState(options?: {
 		pendingTransitionBridge: null,
 		featureFlags: normalizeFeatureFlags(options?.featureFlags),
 		apiKey: options?.apiKey ?? null,
-		useMocks: options?.useMocks ?? false,
 		sceneCount: 0,
 		startTime: now()
 	};
