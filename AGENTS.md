@@ -14,6 +14,9 @@ Priority order when tradeoffs appear:
 5. Speed/perf
 6. Cosmetic polish
 
+Narrative decision rule:
+- If there is a tradeoff between brittle semantic heuristics and model-guided narrative judgment, prefer AI-driven narrative decisions and keep code-level guards structural (schema/contract/parse/limits), not taste-based.
+
 ## Canonical Documentation Policy
 
 These are the only canonical docs for persistent project knowledge:

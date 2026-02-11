@@ -11,14 +11,14 @@ import {
 	type GameState,
 	type RuntimeFeatureFlags,
 	type Scene
-} from '$lib/contracts';
+} from '../contracts';
+import { buildNarrativeContext, detectThreadTransitions } from './narrativeContext';
 import {
 	createSettingsStorage,
 	type SettingsStorage,
 	type StorageBindings,
 	type StoryService
-} from '$lib/services';
-import { mockStoryService } from '$lib/services/mockStoryService';
+} from '../services';
 
 export interface EndingPayload {
 	endingType: EndingType;
@@ -39,7 +39,6 @@ export interface GameTurnResult {
 }
 
 export interface StartGameOptions {
-	useMocks?: boolean;
 	featureFlags?: Partial<RuntimeFeatureFlags>;
 }
 
@@ -80,7 +79,10 @@ function normalizeEndingList(endings: EndingType[]): EndingType[] {
 
 export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime {
 	const now = options.now ?? Date.now;
-	const storyService = options.storyService ?? mockStoryService;
+	const storyService = options.storyService;
+	if (!storyService) {
+		throw new Error('GameRuntime requires an explicit storyService in Grok-only mode');
+	}
 	const settingsStorage =
 		options.settingsStorage ??
 		createSettingsStorage({
@@ -154,11 +156,17 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			throw new Error('Cannot apply scene before game start');
 		}
 
+		const previousThreads = {
+			...gameState.storyThreads,
+			boundariesSet: [...gameState.storyThreads.boundariesSet]
+		};
+
 		if (scene.storyThreadUpdates) {
 			gameState.storyThreads = mergeThreadUpdates(gameState.storyThreads, scene.storyThreadUpdates);
 		}
 
-		gameState.pendingTransitionBridge = null;
+		const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
+		gameState.pendingTransitionBridge = transitionBridge.lines.length > 0 ? transitionBridge : null;
 		gameState.currentSceneId = scene.sceneId;
 		gameState.sceneCount += 1;
 
@@ -183,17 +191,20 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			...settings.featureFlags,
 			...startOptions.featureFlags
 		});
+		const lockedFeatureFlags: RuntimeFeatureFlags = {
+			...effectiveFlags,
+			narrativeContextV2: true,
+			transitionBridges: true
+		};
 
 		gameState = createGameState({
-			featureFlags: effectiveFlags,
+			featureFlags: lockedFeatureFlags,
 			apiKey: null,
-			useMocks: false,
 			now
 		});
 
 		const openingScene = await storyService.getOpeningScene({
-			useMocks: false,
-			featureFlags: effectiveFlags
+			featureFlags: lockedFeatureFlags
 		});
 		if (!validateScene(openingScene)) {
 			throw new Error('Story service returned invalid opening scene');
@@ -212,6 +223,13 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 
 		if (openingScene.lessonId) {
 			gameState.lessonsEncountered.push(openingScene.lessonId);
+		}
+
+		if (openingScene.storyThreadUpdates) {
+			gameState.storyThreads = mergeThreadUpdates(
+				gameState.storyThreads,
+				openingScene.storyThreadUpdates
+			);
 		}
 
 		currentScene = cloneScene(openingScene);
@@ -239,7 +257,17 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		});
 
 		try {
-			const nextScene = await storyService.getNextScene(gameState.currentSceneId, choiceId, gameState);
+			const narrativeContext = buildNarrativeContext(gameState, { lastChoiceText: choiceText });
+			const nextScene = await storyService.getNextScene(
+				gameState.currentSceneId,
+				choiceId,
+				gameState,
+				narrativeContext,
+				{
+					useNarrativeContext: true,
+					enableTransitionBridges: true
+				}
+			);
 			if (!validateScene(nextScene)) {
 				throw new Error('Story service returned invalid scene payload');
 			}
@@ -251,7 +279,12 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 	};
 
 	const setFeatureFlags = (overrides: Partial<RuntimeFeatureFlags>): RuntimeFeatureFlags => {
-		const normalized = settingsStorage.saveFeatureFlags({ ...settings.featureFlags, ...overrides });
+		const normalized = settingsStorage.saveFeatureFlags({
+			...settings.featureFlags,
+			...overrides,
+			narrativeContextV2: true,
+			transitionBridges: true
+		});
 		settings.featureFlags = normalized;
 		return { ...normalized };
 	};

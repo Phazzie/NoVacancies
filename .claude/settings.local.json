@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run test:narrative:*)",
+      "Bash(del \"c:\\\\Users\\\\latro\\\\Downloads\\\\t\\\\sydney-story\\\\docs\\\\claudepotentialci.md\")",
+      "Bash(npm run check:*)",
+      "Bash(npm run lint:*)"
+    ]
+  }
+}

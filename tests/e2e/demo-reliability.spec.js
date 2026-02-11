@@ -98,7 +98,6 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('story opening remains playable for AI-mode request payload shape', async ({ request }) => {
 		const response = await request.post('/api/story/opening', {
 			data: {
-				useMocks: false,
 				featureFlags: { narrativeContextV2: true, transitionBridges: true }
 			}
 		});
@@ -148,7 +147,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('settings no longer exposes Static Story toggle', async ({ page }) => {
 		await page.goto('/settings');
 		await expect(page.getByRole('button', { name: 'Static Story' })).toHaveCount(0);
-		await expect(page.getByText(/AI Generated only/i)).toBeVisible();
+		await expect(page.getByText(/AI mode only\. No fallback\./i)).toBeVisible();
 	});
 
 	test('play route shows AI mode badge when scene is loaded', async ({ page }) => {
@@ -161,6 +160,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('debug page supports manual test entry', async ({ page }) => {
 		await page.goto('/debug');
 		await expect(page.getByRole('heading', { level: 2, name: 'Debug' })).toBeVisible();
+		await expect(page.getByTestId('debug-ready')).toHaveText('ready');
 		await page.getByRole('button', { name: 'Add Test Entry' }).click();
 		await expect(page.locator('.debug-log-item').first()).toBeVisible();
 		await page.getByRole('button', { name: 'Clear Log' }).click();

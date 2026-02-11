@@ -1,0 +1,94 @@
+[
+  {
+    "id": "golden_opening",
+    "description": "Valid opening scene at voice ceiling",
+    "scene": {
+      "sceneId": "scene_opening",
+      "sceneText": "The motel clock blinks 6:47 like it's judging your math. Forty-seven dollars in the envelope under the mattress. Sixty-five due by eleven. Oswaldo is a shape under the comforter, dead to the world and to the eighteen-dollar gap between you and another day in this room.\n\nTrina is on the floor again, wrapper confetti from last night's snack cake marathon circling her like evidence. She'll wake up in an hour, eat something, drop the wrapper, and call that surviving.\n\nYour phones are lined up on the nightstand. Five screens, five chances. The ice machine hums through the wall like it's the only other thing awake in this building.\n\nYou do the math one more time. Eighteen short. Four hours. Nobody in this room is going to solve that but you.",
+      "choices": [
+        { "id": "start_the_hustle", "text": "Fire up the phones. You've got four hours and five screens." },
+        { "id": "wake_oswaldo", "text": "Wake Oswaldo. He owes you a conversation." },
+        { "id": "check_trina_phone", "text": "Check if Trina's catfish money came through." }
+      ],
+      "lessonId": 1,
+      "imageKey": "hotel_room",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "tense",
+      "storyThreadUpdates": null
+    },
+    "expectedSanity": {
+      "ok": true,
+      "blockingIssues": [],
+      "retryableIssues": []
+    }
+  },
+  {
+    "id": "golden_midgame_tension",
+    "description": "Valid mid-game scene with thread update, under 250 words",
+    "scene": {
+      "sceneId": "scene_confrontation_3",
+      "sceneText": "Oswaldo is up. Not because he set an alarm or because the room needed him. He's up because Dex texted about a speaker someone's throwing out three blocks over.\n\nHe's already dressed. Already has his shoes on. Already planning a five-mile round trip for a stranger's garbage, while the toilet handle he promised to fix two weeks ago still requires a specific jiggle-and-hold technique you've perfected through repetition.\n\n\"I'll be back in a bit,\" he says, not asking if you need anything. Not checking if rent is covered. Not registering the five phones laid out like a command center on the nightstand.\n\nThe room smells like cold coffee and Trina's menthol smoke. You've been awake since five. He's been awake for twelve minutes and he's already leaving.",
+      "choices": [
+        { "id": "let_him_go", "text": "Let him go. Track what he does for others versus what he does for you." },
+        { "id": "ask_for_help", "text": "Ask him to fix the handle before he leaves. See what excuse comes." },
+        { "id": "say_nothing_work", "text": "Say nothing. Open the phones. The room doesn't pay itself." }
+      ],
+      "lessonId": 13,
+      "imageKey": "sydney_frustrated",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "tense",
+      "storyThreadUpdates": { "oswaldoConflict": 1, "sydneyRealization": 1 }
+    },
+    "expectedSanity": {
+      "ok": true,
+      "blockingIssues": [],
+      "retryableIssues": []
+    }
+  },
+  {
+    "id": "golden_ending_exit",
+    "description": "Valid ending scene, longer word count allowed",
+    "scene": {
+      "sceneId": "scene_ending_exit",
+      "sceneText": "You pack the phones first. They go into the backpack in order, screens down, pop sockets clicking against each other like prayer beads. The charger cables. The portable battery. The envelope with tomorrow's seed money.\n\nOswaldo watches from the bed. He hasn't moved, but his eyes track you across the room like he's finally computing the math of what's leaving with you.\n\n\"Where are you going?\" Not an accusation yet. Just the first flicker of a man realizing the infrastructure is walking out the door.\n\n\"Out.\"\n\n\"Out where?\"\n\nYou don't answer that. You don't owe coordinates to someone who couldn't find the rent money with both hands and a map.\n\nTrina stirs on the floor, senses the weather change. \"What's happening?\"\n\nWhat's happening is the load-bearing beam is removing itself from the building. What's happening is the engine is leaving and the machine doesn't know it can't run without fuel yet. What's happening is you're choosing uncertainty over the certainty of being used.\n\nThe door handle is cold. The parking lot is empty except for dawn light hitting the motel sign. No Vacancies, it says. No vacancies.\n\nYou don't know where you're going. You know what you're leaving. For the first time, that's enough.",
+      "choices": [],
+      "lessonId": 17,
+      "imageKey": "the_door",
+      "isEnding": true,
+      "endingType": "exit",
+      "mood": "triumphant",
+      "storyThreadUpdates": null
+    },
+    "expectedSanity": {
+      "ok": true,
+      "blockingIssues": [],
+      "retryableIssues": []
+    }
+  },
+  {
+    "id": "golden_quiet_observation",
+    "description": "Valid quiet scene with null lessonId, short and clean",
+    "scene": {
+      "sceneId": "scene_quiet_4",
+      "sceneText": "Nothing is yelling, but everything is saying something. Trina's wrappers form a trail from the bathroom to her spot on the floor. Oswaldo's charger is plugged into your power strip — the one he said was \"overkill\" when you bought it.\n\nThe room is paid. One less fire. But the smoke still hangs.\n\nYour coffee is half-finished on the nightstand, next to a phone that just dinged with a refund confirmation. Fourteen dollars. Not enough to relax, enough to breathe once.\n\nOutside, the ice machine cycles off. The quiet is louder than the noise was.",
+      "choices": [
+        { "id": "inventory_check", "text": "Count what you have. Cash, food, patience — take stock." },
+        { "id": "set_a_rule", "text": "Tell Trina the wrappers stop today or she finds another floor." },
+        { "id": "rest_a_minute", "text": "Close your eyes. Just for five minutes. You've earned that." }
+      ],
+      "lessonId": null,
+      "imageKey": "sydney_coffee",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "neutral",
+      "storyThreadUpdates": null
+    },
+    "expectedSanity": {
+      "ok": true,
+      "blockingIssues": [],
+      "retryableIssues": []
+    }
+  }
+]

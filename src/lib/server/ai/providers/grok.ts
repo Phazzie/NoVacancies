@@ -1,11 +1,11 @@
-import {
-	validateScene,
-	validateEndingType,
-	type NarrativeContext,
-	type Scene,
-	type StoryThreads
-} from '$lib/contracts';
+import { validateEndingType, validateScene, type Scene, type StoryThreads } from '$lib/contracts';
 import type { AiConfig } from '$lib/server/ai/config';
+import {
+	SYSTEM_PROMPT,
+	getContinuePromptFromContext,
+	getOpeningPrompt,
+	getRecoveryPrompt
+} from '$lib/server/ai/narrative';
 import { evaluateStorySanity } from '$lib/server/ai/sanity';
 import {
 	AiProviderError,
@@ -31,6 +31,7 @@ interface ChatResponse {
 }
 
 interface SceneCandidate {
+	sceneId?: unknown;
 	sceneText?: unknown;
 	choices?: Array<{ id?: unknown; text?: unknown; outcome?: unknown }>;
 	lessonId?: unknown;
@@ -40,6 +41,13 @@ interface SceneCandidate {
 	endingType?: unknown;
 	mood?: unknown;
 	storyThreadUpdates?: Partial<StoryThreads> | null;
+}
+
+interface ChatCallResult {
+	text: string;
+	usage?: Record<string, unknown>;
+	retryCount: number;
+	latencyMs: number;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -92,11 +100,8 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 	const isEnding = Boolean(candidate.isEnding);
 	const endingType = isEnding ? validateEndingType(candidate.endingType) : null;
 
-	const normalized: Scene = {
-		sceneId:
-			typeof (candidate as { sceneId?: unknown }).sceneId === 'string'
-				? ((candidate as { sceneId: string }).sceneId || fallbackSceneId)
-				: fallbackSceneId,
+	return {
+		sceneId: typeof candidate.sceneId === 'string' ? candidate.sceneId || fallbackSceneId : fallbackSceneId,
 		sceneText: typeof candidate.sceneText === 'string' ? candidate.sceneText.trim() : '',
 		choices,
 		lessonId: typeof candidate.lessonId === 'number' ? candidate.lessonId : null,
@@ -114,82 +119,20 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 				? candidate.storyThreadUpdates
 				: null
 	};
-
-	return normalized;
-}
-
-function formatNarrativeContext(context: NarrativeContext | null | undefined): string {
-	if (!context) return '';
-
-	const recentProse = context.recentSceneProse
-		.map(
-			(scene, index) =>
-				`${index + 1}. [${scene.sceneId}] via "${scene.viaChoiceText || 'N/A'}": ${scene.text}`
-		)
-		.join('\n');
-
-	const olderSummaries = context.olderSceneSummaries
-		.map((summary, index) => `${index + 1}. ${summary}`)
-		.join('\n');
-
-	const threadLines = context.threadNarrativeLines.map((line, index) => `${index + 1}. ${line}`).join('\n');
-	const lessonLines = context.lessonHistoryLines.map((line, index) => `${index + 1}. ${line}`).join('\n');
-	const boundaryLines = context.boundaryNarrativeLines
-		.map((line, index) => `${index + 1}. ${line}`)
-		.join('\n');
-	const transitionBridge = context.transitionBridge
-		? `Thread shift keys: ${context.transitionBridge.keys.join(', ')}\n${context.transitionBridge.lines.join('\n')}`
-		: 'none';
-
-	return `Narrative Context:
-- arcPosition=${context.arcPosition}
-- sceneCount=${context.sceneCount}
-- lastChoiceText="${context.lastChoiceText}"
-- transitionBridge=${transitionBridge}
-- threadNarrativeLines:
-${threadLines || 'none'}
-- boundaryNarrativeLines:
-${boundaryLines || 'none'}
-- lessonHistoryLines:
-${lessonLines || 'none'}
-- recentSceneProse:
-${recentProse || 'none'}
-- olderSceneSummaries:
-${olderSummaries || 'none'}`;
 }
 
 function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
-	const lastChoice = input.gameState.history[input.gameState.history.length - 1];
-	const threads = input.gameState.storyThreads;
-	const contextBlock = formatNarrativeContext(input.narrativeContext);
-
-	const commonRules = `Return ONLY JSON with keys:
-sceneText, choices (2-3 items), lessonId (number or null), imageKey, isEnding, endingType, mood, storyThreadUpdates.
-Write scene first, then assign lessonId. Prefer lessonId: null if no single lesson is dominant.
-No markdown fences.`;
-
 	if (mode === 'opening') {
-		return `${commonRules}
-
-Story: No Vacancies. Sydney has $47 and needs $18 by 11AM in a motel room with Oswaldo and Trina.
-Write opening scene with immediate pressure and 2-3 meaningful choices with distinct costs.
-Keep continuity constraints: no explicit moral summary, no repetitive apology loops.`;
+		return getOpeningPrompt();
 	}
 
-	return `${commonRules}
-
-Continue from scene "${input.currentSceneId ?? input.gameState.currentSceneId}" after choice "${input.choiceId ?? lastChoice?.choiceId ?? ''}".
-Recent choice text: "${lastChoice?.choiceText ?? ''}".
-Thread state:
-- oswaldoConflict=${threads.oswaldoConflict}
-- trinaTension=${threads.trinaTension}
-- moneyResolved=${threads.moneyResolved}
-- sydneyRealization=${threads.sydneyRealization}
-- exhaustionLevel=${threads.exhaustionLevel}
-
-${contextBlock}
-
-Maintain coherence with prior context and produce playable next choices.`;
+	if (!input.narrativeContext) {
+		throw new AiProviderError('Narrative context is required for non-opening scene generation', {
+			code: 'invalid_response',
+			retryable: false
+		});
+	}
+	return getContinuePromptFromContext(input.narrativeContext, null);
 }
 
 export class GrokAiProvider implements AiProvider {
@@ -202,7 +145,7 @@ export class GrokAiProvider implements AiProvider {
 		this.fetchImpl = fetchImpl;
 	}
 
-	private async callChat(prompt: string): Promise<{ scene: SceneCandidate; usage?: Record<string, unknown> }> {
+	private async callChatRaw(prompt: string): Promise<ChatCallResult> {
 		let attempt = 0;
 		const maxAttempts = this.config.maxRetries + 1;
 		let lastError: unknown = null;
@@ -221,7 +164,7 @@ export class GrokAiProvider implements AiProvider {
 					body: JSON.stringify({
 						model: this.config.grokTextModel,
 						messages: [
-							{ role: 'system', content: 'You are an interactive fiction engine. Output JSON only.' },
+							{ role: 'system', content: SYSTEM_PROMPT },
 							{ role: 'user', content: prompt }
 						],
 						max_tokens: this.config.maxOutputTokens,
@@ -232,10 +175,14 @@ export class GrokAiProvider implements AiProvider {
 
 				if (!response.ok) {
 					const status = response.status;
-					const retryable = isRetryableStatus(status);
 					throw new AiProviderError(`xAI chat request failed (${status})`, {
-						code: status === 401 || status === 403 ? 'auth' : status === 429 ? 'rate_limit' : 'provider_down',
-						retryable,
+						code:
+							status === 401 || status === 403
+								? 'auth'
+								: status === 429
+									? 'rate_limit'
+									: 'provider_down',
+						retryable: isRetryableStatus(status),
 						status
 					});
 				}
@@ -249,27 +196,19 @@ export class GrokAiProvider implements AiProvider {
 					});
 				}
 
-				const json = extractJsonObject(text);
-				const parsed = JSON.parse(json) as SceneCandidate;
-				emitAiServerTelemetry('provider_chat', {
-					requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-					provider: this.name,
-					model: this.config.grokTextModel,
-					latencyMs: Date.now() - started,
+				return {
+					text,
+					usage: payload.usage,
 					retryCount: attempt,
-					parseAttempts: attempt + 1,
-					tokenUsage: payload.usage ?? null
-				});
-				return { scene: parsed, usage: payload.usage };
+					latencyMs: Date.now() - started
+				};
 			} catch (error) {
 				lastError = error;
 				const retryable =
 					error instanceof AiProviderError
 						? error.retryable
 						: error instanceof Error && error.name === 'AbortError';
-				if (!retryable || attempt >= maxAttempts - 1) {
-					break;
-				}
+				if (!retryable || attempt >= maxAttempts - 1) break;
 				const backoff = this.config.retryBackoffMs[Math.min(attempt, this.config.retryBackoffMs.length - 1)];
 				await sleep(backoff);
 			} finally {
@@ -285,29 +224,86 @@ export class GrokAiProvider implements AiProvider {
 		throw new AiProviderError('xAI request failed', { code: 'unknown', retryable: false });
 	}
 
+	private parseSceneCandidate(text: string): SceneCandidate {
+		const json = extractJsonObject(text);
+		return JSON.parse(json) as SceneCandidate;
+	}
+
+	private async callChat(prompt: string): Promise<{ scene: SceneCandidate; usage?: Record<string, unknown> }> {
+		const first = await this.callChatRaw(prompt);
+		try {
+			const parsed = this.parseSceneCandidate(first.text);
+			emitAiServerTelemetry('provider_chat', {
+				requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+				provider: this.name,
+				model: this.config.grokTextModel,
+				latencyMs: first.latencyMs,
+				retryCount: first.retryCount,
+				parseAttempts: 1,
+				tokenUsage: first.usage ?? null
+			});
+			return { scene: parsed, usage: first.usage };
+		} catch {
+			const recoveryPrompt = getRecoveryPrompt(first.text);
+			const recovery = await this.callChatRaw(recoveryPrompt);
+			try {
+				const parsed = this.parseSceneCandidate(recovery.text);
+				emitAiServerTelemetry('provider_chat', {
+					requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+					provider: this.name,
+					model: this.config.grokTextModel,
+					latencyMs: first.latencyMs + recovery.latencyMs,
+					retryCount: first.retryCount + recovery.retryCount,
+					parseAttempts: 2,
+					tokenUsage: recovery.usage ?? first.usage ?? null
+				});
+				return { scene: parsed, usage: recovery.usage ?? first.usage };
+			} catch {
+				throw new AiProviderError('xAI chat parse recovery failed', {
+					code: 'invalid_response',
+					retryable: false
+				});
+			}
+		}
+	}
+
 	private async generateScene(input: GenerateSceneInput, mode: 'opening' | 'next'): Promise<Scene> {
 		const prompt = buildScenePrompt(input, mode);
-		const { scene } = await this.callChat(prompt);
-		const fallbackSceneId =
-			mode === 'opening' ? 'opening' : `scene_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-		const normalized = normalizeScene(scene, fallbackSceneId);
+		const maxSanityAttempts = 2;
+		let attempt = 0;
+		let lastSanityIssues: string[] = [];
 
-		if (!validateScene(normalized)) {
-			throw new AiProviderError('xAI scene failed contract validation', {
-				code: 'invalid_response',
-				retryable: false
-			});
+		while (attempt < maxSanityAttempts) {
+			const { scene } = await this.callChat(prompt);
+			const fallbackSceneId =
+				mode === 'opening' ? 'opening' : `scene_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+			const normalized = normalizeScene(scene, fallbackSceneId);
+
+			if (!validateScene(normalized)) {
+				throw new AiProviderError('xAI scene failed contract validation', {
+					code: 'invalid_response',
+					retryable: false
+				});
+			}
+
+			const sanity = evaluateStorySanity(normalized);
+			lastSanityIssues = sanity.issues;
+			if (sanity.ok) {
+				return normalized;
+			}
+
+			const canRetryForDrift =
+				sanity.blockingIssues.length === 0 && sanity.retryableIssues.length > 0 && attempt < maxSanityAttempts - 1;
+			if (!canRetryForDrift) {
+				break;
+			}
+			attempt += 1;
 		}
 
-		const sanity = evaluateStorySanity(normalized);
-		if (!sanity.ok) {
-			throw new AiProviderError(`xAI scene failed sanity checks: ${sanity.issues.join(',')}`, {
-				code: 'invalid_response',
-				retryable: false
-			});
-		}
-
-		return normalized;
+		throw new AiProviderError(`xAI scene failed sanity checks: ${lastSanityIssues.join(',')}`, {
+			code: 'invalid_response',
+			retryable: false
+		});
 	}
 
 	async getOpeningScene(input: GenerateSceneInput): Promise<Scene> {
@@ -365,7 +361,12 @@ export class GrokAiProvider implements AiProvider {
 				if (!response.ok) {
 					const status = response.status;
 					throw new AiProviderError(`xAI image request failed (${status})`, {
-						code: status === 401 || status === 403 ? 'auth' : status === 429 ? 'rate_limit' : 'provider_down',
+						code:
+							status === 401 || status === 403
+								? 'auth'
+								: status === 429
+									? 'rate_limit'
+									: 'provider_down',
 						retryable: isRetryableStatus(status),
 						status
 					});
@@ -418,7 +419,9 @@ export class GrokAiProvider implements AiProvider {
 	async probe(): Promise<ProviderProbeResult> {
 		const started = Date.now();
 		try {
-			await this.callChat('Respond with {"sceneText":"probe","choices":[{"id":"ok","text":"ok"}],"lessonId":null,"imageKey":"hotel_room","isEnding":false,"endingType":null}');
+			await this.callChat(
+				'Respond with {"sceneText":"probe","choices":[{"id":"ok","text":"ok"},{"id":"wait","text":"wait"}],"lessonId":null,"imageKey":"hotel_room","isEnding":false,"endingType":null}'
+			);
 			return {
 				provider: this.name,
 				model: this.config.grokTextModel,

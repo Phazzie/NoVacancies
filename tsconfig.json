@@ -5,7 +5,12 @@
 		"checkJs": false,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
-		"moduleResolution": "bundler",
+		"baseUrl": ".",
+		"moduleResolution": "node",
+		"paths": {
+			"$lib": ["src/lib"],
+			"$lib/*": ["src/lib/*"]
+		},
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"strict": true

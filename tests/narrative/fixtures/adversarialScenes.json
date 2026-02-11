@@ -1,0 +1,184 @@
+[
+  {
+    "id": "adversarial_banned_phrase_lesson_is",
+    "description": "Contains 'the lesson is' — structurally valid (voice quality deferred to Tier 2)",
+    "scene": {
+      "sceneId": "scene_bad_1",
+      "sceneText": "Sydney stared at the ceiling. The lesson is that load-bearing beams do not get applause. She understood this now, deeply and truly, as the weight of the room settled on her shoulders like a familiar coat.",
+      "choices": [
+        { "id": "reflect", "text": "Reflect on the lesson" },
+        { "id": "move_on", "text": "Move on" }
+      ],
+      "lessonId": 1,
+      "imageKey": "sydney_thinking",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "dark"
+    },
+    "expectedBlocking": []
+  },
+  {
+    "id": "adversarial_therapy_speak",
+    "description": "Contains therapy-style wording — should no longer hard-block",
+    "scene": {
+      "sceneId": "scene_bad_2",
+      "sceneText": "You recognize this as a trauma response. Your nervous system is telling you to flee, but you hold space for the discomfort. The emotional bandwidth required to process Oswaldo's behavior is more than you have right now.",
+      "choices": [
+        { "id": "breathe", "text": "Take a breath" },
+        { "id": "leave", "text": "Walk away" }
+      ],
+      "lessonId": null,
+      "imageKey": "sydney_tired",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "dark"
+    },
+    "expectedBlocking": []
+  },
+  {
+    "id": "adversarial_too_short",
+    "description": "Scene text under 80 chars — must block",
+    "scene": {
+      "sceneId": "scene_bad_3",
+      "sceneText": "Sydney looked at the clock. It was early. She was tired.",
+      "choices": [
+        { "id": "go", "text": "Go" },
+        { "id": "stay", "text": "Stay" }
+      ],
+      "lessonId": null,
+      "imageKey": "hotel_room",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "neutral"
+    },
+    "expectedBlocking": ["scene_text_too_short"]
+  },
+  {
+    "id": "adversarial_one_choice",
+    "description": "Only 1 choice on non-ending — must block",
+    "scene": {
+      "sceneId": "scene_bad_4",
+      "sceneText": "The room is quiet. Oswaldo is sleeping. Trina is on the floor. The clock says 7:15 and the math hasn't changed since you last checked. Eighteen short. Four hours. The phones are lined up but the screens are dark.",
+      "choices": [
+        { "id": "continue", "text": "Continue" }
+      ],
+      "lessonId": null,
+      "imageKey": "hotel_room",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "neutral"
+    },
+    "expectedBlocking": ["insufficient_choices"]
+  },
+  {
+    "id": "adversarial_four_choices",
+    "description": "4 choices — must block",
+    "scene": {
+      "sceneId": "scene_bad_5",
+      "sceneText": "The ice machine hums through the wall. Eighteen dollars short and four hours to close the gap. Oswaldo is still a lump under the blankets. Trina's wrapper trail has extended to the bathroom door. Your phones are ready.",
+      "choices": [
+        { "id": "phones", "text": "Work the phones" },
+        { "id": "wake_him", "text": "Wake Oswaldo" },
+        { "id": "ask_trina", "text": "Ask Trina for money" },
+        { "id": "go_outside", "text": "Step outside for air" }
+      ],
+      "lessonId": null,
+      "imageKey": "hotel_room",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "tense"
+    },
+    "expectedBlocking": ["too_many_choices"]
+  },
+  {
+    "id": "adversarial_duplicate_choices",
+    "description": "Duplicate choice phrasing — must block",
+    "scene": {
+      "sceneId": "scene_bad_6",
+      "sceneText": "Oswaldo just said something that landed wrong. Not the words themselves but the tone underneath them, the casual dismissal baked into every syllable. You've heard this voice before. It means he knows he's wrong and he's going to make that your problem.",
+      "choices": [
+        { "id": "confront_him", "text": "Tell him what you really think" },
+        { "id": "confront_also", "text": "Tell him what you really think" }
+      ],
+      "lessonId": null,
+      "imageKey": "sydney_frustrated",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "tense"
+    },
+    "expectedBlocking": ["duplicate_choice_phrasing"]
+  },
+  {
+    "id": "adversarial_apology_loop",
+    "description": "3+ apology mentions — structurally valid (taste deferred to Tier 2)",
+    "scene": {
+      "sceneId": "scene_bad_7",
+      "sceneText": "Oswaldo says sorry. He's sorry about the charger. He's sorry about the food. He says he's going to apologize to Trina too. You've heard sorry before. Sorry is the cheapest word in this room. Sorry doesn't fix the toilet handle or pay the eighteen dollars or undo the car incident. Sorry is what he says when he wants the conversation to end without changing anything.",
+      "choices": [
+        { "id": "accept", "text": "Accept the apology" },
+        { "id": "reject", "text": "Tell him sorry means nothing without action" }
+      ],
+      "lessonId": null,
+      "imageKey": "sydney_frustrated",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "tense"
+    },
+    "expectedBlocking": []
+  },
+  {
+    "id": "adversarial_over_word_limit",
+    "description": "Non-ending scene over 350 words — must hard block",
+    "scene": {
+      "sceneId": "scene_bad_8",
+      "sceneText": "The morning light cuts through the gap in the curtains like a blade. You've been awake since five, running the numbers, checking the phones, calculating the distance between forty-seven dollars and sixty-five dollars like it's a math problem that might solve itself if you just look at it from the right angle. It won't. It never does. The gap is eighteen dollars and the clock doesn't care about your angle. Oswaldo is still sleeping. Of course he is. He went to bed at four after spending three hours fixing a stranger's speaker wire, a task he volunteered for with the enthusiasm he never shows when you ask him to walk to the vending machine. Trina is on the floor surrounded by snack cake wrappers like she's nesting in processed sugar. She'll wake up in an hour, eat something else, and drop another wrapper. The room smells like cold coffee, menthol smoke, and the specific staleness of a space that three people share but only one person cleans. Your phones are on the nightstand. Five screens, five pop sockets, five chances to close an eighteen-dollar gap before eleven AM. You pick up the first one and start scrolling. There's a refund pending on one account, a dispute on another, a phishing thread that might pay if the mark responds before nine. The math is always running in your head. Calories per dollar at 7-Eleven. Gigabytes left on the hotspot before it throttles. Days until the insurance premium on a car you no longer have. Hours until Oswaldo wakes up and asks what's for breakfast. The ice machine cycles through the wall. The parking lot is still dark. You're the only thing moving in this building that isn't mechanical. That's not a metaphor. That's just Tuesday. The question isn't whether you can close the gap. You always close the gap. The question is what it costs you this time, and whether anyone in this room will notice the invoice. They won't. They never do. But the room will be paid and the phones will be charged and the food will be calculated and life will go on because you made it go on, because that's what load-bearing beams do.",
+      "choices": [
+        { "id": "start_working", "text": "Start the hustle" },
+        { "id": "wake_someone", "text": "Wake someone up" }
+      ],
+      "lessonId": null,
+      "imageKey": "hotel_room",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "tense"
+    },
+    "expectedBlocking": ["scene_word_count_hard_limit"]
+  },
+  {
+    "id": "adversarial_in_the_end_realized",
+    "description": "Contains 'In the end, Sydney realized' — structurally valid (voice quality deferred to Tier 2)",
+    "scene": {
+      "sceneId": "scene_bad_9",
+      "sceneText": "The room was quiet now. The fight was over, the words hung in the air like smoke from a fire nobody wanted to tend. In the end, Sydney realized that she had been carrying more than rent money. She had been carrying the entire illusion that this arrangement was mutual.",
+      "choices": [
+        { "id": "accept", "text": "Accept what you know now" },
+        { "id": "change", "text": "Start making changes" }
+      ],
+      "lessonId": null,
+      "imageKey": "sydney_thinking",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "dark"
+    },
+    "expectedBlocking": []
+  },
+  {
+    "id": "adversarial_soft_limit_retryable",
+    "description": "Non-ending at 290 words — retryable, not blocking",
+    "scene": {
+      "sceneId": "scene_soft_1",
+      "sceneText": "The morning pushes through the curtains. You have been awake since five, running numbers that do not change no matter how many times you recalculate. Forty-seven dollars. Sixty-five needed. Eighteen short. The clock on the nightstand blinks like it knows. Oswaldo is a shape under the comforter. He went to bed at four after riding his bike across town to help someone move a couch. He can ride five miles for a stranger but cannot walk five feet to hand you the charger that is three inches from his elbow. Trina is on the floor. Wrapper confetti. Menthol smoke residue. She wakes up every hour to eat something and leaves the evidence behind like a crime scene. Your phones are lined up on the nightstand. Five screens. Five pop sockets. Five chances to turn eighteen dollars from a problem into a fact of life that nobody else in this room will remember by noon. The ice machine hums through the thin wall. The parking lot is still mostly dark. You pick up the first phone and check the pending refund. Twelve dollars, maybe, if the dispute clears before ten. Not enough. Never enough on the first try. But you stack small numbers into bigger ones because that is the job nobody gave you and nobody will thank you for. The room needs you to be awake right now. The room needs you to be solving this right now. The room does not know that, and if it did, it would not say so. You start working. Nobody is watching. Nobody needs to be. The math does not require an audience, and neither do you, most days. Today might not be most days. Today the gap feels wider than eighteen dollars.",
+      "choices": [
+        { "id": "grind", "text": "Keep grinding. Stack the small numbers." },
+        { "id": "wake_him", "text": "Wake Oswaldo. He should see this." }
+      ],
+      "lessonId": null,
+      "imageKey": "sydney_phone",
+      "isEnding": false,
+      "endingType": null,
+      "mood": "tense"
+    },
+    "expectedBlocking": [],
+    "expectedRetryable": ["scene_word_count_soft_limit"]
+  }
+]

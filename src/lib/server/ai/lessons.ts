@@ -5,10 +5,17 @@
  * These appear as popups when scenes demonstrate them.
  */
 
-/**
- * @type {import('./contracts.js').Lesson[]}
- */
-export const lessons = [
+export interface Lesson {
+	id: number;
+	title: string;
+	quote: string;
+	insight: string;
+	emotionalStakes: string[];
+	storyTriggers: string[];
+	unconventionalAngle: string;
+}
+
+export const lessons: Lesson[] = [
     {
         id: 1,
         title: 'Load-Bearing Beams Get Leaned On',
@@ -320,7 +327,7 @@ export const lessons = [
  * @param {number} id
  * @returns {import('./contracts.js').Lesson|undefined}
  */
-export function getLessonById(id) {
+export function getLessonById(id: number): Lesson | undefined {
     return lessons.find((l) => l.id === id);
 }
 
@@ -329,7 +336,7 @@ export function getLessonById(id) {
  * @param {number} lessonId
  * @returns {string|null}
  */
-export function getRandomTrigger(lessonId) {
+export function getRandomTrigger(lessonId: number): string | null {
     const lesson = getLessonById(lessonId);
     if (!lesson || !lesson.storyTriggers.length) return null;
     return lesson.storyTriggers[Math.floor(Math.random() * lesson.storyTriggers.length)];
@@ -340,7 +347,7 @@ export function getRandomTrigger(lessonId) {
  * @param {string} sceneText
  * @returns {number|null} Lesson ID or null
  */
-export function detectLessonInScene(sceneText) {
+export function detectLessonInScene(sceneText: string): number | null {
     const text = sceneText.toLowerCase();
 
     // Check for specific keywords/phrases that indicate lessons

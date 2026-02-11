@@ -5,7 +5,7 @@ import {
 	type EndingType,
 	type GameSettings,
 	type RuntimeFeatureFlags
-} from '$lib/contracts';
+} from '../contracts';
 
 export interface StorageLike {
 	getItem(key: string): string | null;
@@ -119,7 +119,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 			if (!parsed || typeof parsed !== 'object') return base;
 			return {
 				...base,
-				useMocks: typeof parsed.useMocks === 'boolean' ? parsed.useMocks : base.useMocks,
 				showLessons:
 					typeof parsed.showLessons === 'boolean' ? parsed.showLessons : base.showLessons,
 				featureFlags: base.featureFlags,
@@ -143,7 +142,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 			local,
 			STORAGE_KEYS.settings,
 			JSON.stringify({
-				useMocks: next.useMocks,
 				showLessons: next.showLessons
 			})
 		);

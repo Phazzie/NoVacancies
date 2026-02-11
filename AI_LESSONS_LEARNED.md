@@ -118,3 +118,57 @@
 
 **Insight:** Local debug tooling that depends only on localStorage can appear broken in privacy/quota-constrained contexts.
 **Lesson:** Keep an in-memory fallback path so manual debug actions still produce visible feedback even when persistence is unavailable.
+
+## 23. Test Gates Must Follow the Active Runtime, Not Legacy Convenience
+
+**Insight:** Keeping `npm test`/`npm run lint` pointed at legacy folders makes decommission work look incomplete forever and blocks objective progress.
+**Lesson:** Align default gates with the live runtime first, and keep legacy checks as explicitly named transitional scripts (`*:legacy`) until deletion is complete.
+
+## 24. Marker Guards Work Best When They Cover Every Runtime Code Root
+
+**Insight:** A marker guard limited to `src/**` can still miss old code roots (`js/**`) that remain in the repo and reintroduce banned provider assumptions.
+**Lesson:** Expand guard scope to every runtime code directory that still exists, then shrink scope only after those directories are fully deleted.
+
+## 25. Narrative Assets Must Be Runtime-Reachable, Not Just Well-Written
+
+**Insight:** High-quality prompt assets (voice maps, lesson history, transition bridges, recovery rules) have zero product value if the active provider path does not import them.
+**Lesson:** Treat narrative parity as an integration contract:
+- full `SYSTEM_PROMPT` must be wired in active provider code
+- opening/continue/recovery prompt builders must be used in generation flow
+- `NarrativeContext` must be built/passed at runtime
+- sanity checks must enforce voice constraints (not only JSON shape)
+
+## 26. No-Shortcut Type Hardening Prevents Quiet Prompt Regressions
+
+**Insight:** `@ts-nocheck` and broad cast workarounds in narrative modules hide integration drift until runtime.
+**Lesson:** Keep prompt/context modules strict-typed in `src` so function signatures, thread/context fields, and prompt wiring fail fast during `npm run check` instead of during live story generation.
+
+## 27. Split Narrative CI Into Deterministic Gates and Subjective Scoring
+
+**Insight:** Narrative quality has both objective failure modes (broken prompt wiring, missing context fields, banned phrasing) and subjective quality signals (voice strength, emotional resonance, novelty).
+**Lesson:** Keep Tier 1 blocking checks deterministic and fixture-backed (`npm run test:narrative`), then layer subjective rubric scoring (Tier 2) as non-blocking CI artifacts so creative evaluation informs iteration without destabilizing release gates.
+
+## 28. Never Import `$lib/server/*` From Client Runtime Modules
+
+**Insight:** `gameRuntime` is consumed by browser routes; importing server-only modules into that path can pass static checks but fail at runtime/hydration with SvelteKit boundary errors.
+**Lesson:** Keep context/transition helpers in browser-safe shared modules (`$lib/game/*` or `$lib/shared/*`) and reserve `$lib/server/*` for provider/routes-only code.
+
+## 29. Gate UI Click Assertions Behind Hydration Readiness
+
+**Insight:** SSR route markup can appear before client handlers bind, causing false-negative e2e failures when tests click immediately after heading visibility.
+**Lesson:** Expose a tiny hydration-ready marker for interactive debug/admin surfaces and make e2e wait for it before click/assert sequences.
+
+## 30. Remove Taste Heuristics, Keep Structural Guards
+
+**Insight:** Regex-heavy voice policing (therapy-speak detectors, banned phrase lists, apology-loop counters, evasion regex) adds brittle false positives, fights prompt intent, and creates blind-retry loops where the provider gets no feedback about what was wrong.
+**Lesson:** Keep sanity gates deterministic and structural only (text length, choice count, duplicate choices, word-count hard/soft limits). Let the system prompt and Tier 2 AI-evaluated scoring carry narrative taste enforcement — those surfaces are tunable without code changes and can explain *why* something fails, unlike a regex.
+
+## 31. A "Hard Cap" Must Have a Final Deterministic Trim Path
+
+**Insight:** Declaring a context budget is not enough if protected sections can silently push payload size beyond target.
+**Lesson:** Enforce deterministic trim order to stay within budget (older summaries first, then controlled recent-prose clipping) and expose truncation metadata for observability.
+
+## 32. Canonical Prompt Paths Reduce Drift Risk
+
+**Insight:** Keeping both legacy and v2 continue-prompt paths doubles maintenance surface and creates flag-dependent narrative divergence.
+**Lesson:** Use one canonical context-driven continue path in active runtime/provider flow; treat alternate prompt paths as temporary migration scaffolding only.
