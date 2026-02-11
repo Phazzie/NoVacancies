@@ -5,7 +5,7 @@ import type { GameTurnResult } from '$lib/game/gameRuntime';
 import { createGameRuntime, type GameRuntime } from '$lib/game/gameRuntime';
 import { resolveImagePath } from '$lib/game/imagePaths';
 import { appendDebugError } from '$lib/debug/errorLog';
-import { createApiStoryService, mockStoryService } from '$lib/services';
+import { createApiStoryService } from '$lib/services';
 
 export interface AppGameState {
 	settings: GameSettings | null;
@@ -66,7 +66,7 @@ function getRuntime(): GameRuntime {
 				}
 			}
 			: {
-				storyService: mockStoryService
+				storyService: createApiStoryService()
 			}
 	);
 
@@ -103,7 +103,6 @@ export const gameStore = {
 
 		try {
 			const result = await engine.startGame({
-				useMocks: false,
 				featureFlags: settings.featureFlags
 			});
 			applyTurnResult(result);

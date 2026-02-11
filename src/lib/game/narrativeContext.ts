@@ -110,7 +110,7 @@ export const TRANSITION_BRIDGE_MAP: TransitionBridgeMap = Object.freeze({
 		'1->3': 'The pattern gets too clean to deny: he can show up for everybody else, just not for her.'
 	},
 	oswaldoAwareness: {
-		'0->2': 'He overhears the referral hustle, the rent math, the cleanup, and finally has no excuse to claim he didn't know.'
+		'0->2': "He overhears the referral hustle, the rent math, the cleanup, and finally has no excuse to claim he didn't know."
 	},
 	moneyResolved: {
 		'false->true': 'She patches it with one ugly move, buys one day of air, and everyone else mistakes that for stability.'

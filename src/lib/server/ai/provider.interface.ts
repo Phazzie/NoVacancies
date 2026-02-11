@@ -1,6 +1,6 @@
 import type { GameState, NarrativeContext, Scene } from '$lib/contracts';
 
-export type AiProviderName = 'mock' | 'grok';
+export type AiProviderName = 'grok';
 export type AiErrorCode =
 	| 'timeout'
 	| 'auth'

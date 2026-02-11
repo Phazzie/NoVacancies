@@ -147,7 +147,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('settings no longer exposes Static Story toggle', async ({ page }) => {
 		await page.goto('/settings');
 		await expect(page.getByRole('button', { name: 'Static Story' })).toHaveCount(0);
-		await expect(page.getByText(/AI mode only\. No fallback\./i)).toBeVisible();
+		await expect(page.getByText(/AI Generated only\..*No mock fallback path is active\./i)).toBeVisible();
 	});
 
 	test('play route shows AI mode badge when scene is loaded', async ({ page }) => {

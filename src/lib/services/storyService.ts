@@ -2,7 +2,6 @@ import type { GameState, NarrativeContext, Scene, StoryThreads } from '../contra
 import { appendDebugError } from '../debug/errorLog';
 
 export interface OpeningSceneRequest {
-	useMocks: boolean;
 	featureFlags?: GameState['featureFlags'];
 }
 
@@ -109,7 +108,6 @@ export function createApiStoryService(config: ApiStoryServiceConfig = {}): Story
 				fetchImpl,
 				endpoint('/story/opening'),
 				{
-					useMocks: request?.useMocks ?? false,
 					featureFlags: request?.featureFlags ?? null
 				}
 			);
@@ -129,7 +127,7 @@ export function createApiStoryService(config: ApiStoryServiceConfig = {}): Story
 			const payload = await postJson<{ scene: unknown }>(
 				fetchImpl,
 				endpoint('/story/opening'),
-				{ useMocks: false }
+				{}
 			);
 			return ensureSceneShape(payload.scene, '/story/opening');
 		},

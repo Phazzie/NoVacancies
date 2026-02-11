@@ -4,7 +4,6 @@ import { asRouteError, buildOpeningInput, resolveTextScene } from '$lib/server/a
 export const POST: RequestHandler = async (event) => {
 	try {
 		const payload = (await event.request.json().catch(() => ({}))) as {
-			useMocks?: boolean;
 			featureFlags?: unknown;
 		};
 		const input = buildOpeningInput(payload);

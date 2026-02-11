@@ -11,8 +11,7 @@ export const GET: RequestHandler = async (event) => {
 		}
 
 		const providers = createProviderRegistry(config);
-		const probeProvider = config.provider === 'grok' ? providers.grok : providers.mock;
-		const result = await probeProvider.probe?.();
+		const result = await providers.grok.probe?.();
 		return json({
 			probe: result ?? null,
 			config: {
