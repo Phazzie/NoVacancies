@@ -172,3 +172,8 @@
 
 **Insight:** Keeping both legacy and v2 continue-prompt paths doubles maintenance surface and creates flag-dependent narrative divergence.
 **Lesson:** Use one canonical context-driven continue path in active runtime/provider flow; treat alternate prompt paths as temporary migration scaffolding only.
+
+## 33. Parse Recovery Should Degrade to Typed Failure, Not Synthetic Story Content
+
+**Insight:** When provider JSON is malformed, inventing a synthetic "fallback scene" may keep the app moving but can silently corrupt narrative continuity and hide provider defects.
+**Lesson:** Prefer deterministic parse layers (robust extraction, one recovery prompt) and then fail with typed `invalid_response` errors. Keep UX recovery in the UI/runtime layer, not by manufacturing story content inside the provider adapter.

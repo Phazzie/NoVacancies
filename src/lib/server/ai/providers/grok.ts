@@ -58,15 +58,78 @@ function extractJsonObject(text: string): string {
 	const trimmed = text.trim();
 	if (!trimmed) throw new Error('Empty provider response');
 
-	const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-	if (fencedMatch?.[1]) return fencedMatch[1].trim();
+	const candidates: string[] = [];
+	const seen = new Set<string>();
 
-	const first = trimmed.indexOf('{');
-	const last = trimmed.lastIndexOf('}');
-	if (first === -1 || last === -1 || last <= first) {
-		throw new Error('No JSON object found in provider response');
+	const pushCandidate = (value: string) => {
+		const candidate = value.trim();
+		if (!candidate || seen.has(candidate)) return;
+		seen.add(candidate);
+		candidates.push(candidate);
+	};
+
+	const fencedRegex = /```(?:json)?\s*([\s\S]*?)\s*```/gi;
+	let fencedMatch: RegExpExecArray | null = null;
+	while ((fencedMatch = fencedRegex.exec(trimmed)) !== null) {
+		if (fencedMatch[1]) pushCandidate(fencedMatch[1]);
 	}
-	return trimmed.slice(first, last + 1);
+
+	if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+		pushCandidate(trimmed);
+	}
+
+	// Scan for balanced JSON object slices while respecting quoted strings.
+	const maxObjectsToScan = 10;
+	let objectsFound = 0;
+	for (let start = 0; start < trimmed.length && objectsFound < maxObjectsToScan; start += 1) {
+		if (trimmed[start] !== '{') continue;
+
+		let depth = 0;
+		let inString = false;
+		let escaped = false;
+
+		for (let i = start; i < trimmed.length; i += 1) {
+			const ch = trimmed[i];
+			if (inString) {
+				if (escaped) {
+					escaped = false;
+				} else if (ch === '\\') {
+					escaped = true;
+				} else if (ch === '"') {
+					inString = false;
+				}
+				continue;
+			}
+
+			if (ch === '"') {
+				inString = true;
+				continue;
+			}
+			if (ch === '{') depth += 1;
+			if (ch === '}') {
+				depth -= 1;
+				if (depth === 0) {
+					pushCandidate(trimmed.slice(start, i + 1));
+					objectsFound += 1;
+					start = i;
+					break;
+				}
+			}
+		}
+	}
+
+	for (const candidate of candidates) {
+		try {
+			const parsed = JSON.parse(candidate);
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+				return candidate;
+			}
+		} catch {
+			// try next candidate
+		}
+	}
+
+	throw new Error('No parseable JSON object found in provider response');
 }
 
 function normalizeChoiceId(text: string, index: number): string {
@@ -231,6 +294,8 @@ export class GrokAiProvider implements AiProvider {
 
 	private async callChat(prompt: string): Promise<{ scene: SceneCandidate; usage?: Record<string, unknown> }> {
 		const first = await this.callChatRaw(prompt);
+
+		// Parse level 1: standard extraction + parse.
 		try {
 			const parsed = this.parseSceneCandidate(first.text);
 			emitAiServerTelemetry('provider_chat', {
@@ -244,27 +309,33 @@ export class GrokAiProvider implements AiProvider {
 			});
 			return { scene: parsed, usage: first.usage };
 		} catch {
-			const recoveryPrompt = getRecoveryPrompt(first.text);
-			const recovery = await this.callChatRaw(recoveryPrompt);
-			try {
-				const parsed = this.parseSceneCandidate(recovery.text);
-				emitAiServerTelemetry('provider_chat', {
-					requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-					provider: this.name,
-					model: this.config.grokTextModel,
-					latencyMs: first.latencyMs + recovery.latencyMs,
-					retryCount: first.retryCount + recovery.retryCount,
-					parseAttempts: 2,
-					tokenUsage: recovery.usage ?? first.usage ?? null
-				});
-				return { scene: parsed, usage: recovery.usage ?? first.usage };
-			} catch {
-				throw new AiProviderError('xAI chat parse recovery failed', {
-					code: 'invalid_response',
-					retryable: false
-				});
-			}
+			// Continue to parse level 2 recovery path.
 		}
+
+		// Parse level 2: recovery prompt, then parse again.
+		const recoveryPrompt = getRecoveryPrompt(first.text);
+		const recovery = await this.callChatRaw(recoveryPrompt);
+		try {
+			const parsed = this.parseSceneCandidate(recovery.text);
+			emitAiServerTelemetry('provider_chat', {
+				requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+				provider: this.name,
+				model: this.config.grokTextModel,
+				latencyMs: first.latencyMs + recovery.latencyMs,
+				retryCount: first.retryCount + recovery.retryCount,
+				parseAttempts: 2,
+				tokenUsage: recovery.usage ?? first.usage ?? null
+			});
+			return { scene: parsed, usage: recovery.usage ?? first.usage };
+		} catch {
+			// fall through to typed failure
+		}
+
+		// All parse attempts failed: throw typed failure (no synthetic fallback scene).
+		throw new AiProviderError('Unable to parse scene from provider response', {
+			code: 'invalid_response',
+			retryable: false
+		});
 	}
 
 	private async generateScene(input: GenerateSceneInput, mode: 'opening' | 'next'): Promise<Scene> {
