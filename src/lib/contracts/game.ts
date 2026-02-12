@@ -67,6 +67,7 @@ export interface StoryThreads {
 	boundariesSet: string[];
 	oswaldoAwareness: number;
 	exhaustionLevel: number;
+	dexTriangulation: number;
 }
 
 export interface SceneLogEntry {
@@ -96,6 +97,7 @@ export interface NarrativeContext {
 	threadNarrativeLines: string[];
 	boundaryNarrativeLines: string[];
 	lessonHistoryLines: string[];
+	recentBeats: string[];
 	recentSceneProse: Array<{ sceneId: string; text: string; viaChoiceText: string }>;
 	olderSceneSummaries: string[];
 	transitionBridge: { keys: string[]; lines: string[] } | null;
@@ -164,7 +166,8 @@ export function createStoryThreads(): StoryThreads {
 		sydneyRealization: 0,
 		boundariesSet: [],
 		oswaldoAwareness: 0,
-		exhaustionLevel: 1
+		exhaustionLevel: 1,
+		dexTriangulation: 0
 	};
 }
 

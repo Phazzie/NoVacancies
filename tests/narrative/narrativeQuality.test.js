@@ -138,34 +138,83 @@ function testVoiceIntegrity() {
 }
 
 // ---------------------------------------------------------------------------
+// Tier 1, Suite 2b: Translation Quality Floor (freeze weak fallback regressions)
+// ---------------------------------------------------------------------------
+
+function testTranslationQualityFloor() {
+	suite('Translation Quality Floor');
+
+	const narrativeSource = readSource('src/lib/server/ai/narrative.ts');
+	const contextSource = readSource('src/lib/game/narrativeContext.ts');
+	assert(narrativeSource !== null, 'narrative.ts exists for translation quality checks');
+	assert(contextSource !== null, 'narrativeContext.ts exists for translation quality checks');
+
+	const weakPhrases = [
+		'Thread state unavailable; keep continuity conservative.',
+		"Oswaldo's current posture is unclear; treat him as unpredictable.",
+		"Trina's pressure level is unclear; keep her as an ambient stressor.",
+		"Sydney's realization state is uncertain; keep her in observation mode.",
+		"Oswaldo's awareness is unstable; assume low accountability.",
+		'Her exhaustion is hard to read; keep the cost of every interaction visible.',
+		'has appeared already; do not re-teach it directly.',
+		'Boundary set: ${boundary}. The room now has one less loophole.'
+	];
+
+	for (const phrase of weakPhrases) {
+		assert(!contextSource.includes(phrase), `Weak phrase removed from narrativeContext.ts: "${phrase}"`);
+		assert(!narrativeSource.includes(phrase), `Weak phrase removed from narrative.ts: "${phrase}"`);
+	}
+
+	const qualityAnchors = [
+		'One more loophole just lost its key.',
+		'Advance the consequence; do not replay the reveal.',
+		'Continuity memory dropped this turn. Keep behavior conservative and avoid abrupt reversals.',
+		'Assume fast pivots between charm, dodge, and blame.',
+		'Keep her as ambient drain with entitlement intact.',
+		'Keep her observing the mismatch between words and labor.',
+		'make behavior lag unless earned.',
+		'Her fatigue is underreported. Keep a visible cost on every ask.'
+	];
+
+	for (const anchor of qualityAnchors) {
+		assert(contextSource.includes(anchor), `Quality anchor present in narrativeContext.ts: "${anchor}"`);
+		assert(narrativeSource.includes(anchor), `Quality anchor present in narrative.ts: "${anchor}"`);
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Tier 1, Suite 3: Lesson Corpus Integrity
 // ---------------------------------------------------------------------------
 
 function testLessonCorpusIntegrity() {
 	suite('Lesson Corpus Integrity');
 
-	const lessonsSource = readSource('src/lib/server/ai/lessons.ts');
-	assert(lessonsSource !== null, 'lessons.ts exists');
+	const lessonsCatalogSource = readSource('src/lib/narrative/lessonsCatalog.ts');
+	const serverLessonsSource = readSource('src/lib/server/ai/lessons.ts');
+	assert(lessonsCatalogSource !== null, 'lessonsCatalog.ts exists');
+	assert(serverLessonsSource !== null, 'server lessons wrapper exists');
 
 	// All 17 lessons present
 	for (let id = 1; id <= 17; id++) {
-		assert(new RegExp(`id:\\s*${id}\\b`).test(lessonsSource),
+		assert(new RegExp(`id:\\s*${id}\\b`).test(lessonsCatalogSource),
 			`Lesson ${id} present in corpus`);
 	}
 
 	// Required fields per lesson
 	const requiredFields = ['title', 'quote', 'insight', 'emotionalStakes', 'storyTriggers', 'unconventionalAngle'];
 	for (const field of requiredFields) {
-		const count = (lessonsSource.match(new RegExp(`${field}:`, 'g')) || []).length;
+		const count = (lessonsCatalogSource.match(new RegExp(`${field}:`, 'g')) || []).length;
 		assert(count >= 17, `All 17 lessons have '${field}' field (found ${count})`,
 			`Only ${count}/17 lessons have '${field}'`);
 	}
 
-	// Lesson functions exported
-	assert(/export\s+function\s+getLessonById/.test(lessonsSource),
-		'getLessonById exported');
-	assert(/export\s+function\s+detectLessonInScene/.test(lessonsSource),
-		'detectLessonInScene exported');
+	// Lesson exports remain available through server adapter.
+	assert(/export\s+function\s+getLessonById/.test(lessonsCatalogSource),
+		'getLessonById exported from lessonsCatalog.ts');
+	assert(/export\s*\{\s*getLessonById,\s*lessons,\s*type\s+Lesson\s*\}/.test(serverLessonsSource),
+		'server lessons module re-exports canonical lesson catalog');
+	assert(/export\s+function\s+detectLessonInScene/.test(serverLessonsSource),
+		'detectLessonInScene exported from server lessons wrapper');
 }
 
 // ---------------------------------------------------------------------------
@@ -184,6 +233,8 @@ function testContextBuilderContract() {
 		'buildNarrativeContext exported from narrativeContext.ts');
 	assert(/export\s+function\s+getContinuePromptFromContext/.test(narrativeSource),
 		'continue prompt builder exported from narrative.ts');
+	assert(narrativeSource.includes('RECENT BEAT MEMORY'),
+		'continue prompt context includes beat-memory section');
 
 	// Runtime calls it
 	assert(/buildNarrativeContext\(/.test(runtimeSource),
@@ -195,6 +246,7 @@ function testContextBuilderContract() {
 	assert(contextSource.includes('threadNarrativeLines'), 'Context includes thread narrative lines');
 	assert(contextSource.includes('boundaryNarrativeLines'), 'Context includes boundary narrative lines');
 	assert(contextSource.includes('lessonHistoryLines'), 'Context includes lesson history lines');
+	assert(contextSource.includes('recentBeats'), 'Context includes recent beat memory');
 	assert(contextSource.includes('recentSceneProse'), 'Context includes recent scene prose');
 	assert(contextSource.includes('olderSceneSummaries'), 'Context includes older scene summaries');
 	assert(contextSource.includes('transitionBridge'), 'Context includes transition bridge');
@@ -217,10 +269,10 @@ function testContinuityDimensions() {
 	const contextSource = readSource('src/lib/game/narrativeContext.ts');
 	const contractsSource = readSource('src/lib/contracts/game.ts');
 
-	// All 8 thread dimensions in StoryThreads type
+	// All thread dimensions in StoryThreads type
 	const threadDimensions = [
 		'oswaldoConflict', 'trinaTension', 'moneyResolved', 'carMentioned',
-		'sydneyRealization', 'boundariesSet', 'oswaldoAwareness', 'exhaustionLevel'
+		'sydneyRealization', 'boundariesSet', 'oswaldoAwareness', 'exhaustionLevel', 'dexTriangulation'
 	];
 	for (const dim of threadDimensions) {
 		assert(contractsSource.includes(dim),
@@ -235,7 +287,8 @@ function testContinuityDimensions() {
 		'CAR_TRANSLATIONS',
 		'SYDNEY_REALIZATION_TRANSLATIONS',
 		'OSWALDO_AWARENESS_TRANSLATIONS',
-		'EXHAUSTION_TRANSLATIONS'
+		'EXHAUSTION_TRANSLATIONS',
+		'DEX_TRIANGULATION_TRANSLATIONS'
 	];
 	for (const map of translationMaps) {
 		assert(contextSource.includes(map),
@@ -300,7 +353,7 @@ function testTransitionBridgeLogic() {
 
 	// Bridge map covers key thread fields
 	const bridgedFields = ['oswaldoConflict', 'trinaTension', 'exhaustionLevel',
-		'sydneyRealization', 'oswaldoAwareness', 'moneyResolved'];
+		'sydneyRealization', 'oswaldoAwareness', 'moneyResolved', 'dexTriangulation'];
 	for (const field of bridgedFields) {
 		assert(contextSource.includes(`${field}:`),
 			`TRANSITION_BRIDGE_MAP covers '${field}'`);
@@ -549,6 +602,7 @@ console.log(`=== Tier 1: Blocking Gates ===`);
 
 testCanonicalPromptWiring();
 testVoiceIntegrity();
+testTranslationQualityFloor();
 testLessonCorpusIntegrity();
 testContextBuilderContract();
 testContinuityDimensions();

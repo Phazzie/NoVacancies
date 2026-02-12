@@ -119,7 +119,20 @@
 **Insight:** Local debug tooling that depends only on localStorage can appear broken in privacy/quota-constrained contexts.
 **Lesson:** Keep an in-memory fallback path so manual debug actions still produce visible feedback even when persistence is unavailable.
 
-## 23. Test Gates Must Follow the Active Runtime, Not Legacy Convenience
+## 23. Behavior-Led Prose Holds Voice Better Than Label-Led Prose
+
+**Insight:** Even when continuity state is correct, abstract status-label phrasing ("hostile", "tension high", "already learned") flattens scene output and invites generic model prose.
+**Lesson:** Encode state lines as behavior with motive and social consequence. Keep prose lines as enacted observations, not diagnostic summaries.
+
+## 24. Style Rules Must Live in Three Layers, Not One
+
+**Insight:** A style guide in docs alone does not reliably shape output if translation maps and prompt task bullets still allow explanatory language.
+**Lesson:** Apply voice constraints at all three layers:
+1. reference docs (north star),
+2. prompt instructions,
+3. state-translation strings injected into context.
+
+## 25. Test Gates Must Follow the Active Runtime, Not Legacy Convenience
 
 **Insight:** Keeping `npm test`/`npm run lint` pointed at legacy folders makes decommission work look incomplete forever and blocks objective progress.
 **Lesson:** Align default gates with the live runtime first, and keep legacy checks as explicitly named transitional scripts (`*:legacy`) until deletion is complete.
@@ -177,3 +190,13 @@
 
 **Insight:** When provider JSON is malformed, inventing a synthetic "fallback scene" may keep the app moving but can silently corrupt narrative continuity and hide provider defects.
 **Lesson:** Prefer deterministic parse layers (robust extraction, one recovery prompt) and then fail with typed `invalid_response` errors. Keep UX recovery in the UI/runtime layer, not by manufacturing story content inside the provider adapter.
+
+## 34. Side-Character Harm Needs an Explicit Operating Pattern
+
+**Insight:** Labeling a character as "friend" or "chaotic" is too weak; the model defaults to generic banter unless the character's incentive loop and betrayal mechanics are concretely specified.
+**Lesson:** For manipulative supporting characters, encode the operating model directly in the system prompt (what they want, how they earn trust, how they convert trust into harm). This keeps behavior consistent across scenes and prevents flattening into one-note archetypes.
+
+## 35. Freeze Narrative Quality Floors With Phrase-Level Gates
+
+**Insight:** Weak fallback strings (for missing or out-of-range thread states) quietly flatten output even when primary translation maps are strong.
+**Lesson:** Put a blocking quality-floor suite in CI that rejects known weak fallback phrases and asserts high-signal replacements. This makes voice regressions visible at review time instead of after prose quality drops in live runs.
