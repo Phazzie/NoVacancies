@@ -14,8 +14,11 @@
 </svelte:head>
 
 <div class="app-shell">
-	<header>
-		<h1>No Vacancies</h1>
+	<header class="masthead">
+		<div class="brand">
+			<p class="eyebrow">LIVE NARRATIVE BUILD</p>
+			<h1>No Vacancies</h1>
+		</div>
 		<nav class="top-nav" aria-label="Primary navigation">
 			<a href="/" class:active={$page.url.pathname === '/'}>Home</a>
 			<a href="/play" class:active={$page.url.pathname === '/play'}>Play</a>

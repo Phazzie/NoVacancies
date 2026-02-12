@@ -200,3 +200,13 @@
 
 **Insight:** Weak fallback strings (for missing or out-of-range thread states) quietly flatten output even when primary translation maps are strong.
 **Lesson:** Put a blocking quality-floor suite in CI that rejects known weak fallback phrases and asserts high-signal replacements. This makes voice regressions visible at review time instead of after prose quality drops in live runs.
+
+## 36. Model Variety Improves When Repetition Constraints Are Explicit
+
+**Insight:** Even with strong voice instructions, scene openings can loop on the same conflict beat across adjacent turns.
+**Lesson:** Add compact beat-memory (`recentBeats`) to narrative context and explicitly forbid reusing a recent opening beat unless thread state escalation justifies it. This keeps continuity while forcing structural variety.
+
+## 37. Manipulation Arcs Need Stateful Tracking, Not Prompt-Only Description
+
+**Insight:** Describing Dex as two-faced in the system prompt improves tone but does not guarantee consistent escalation across turns.
+**Lesson:** Track manipulative dynamics as their own thread dimension (`dexTriangulation`) so updates can accumulate and future scenes can react to concrete state instead of re-inferring from scratch each turn.
