@@ -3,7 +3,7 @@
  * Keeps app shell + core static assets available for offline play.
  */
 
-const CACHE_NAME = 'sydney-story-v3-sveltekit';
+const CACHE_NAME = 'sydney-story-v4-sveltekit';
 const ASSETS_TO_CACHE = [
 	'/',
 	'/play',

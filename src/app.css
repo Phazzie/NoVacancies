@@ -130,6 +130,18 @@ header h1 {
 	gap: 14px;
 }
 
+@media (min-width: 980px) {
+	.play-grid {
+		grid-template-columns: minmax(320px, 44%) 1fr;
+		align-items: start;
+	}
+
+	.scene-image-wrap {
+		position: sticky;
+		top: 12px;
+	}
+}
+
 .scene-image-wrap {
 	border-radius: 10px;
 	overflow: hidden;
@@ -139,7 +151,9 @@ header h1 {
 .scene-image {
 	display: block;
 	width: 100%;
-	height: auto;
+	max-height: 460px;
+	object-fit: cover;
+	aspect-ratio: 4 / 3;
 }
 
 .progress-text {
@@ -333,6 +347,31 @@ header h1 {
 .readiness-item-detail {
 	font-size: 0.82rem;
 	color: #4b5563;
+}
+
+.lesson-card {
+	margin: 0 0 12px;
+	padding: 10px 12px;
+	border: 1px solid #fde68a;
+	border-radius: 10px;
+	background: #fffbeb;
+}
+
+.lesson-quote {
+	margin: 0 0 8px;
+	color: #7c2d12;
+	font-weight: 700;
+}
+
+.lesson-insight {
+	margin: 0;
+	color: #78350f;
+}
+
+.lesson-muted {
+	margin: 0 0 12px;
+	color: #6b7280;
+	font-size: 0.9rem;
 }
 
 .debug-log-list {

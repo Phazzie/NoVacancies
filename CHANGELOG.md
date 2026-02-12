@@ -75,6 +75,10 @@
 - **Vercel Hygiene:** Added `.vercel/` to `.gitignore` to avoid committing local deployment artifacts.
 - **E2E Reliability:** Removed legacy static-server branch from Playwright config, pinned e2e runtime defaults to safe mock mode, updated route-shell heading expectation, and migrated opt-in live canary flow to Grok/SvelteKit selectors.
 - **Pregenerated Image Rotation:** Updated `/play` image rendering to use deterministic randomized selection from `static/images`, so each scene resolves to a stable pre-generated art frame without requiring live image generation.
+- **Lesson UI Rendering:** `/play` now renders lesson title + quote + insight when `lessonId` is present (instead of only showing a numeric pill), and shows an explicit “no lesson tagged” message when lesson insights are enabled but absent for a scene.
+- **Play Layout Tuning:** Updated `/play` layout to reduce oversized image dominance (desktop split layout + bounded image height/aspect) so story text and choices remain visible without excessive scrolling.
+- **Lesson Catalog Sharing:** Moved lesson catalog to shared runtime module (`src/lib/narrative/lessonsCatalog.ts`) so both server prompt generation and client lesson rendering use the same canonical lesson data.
+- **Cache Bust for Stale UI:** Bumped service worker cache key to `sydney-story-v4-sveltekit` so old cached shells (including stale key-entry UI) are invalidated on refresh.
 
 ## [Unreleased] - 2026-02-05
 
