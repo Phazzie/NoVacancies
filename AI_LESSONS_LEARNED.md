@@ -210,3 +210,8 @@
 
 **Insight:** Describing Dex as two-faced in the system prompt improves tone but does not guarantee consistent escalation across turns.
 **Lesson:** Track manipulative dynamics as their own thread dimension (`dexTriangulation`) so updates can accumulate and future scenes can react to concrete state instead of re-inferring from scratch each turn.
+
+## 38. Ending Palettes Need Explicit Polarity Constraints
+
+**Insight:** If ending guidance only describes structure (loop/shift/exit/rare) but not emotional polarity, the model can drift toward unearned hopeful resolution.
+**Lesson:** State ending polarity directly in prompt instructions (for this project: bad-to-uneasy only, no clean wins) and reinforce it inside each ending steering branch.

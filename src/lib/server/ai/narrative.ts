@@ -821,11 +821,13 @@ Every scene should have ONE specific sensory detail:
 
 ## ENDINGS
 You may create custom endings as poetic 1-3 word phrases. Examples:
-- "loop" — Nothing changes, but Sydney is awake to it now
-- "shift" — Small boundaries set, uncomfortable but hopeful
-- "exit" — Sydney leaves. Uncertain, but lighter.
-- "rare" — Oswaldo actually says "I see what would break if you weren't here"
-- Or create your own: "cold clarity", "the long exhale", "still here", "he finally sees"
+- "loop" — Nothing changes. She just loses the excuse that it might.
+- "shift" — One boundary lands, then the room starts looking for a new loophole.
+- "exit" — She leaves this room and carries the bill, the withdrawal, and the silence with her.
+- "rare" — He names the damage once, then backslides before sunset.
+- Or create your own: "cold clarity", "bad bargain", "still here", "half-measure"
+
+No clean wins. Endings should feel bad, costly, or at best uneasy.
 
 Minimum 5 scenes before any ending. Ending must feel EARNED by player choices.
 
@@ -919,16 +921,16 @@ export function getContinuePrompt(
             endingGuidance += ` Based on the player's choices, please steer the narrative toward the **${suggestedEnding.toUpperCase()}** ending.`;
             
             if (suggestedEnding === EndingTypes.RARE) {
-                endingGuidance += ' Oswaldo should start to actually SEE the labor. He should be shocked into awareness.';
+                endingGuidance += ' He should name the damage once, but the change should feel fragile and likely temporary.';
             } else if (suggestedEnding === EndingTypes.EXIT) {
-                endingGuidance += ' Sydney should feel ready to leave. The weight is too much.';
+                endingGuidance += ' Sydney should leave into uncertainty, debt pressure, and emotional fallout. Not relief.';
             } else if (suggestedEnding === EndingTypes.SHIFT) {
-                endingGuidance += ' Sydney should set a boundary. It feels uncomfortable but necessary.';
+                endingGuidance += ' Sydney should set one boundary, and the room should immediately test it.';
             } else {
-                endingGuidance += ' Sydney accepts the cycle. Nothing changes, but she is awake to it.';
+                endingGuidance += ' Sydney stays in the cycle. Nothing improves; denial gets thinner.';
             }
         } else {
-            endingGuidance += " Consider steering toward a fitting ending based on the player's choice patterns. If they've been confrontational, consider EXIT. If they've been accepting, consider LOOP. If they've pushed for change, consider SHIFT or RARE.";
+            endingGuidance += ' Consider steering toward a fitting ending based on the player choice patterns, but keep all outcomes costly or uneasy. No clean victory ending.';
         }
     }
 
@@ -974,14 +976,15 @@ export function getContinuePromptFromContext(
         if (suggestedEnding) {
             endingGuidance += ` Based on choice history, steer toward **${suggestedEnding.toUpperCase()}** if earned.`;
             if (suggestedEnding === EndingTypes.RARE) {
-                endingGuidance += ' Oswaldo should be shocked into real awareness.';
+                endingGuidance += ' Oswaldo should acknowledge the damage once, then show signs the change may not hold.';
             } else if (suggestedEnding === EndingTypes.EXIT) {
-                endingGuidance += ' Sydney should be ready to leave despite uncertainty.';
+                endingGuidance += ' Sydney should leave into uncertainty with visible downside, not catharsis.';
             } else if (suggestedEnding === EndingTypes.SHIFT) {
-                endingGuidance += ' Sydney should set and enforce one concrete boundary.';
+                endingGuidance += ' Sydney should set one concrete boundary; make clear it creates immediate backlash or work.';
             } else {
-                endingGuidance += ' Nothing fully changes, but Sydney sees the loop clearly.';
+                endingGuidance += ' Nothing changes. She just loses the fantasy that it might.';
             }
+            endingGuidance += ' Keep ending tone in bad-to-ehhh range. No clean wins.';
         }
     }
 
