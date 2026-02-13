@@ -1,11 +1,6 @@
 import { validateEndingType, validateScene, type Scene, type StoryThreads } from '$lib/contracts';
 import type { AiConfig } from '$lib/server/ai/config';
-import {
-	SYSTEM_PROMPT,
-	getContinuePromptFromContext,
-	getOpeningPrompt,
-	getRecoveryPrompt
-} from '$lib/server/ai/narrative';
+import { getActiveStoryCartridge } from '$lib/stories';
 import { evaluateStorySanity } from '$lib/server/ai/sanity';
 import {
 	AiProviderError,
@@ -184,7 +179,19 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 	};
 }
 
+
+function getCartridgePrompts() {
+	const prompts = getActiveStoryCartridge().prompts;
+	return {
+		SYSTEM_PROMPT: prompts.systemPrompt,
+		getOpeningPrompt: prompts.getOpeningPrompt,
+		getContinuePromptFromContext: prompts.getContinuePromptFromContext,
+		getRecoveryPrompt: prompts.getRecoveryPrompt
+	};
+}
+
 function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
+	const { getOpeningPrompt, getContinuePromptFromContext } = getCartridgePrompts();
 	if (mode === 'opening') {
 		return getOpeningPrompt();
 	}
@@ -227,7 +234,7 @@ export class GrokAiProvider implements AiProvider {
 					body: JSON.stringify({
 						model: this.config.grokTextModel,
 						messages: [
-							{ role: 'system', content: SYSTEM_PROMPT },
+							{ role: 'system', content: getCartridgePrompts().SYSTEM_PROMPT },
 							{ role: 'user', content: prompt }
 						],
 						max_tokens: this.config.maxOutputTokens,
@@ -313,7 +320,7 @@ export class GrokAiProvider implements AiProvider {
 		}
 
 		// Parse level 2: recovery prompt, then parse again.
-		const recoveryPrompt = getRecoveryPrompt(first.text);
+		const recoveryPrompt = getCartridgePrompts().getRecoveryPrompt(first.text);
 		const recovery = await this.callChatRaw(recoveryPrompt);
 		try {
 			const parsed = this.parseSceneCandidate(recovery.text);

@@ -39,11 +39,26 @@ Server/runtime variables used by the SvelteKit AI provider layer:
 - `AI_AUTH_BYPASS`: disabled in Grok-only mode.
 - `GROK_TEXT_MODEL`, `GROK_IMAGE_MODEL`: optional model override strings.
 - `AI_MAX_OUTPUT_TOKENS`, `AI_REQUEST_TIMEOUT_MS`, `AI_MAX_RETRIES`: optional reliability tuning.
+- `PUBLIC_STORY_ID`: optional active story cartridge id (defaults to `no-vacancies`; unknown ids fail fast at runtime).
 
 Default mode policy:
 - Text defaults to Grok (`AI Generated` mode in settings).
 - Images default to pre-generated/static unless `ENABLE_GROK_IMAGES=1`.
 - If Grok is unavailable or misconfigured, requests fail fast (no mock fallback path).
+
+
+## Story Engine + Cartridges
+
+The app runtime now supports a cartridge seam so story content can be isolated from engine code.
+
+- Engine runtime stays in `src/lib/game`, `src/lib/services`, and server provider adapters.
+- Story content is defined through `StoryCartridge` (`src/lib/stories/types.ts`).
+- Active story wiring defaults to `src/lib/stories/no-vacancies/index.ts` and can be selected via `PUBLIC_STORY_ID`.
+
+To add a new story cartridge:
+1. Create `src/lib/stories/<story-id>/index.ts` implementing `StoryCartridge`.
+2. Register it in `src/lib/stories/index.ts`.
+3. Provide prompts, lesson data, initial state defaults, and UI image mappings in the cartridge.
 
 ## Build + Preview
 
@@ -64,7 +79,7 @@ npm run test:e2e
 ```
 
 Notes:
-- `npm test` enforces the active-runtime decommission guard (`src/**`, `js/**`, `tests/e2e/**`, and `package.json` must stay free of legacy provider markers).
+- `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, and invalid-id fail-fast behavior).
 - `npm run test:narrative` runs deterministic Tier 1 narrative quality gates (prompt wiring, context coverage, continuity dimensions, sanity contract, and fixture-based adversarial checks).
 - `npm run test:e2e` runs Playwright against the SvelteKit app.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
