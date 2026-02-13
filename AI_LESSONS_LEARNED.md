@@ -215,3 +215,13 @@
 
 **Insight:** If ending guidance only describes structure (loop/shift/exit/rare) but not emotional polarity, the model can drift toward unearned hopeful resolution.
 **Lesson:** State ending polarity directly in prompt instructions (for this project: bad-to-uneasy only, no clean wins) and reinforce it inside each ending steering branch.
+
+## 39. Cartridge Selection Should Fail Fast, Not Silently Fallback
+
+**Insight:** A default cartridge fallback hides misconfiguration and can make a deploy appear healthy while serving the wrong narrative content.
+**Lesson:** Keep defaulting only for unset configuration, but throw an explicit runtime error for unknown cartridge IDs so engine/content mismatches fail loudly and early.
+
+## 40. A Cartridge Seam Is Not Done Until Selection Is Observable
+
+**Insight:** Even with typed cartridge wiring, operators still guess which story is active unless runtime metadata is exposed.
+**Lesson:** Include active cartridge identity in operational endpoints and back it with a smoke test that runs default/explicit/invalid selection paths.

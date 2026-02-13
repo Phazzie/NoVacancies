@@ -1,5 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { createGameState, type GameState, type NarrativeContext, type RuntimeFeatureFlags } from '$lib/contracts';
+import { getActiveStoryCartridge } from '$lib/stories';
 import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry, selectImageProvider, selectTextProvider } from '$lib/server/ai/providers';
 import { AiProviderError, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
@@ -18,8 +19,11 @@ function safeFeatureFlags(value: unknown): Partial<RuntimeFeatureFlags> {
 }
 
 export function buildOpeningInput(payload: { featureFlags?: unknown }): GenerateSceneInput {
+	const cartridge = getActiveStoryCartridge();
 	const gameState = createGameState({
-		featureFlags: safeFeatureFlags(payload.featureFlags)
+		featureFlags: safeFeatureFlags(payload.featureFlags),
+		initialSceneId: cartridge.initialSceneId,
+		initialStoryThreads: cartridge.createInitialStoryThreads()
 	});
 	return {
 		currentSceneId: null,
@@ -29,7 +33,13 @@ export function buildOpeningInput(payload: { featureFlags?: unknown }): Generate
 }
 
 export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
-	const baseState = payload.gameState ?? createGameState();
+	const cartridge = getActiveStoryCartridge();
+	const baseState =
+		payload.gameState ??
+		createGameState({
+			initialSceneId: cartridge.initialSceneId,
+			initialStoryThreads: cartridge.createInitialStoryThreads()
+		});
 	return {
 		currentSceneId: payload.currentSceneId ?? baseState.currentSceneId,
 		choiceId: payload.choiceId ?? null,

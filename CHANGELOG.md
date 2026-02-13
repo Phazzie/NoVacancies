@@ -4,6 +4,10 @@
 
 ### Changed
 
+- **Story Cartridge Abstraction:** Added a typed `StoryCartridge` interface and No Vacancies cartridge adapter (`src/lib/stories/no-vacancies/index.ts`), then wired game-state initialization, Grok prompt injection, and image path resolution through the active cartridge registry so engine runtime can be reused for additional stories without changing current play behavior.
+- **Cartridge Selection Hardening:** Added `PUBLIC_STORY_ID`-driven active cartridge selection with explicit fail-fast behavior on unknown ids (instead of silent default fallback) to prevent accidental story mismatch in runtime/provider/image seams.
+- **Multi-Cartridge Proof + Ops Visibility:** Added a second `starter-kit` cartridge registration and enriched demo readiness payloads with active story metadata (`id`, `title`) so runtime story selection is observable during demos.
+- **Selection Smoke Gate:** Added `tests/storyEngineRuntimeSelection.js` and integrated it into `npm test` to validate default story selection, explicit `PUBLIC_STORY_ID` selection, and invalid-id fail-fast behavior end-to-end.
 - **Legacy Runtime Deletion:** Removed the entire legacy `js/` runtime tree (`app/contracts/prompts/renderer/services`) from the repo to eliminate duplicate architecture and prompt drift risk.
 - **Game Runtime Dependency Cleanup:** Removed active mock-service wiring from `src/lib/game/gameRuntime.ts` and `src/lib/game/store.ts`; runtime now requires an explicit API story service path.
 - **Provider Selection Simplification:** Removed remaining `useMocks` provider branching in server-side provider selection and opening/probe route helpers.

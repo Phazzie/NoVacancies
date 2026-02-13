@@ -4,7 +4,7 @@
   "description": "No Vacancies - A choose-your-own-adventure PWA about invisible labor and load-bearing",
   "type": "module",
   "scripts": {
-    "test": "node tests/noLegacyProviderMarkers.js",
+    "test": "node tests/noLegacyProviderMarkers.js && node tests/storyEngineRuntimeSelection.js",
     "lint": "eslint \"tests/e2e/**/*.js\" tests/noLegacyProviderMarkers.js --max-warnings=0",
     "lint:fix": "eslint \"tests/e2e/**/*.js\" tests/noLegacyProviderMarkers.js --fix",
     "format": "prettier --write \"js/**/*.js\" \"src/**/*.{ts,svelte,css}\" \"*.css\" \"*.html\"",

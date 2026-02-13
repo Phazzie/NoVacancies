@@ -175,13 +175,15 @@ export function createGameState(options?: {
 	featureFlags?: Partial<RuntimeFeatureFlags>;
 	apiKey?: string | null;
 	now?: () => number;
+	initialSceneId?: string;
+	initialStoryThreads?: StoryThreads;
 }): GameState {
 	const now = options?.now ?? Date.now;
 	return {
-		currentSceneId: SceneIds.OPENING,
+		currentSceneId: options?.initialSceneId ?? SceneIds.OPENING,
 		history: [],
 		lessonsEncountered: [],
-		storyThreads: createStoryThreads(),
+		storyThreads: options?.initialStoryThreads ?? createStoryThreads(),
 		sceneLog: [],
 		pendingTransitionBridge: null,
 		featureFlags: normalizeFeatureFlags(options?.featureFlags),

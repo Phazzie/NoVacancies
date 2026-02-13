@@ -12,6 +12,7 @@ import {
 	type RuntimeFeatureFlags,
 	type Scene
 } from '../contracts';
+import { getActiveStoryCartridge } from '$lib/stories';
 import { buildNarrativeContext, detectThreadTransitions } from './narrativeContext';
 import {
 	createSettingsStorage,
@@ -89,6 +90,7 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			local: options.storageBindings?.local,
 			session: options.storageBindings?.session
 		});
+	const cartridge = getActiveStoryCartridge();
 
 	let settings = settingsStorage.loadSettings();
 	let gameState: GameState | null = null;
@@ -200,7 +202,9 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		gameState = createGameState({
 			featureFlags: lockedFeatureFlags,
 			apiKey: null,
-			now
+			now,
+			initialSceneId: cartridge.initialSceneId,
+			initialStoryThreads: cartridge.createInitialStoryThreads()
 		});
 
 		const openingScene = await storyService.getOpeningScene({
