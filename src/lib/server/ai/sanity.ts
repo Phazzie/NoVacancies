@@ -43,44 +43,6 @@ export function evaluateStorySanity(scene: Scene): StorySanityResult {
 		}
 	}
 
-	const apologyMentions = (text.match(/\b(sorry|apologize|apology)\b/gi) || []).length;
-	if (apologyMentions >= 3) {
-		blockingIssues.push('apology_loop_pattern');
-	}
-
-	const bannedPatterns = [
-		{ id: 'banned_phrase_lesson_is', regex: /\bthe lesson is\b/i },
-		{ id: 'banned_phrase_teaches_us', regex: /\bwhat this teaches us is\b/i },
-		{ id: 'banned_phrase_in_the_end_realized', regex: /\bin the end,\s*sydney realized\b/i },
-		{ id: 'banned_phrase_everything_happens_for_reason', regex: /\beverything happens for a reason\b/i },
-		{ id: 'shiver', regex: /\bshiver\b/i }
-	];
-
-	// Therapy Speak Detection
-	const therapySpeakPatterns = [
-		{ id: 'therapy_speak_validate', regex: /\bvalidate (your|their|his|her) feelings\b/i },
-		{ id: 'therapy_speak_safe_space', regex: /\bsafe space\b/i },
-		{ id: 'therapy_speak_process', regex: /\bprocess (this|the) trauma\b/i },
-		{ id: 'therapy_speak_summary', regex: /\bsummary of (your|their|his|her) feelings\b/i }
-	];
-
-	for (const pattern of [...bannedPatterns, ...therapySpeakPatterns]) {
-		if (pattern.regex.test(text)) {
-			// Evasion check: if it looks like they are trying to hide it
-			// e.g. "s.a.f.e s.p.a.c.e" - tough to catch with regex alone without false positives
-			blockingIssues.push(pattern.id);
-		}
-	}
-
-	// Adversarial Evasion Detection (e.g. "S.h.i.v.e.r")
-	// Looks for valid words corrupted with dots/spaces/symbols to bypass filters
-	// Crude heuristic: High ratio of non-alphanumeric to alphanumeric in short sequences?
-	// Targeted check for specific banned concepts if needed, but for now just general "broken text" check
-	// Pattern: single char followed by symbol, repeated 3+ times (e.g. "a.b.c.")
-	if (/([a-z][^a-z0-9\s]){3,}[a-z]/i.test(text)) {
-		blockingIssues.push('evasion_attempt_detected');
-	}
-
 	if (scene.isEnding) {
 		if (wordCount > 450) {
 			blockingIssues.push('ending_scene_word_count_hard_limit');

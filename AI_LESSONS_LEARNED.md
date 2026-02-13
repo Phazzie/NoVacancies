@@ -225,3 +225,8 @@
 
 **Insight:** Keeping duplicate context maps/builders across server prompt files and runtime files creates silent drift even when tests are green.
 **Lesson:** Keep `buildNarrativeContext` + translation/transition maps in one canonical module and import from there everywhere else; enforce this with anti-duplication tests.
+
+## 41. Plan Files Can Drift as Hard as Code
+
+**Insight:** Even when runtime code is cleaned up, stale active plan docs with legacy paths (`js/*`) cause execution confusion and false "remaining work" signals.
+**Lesson:** Archive outdated plans immediately, keep one active cleanup tracker, and point `README.md` docs map at the active files so implementation focus stays aligned with current architecture.

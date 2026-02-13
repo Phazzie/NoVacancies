@@ -162,7 +162,6 @@ function testTranslationQualityFloor() {
 
 	for (const phrase of weakPhrases) {
 		assert(!contextSource.includes(phrase), `Weak phrase removed from narrativeContext.ts: "${phrase}"`);
-		assert(!narrativeSource.includes(phrase), `Weak phrase removed from narrative.ts: "${phrase}"`);
 	}
 
 	const qualityAnchors = [
@@ -178,7 +177,34 @@ function testTranslationQualityFloor() {
 
 	for (const anchor of qualityAnchors) {
 		assert(contextSource.includes(anchor), `Quality anchor present in narrativeContext.ts: "${anchor}"`);
-		assert(narrativeSource.includes(anchor), `Quality anchor present in narrative.ts: "${anchor}"`);
+	}
+
+	assert(
+		/\$lib\/game\/narrativeContext/.test(narrativeSource),
+		'narrative.ts imports canonical context helpers from narrativeContext.ts'
+	);
+
+	const forbiddenDuplicatePatterns = [
+		/export\s+const\s+OSWALDO_CONFLICT_TRANSLATIONS/,
+		/export\s+const\s+TRINA_TENSION_TRANSLATIONS/,
+		/export\s+const\s+MONEY_TRANSLATIONS/,
+		/export\s+const\s+CAR_TRANSLATIONS/,
+		/export\s+const\s+SYDNEY_REALIZATION_TRANSLATIONS/,
+		/export\s+const\s+OSWALDO_AWARENESS_TRANSLATIONS/,
+		/export\s+const\s+EXHAUSTION_TRANSLATIONS/,
+		/export\s+const\s+DEX_TRIANGULATION_TRANSLATIONS/,
+		/export\s+function\s+buildNarrativeContext\s*\(/,
+		/export\s+function\s+detectThreadTransitions\s*\(/,
+		/export\s+function\s+translateThreadStateNarrative\s*\(/,
+		/export\s+function\s+translateBoundaries\s*\(/,
+		/export\s+function\s+translateLessonHistory\s*\(/
+	];
+
+	for (const pattern of forbiddenDuplicatePatterns) {
+		assert(
+			!pattern.test(narrativeSource),
+			`narrative.ts no longer duplicates context implementation: ${String(pattern)}`
+		);
 	}
 }
 
@@ -265,7 +291,6 @@ function testContextBuilderContract() {
 function testContinuityDimensions() {
 	suite('Continuity Dimensions');
 
-	const narrativeSource = readSource('src/lib/server/ai/narrative.ts');
 	const contextSource = readSource('src/lib/game/narrativeContext.ts');
 	const contractsSource = readSource('src/lib/contracts/game.ts');
 

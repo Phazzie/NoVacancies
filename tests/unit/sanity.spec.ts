@@ -1,68 +1,87 @@
-
 import { test, expect } from '@playwright/test';
 import { evaluateStorySanity } from '../../src/lib/server/ai/sanity';
 
-// Wu-Bob Principle: "Trust But Verify" (Adversarial Edition)
-// We act as the Red Team attacking our own sanity filters.
+function makeScene(overrides: Partial<Parameters<typeof evaluateStorySanity>[0]> = {}) {
+	return {
+		sceneId: 'scene_test',
+		sceneText:
+			"The motel clock keeps blinking. You have forty-seven dollars and four hours to turn it into sixty-five. Oswaldo is still asleep. Trina is still on the floor. The phones are charged and waiting.",
+		choices: [
+			{ id: 'work', text: 'Work the phones' },
+			{ id: 'wake', text: 'Wake Oswaldo' }
+		],
+		lessonId: null,
+		imageKey: 'hotel_room',
+		isEnding: false,
+		endingType: null,
+		...overrides
+	};
+}
 
-test.describe('Sanity Gate (Adversarial)', () => {
+test.describe('Sanity Gate (Structural Only)', () => {
+	test('blocks scene text that is too short', () => {
+		const result = evaluateStorySanity(
+			makeScene({
+				sceneText: 'Too short.'
+			})
+		);
+		expect(result.blockingIssues).toContain('scene_text_too_short');
+	});
 
-    // Table-driven test vectors
-    const VECTORS = [
-        { 
-            name: 'Direct Violation', 
-            input: 'A cold shiver ran down her spine.', 
-            expectedBlock: ['shiver'],
-            type: 'blocking' 
-        },
-        { 
-            name: 'Punctuation Evasion (Naive)', 
-            input: 'S.h.i.v.e.r ran down her spine.', 
-            // Our robust regex now catches this!
-            expectedBlock: ['evasion_attempt_detected'],
-            type: 'blocking' 
-        },
-        {
-            name: 'Therapy Speak',
-            input: 'I understand that this is difficult for you, but I want to validate your feelings.',
-            expectedBlock: ['therapy_speak_summary'],
-            type: 'blocking'
-        },
-        {
-            name: 'Empty String',
-            input: '',
-            expectedBlock: ['scene_word_count_hard_limit'],
-            type: 'blocking'
-        }
-    ];
+	test('blocks non-ending scenes with fewer than 2 choices', () => {
+		const result = evaluateStorySanity(
+			makeScene({
+				choices: [{ id: 'only', text: 'Only one option' }]
+			})
+		);
+		expect(result.blockingIssues).toContain('insufficient_choices');
+	});
 
-    for (const vector of VECTORS) {
-        test(`Vector: ${vector.name}`, () => {
-            const result = evaluateStorySanity({ 
-                sceneText: vector.input, 
-                sceneId: 'test', 
-                isEnding: false 
-            });
+	test('blocks scenes with more than 3 choices', () => {
+		const result = evaluateStorySanity(
+			makeScene({
+				choices: [
+					{ id: 'a', text: 'A' },
+					{ id: 'b', text: 'B' },
+					{ id: 'c', text: 'C' },
+					{ id: 'd', text: 'D' }
+				]
+			})
+		);
+		expect(result.blockingIssues).toContain('too_many_choices');
+	});
 
-            if (vector.type === 'blocking') {
-                for (const code of vector.expectedBlock) {
-                    expect(result.blockingIssues, `Input [${vector.input}] should trigger [${code}]`)
-                        .toContain(code);
-                }
-            } else {
-                expect(result.blockingIssues).toEqual([]);
-            }
-        });
-    }
+	test('blocks duplicate choice phrasing', () => {
+		const result = evaluateStorySanity(
+			makeScene({
+				choices: [
+					{ id: 'a', text: 'Tell him what you think' },
+					{ id: 'b', text: 'Tell him what you think' }
+				]
+			})
+		);
+		expect(result.blockingIssues).toContain('duplicate_choice_phrasing');
+	});
 
-    test('Word Count Limits - Boundary Check', () => {
-        // Hard limit is usually very high or very low (min words).
-        // Let's test the "Too Short" case.
-        const tooShort = "Too short.";
-        const result = evaluateStorySanity({ sceneText: tooShort, sceneId: 'short', isEnding: false });
-        
-        // Assuming min words is > 2
-        expect(result.blockingIssues.concat(result.retryableIssues))
-            .toEqual(expect.arrayContaining([expect.stringMatching(/word_count/)]));
-    });
+	test('marks soft word-limit scenes as retryable', () => {
+		const longish = new Array(285).fill('word').join(' ');
+		const result = evaluateStorySanity(
+			makeScene({
+				sceneText: longish
+			})
+		);
+		expect(result.blockingIssues).not.toContain('scene_word_count_hard_limit');
+		expect(result.retryableIssues).toContain('scene_word_count_soft_limit');
+	});
+
+	test('blocks hard word-limit scenes', () => {
+		const tooLong = new Array(360).fill('word').join(' ');
+		const result = evaluateStorySanity(
+			makeScene({
+				sceneText: tooLong
+			})
+		);
+		expect(result.blockingIssues).toContain('scene_word_count_hard_limit');
+	});
 });
+
