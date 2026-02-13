@@ -14,6 +14,9 @@ Demo readiness UX:
 - Score/checks are runtime-derived (provider mode, key presence, outage mode, probe state) so you can quickly gauge demo readiness.
 - Debug route (`/debug`) shows persisted runtime/client/API error events to speed up playthrough troubleshooting.
 
+Play UX:
+- `/play` uses a command-deck layout with clearer scene hierarchy, arc progress meter, and keyboard choice shortcuts (`1`, `2`, `3`) for faster turn selection.
+
 ## Run
 
 ```bash
@@ -80,4 +83,5 @@ Notes:
 - Migration plan: `docs/SVELTEKIT_MIGRATION_PLAN.md`
 - Grok follow-up plan: `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md`
 - Narrative upgrade plan: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`
+- Narrative drift cleanup plan: `docs/NARRATIVE_DRIFT_CLEANUP_EXECUTION_PLAN_2026-02-13.md`
 - Gemini decommission plan: `docs/GEMINI_DECOMMISSION_EXECUTION_PLAN.md`

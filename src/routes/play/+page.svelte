@@ -11,6 +11,7 @@
 	let sceneCount = 0;
 	let showLessons = true;
 	let lessonDetails: ReturnType<typeof getLessonById> | null = null;
+	const choiceHotkeys = ['1', '2', '3'];
 
 	const unsubscribe = gameStore.subscribe((state) => {
 		scene = state.scene;
@@ -24,8 +25,42 @@
 				: null;
 	});
 
+	function getArcLabel(count: number): string {
+		if (count <= 3) return 'Opening Pressure';
+		if (count <= 7) return 'Rising Pressure';
+		if (count <= 11) return 'Consequence Phase';
+		return 'Endgame Drift';
+	}
+
+	function getPressureLabel(count: number): string {
+		if (count <= 3) return 'Tense';
+		if (count <= 7) return 'Heating Up';
+		if (count <= 11) return 'Unstable';
+		return 'No Clean Exit';
+	}
+
+	function getArcProgress(count: number): number {
+		return Math.max(8, Math.min(100, Math.round((count / 12) * 100)));
+	}
+
+	async function triggerChoiceByIndex(index: number): Promise<void> {
+		if (!scene || isProcessing || index < 0 || index >= scene.choices.length) {
+			return;
+		}
+		const selected = scene.choices[index];
+		await choose(selected.id, selected.text);
+	}
+
+	function handleChoiceHotkeys(event: KeyboardEvent): void {
+		const index = Number(event.key) - 1;
+		if (!Number.isInteger(index) || index < 0 || index > 2) return;
+		event.preventDefault();
+		void triggerChoiceByIndex(index);
+	}
+
 	onMount(() => {
 		gameStore.initialize();
+		window.addEventListener('keydown', handleChoiceHotkeys);
 
 		if (!scene) {
 			(async () => {
@@ -37,7 +72,10 @@
 			})();
 		}
 
-		return () => unsubscribe();
+		return () => {
+			window.removeEventListener('keydown', handleChoiceHotkeys);
+			unsubscribe();
+		};
 	});
 
 	async function choose(choiceId: string, choiceText: string): Promise<void> {
@@ -57,23 +95,47 @@
 </script>
 
 <h2>Play</h2>
+<p class="play-tagline">Quiet control. Rising pressure.</p>
 
 {#if error}
 	<p class="error-banner">{error}</p>
 {/if}
 
 {#if !scene}
-	<p>Loading story...</p>
+	<div class="scene-loading-card">
+		<p class="loading-kicker">Live Story Feed</p>
+		<p>Loading scene...</p>
+	</div>
 {:else}
-	<div class="play-grid">
-		<div class="scene-image-wrap">
+	<div class="play-grid play-command-deck" data-testid="play-command-deck">
+		<section class="scene-image-wrap">
 			<img class="scene-image" src={imagePath()} alt="Scene illustration" />
-		</div>
-
-		<div class="scene-meta">
-			<div class="mode-row">
-				<p class="progress-text">Scene {sceneCount}</p>
+			<div class="image-overlay">
+				<p class="image-overlay-label">Scene {sceneCount}</p>
 				<p class="mode-pill" data-testid="mode-pill">AI Mode</p>
+			</div>
+			<div class="arc-card">
+				<div class="arc-head">
+					<p class="arc-label">{getArcLabel(sceneCount)}</p>
+					<p class="pressure-pill">{getPressureLabel(sceneCount)}</p>
+				</div>
+				<div
+					class="arc-track"
+					role="progressbar"
+					aria-label="Narrative arc progress"
+					aria-valuemin="0"
+					aria-valuemax="100"
+					aria-valuenow={getArcProgress(sceneCount)}
+				>
+					<div class="arc-fill" style={`width: ${getArcProgress(sceneCount)}%`}></div>
+				</div>
+			</div>
+		</section>
+
+		<section class="scene-meta">
+			<div class="mode-row">
+				<p class="progress-text">Live Scene</p>
+				<p class="mode-pill mode-pill-outline">Turn Active</p>
 			</div>
 			<div class="scene-text">{scene.sceneText}</div>
 
@@ -98,17 +160,20 @@
 				<a class="btn btn-primary" href="/ending">View Ending</a>
 			{:else}
 				<div class="choices-list">
-					{#each scene.choices as choice}
+					{#each scene.choices as choice, index}
 						<button
 							class="btn btn-primary choice-btn"
-							on:click={() => choose(choice.id, choice.text)}
+							on:click={() => triggerChoiceByIndex(index)}
 							disabled={isProcessing}
 						>
-							{choice.text}
+							<span class="choice-hotkey">{choiceHotkeys[index]}</span>
+							<span class="choice-copy">{choice.text}</span>
+							<span class="choice-hint">Press {choiceHotkeys[index]}</span>
 						</button>
 					{/each}
 				</div>
+				<p class="choice-legend">Quick keys: 1 / 2 / 3</p>
 			{/if}
-		</div>
+		</section>
 	</div>
 {/if}

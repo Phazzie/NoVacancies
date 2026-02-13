@@ -215,3 +215,13 @@
 
 **Insight:** If ending guidance only describes structure (loop/shift/exit/rare) but not emotional polarity, the model can drift toward unearned hopeful resolution.
 **Lesson:** State ending polarity directly in prompt instructions (for this project: bad-to-uneasy only, no clean wins) and reinforce it inside each ending steering branch.
+
+## 39. Bold UI Needs Redundant Affordances
+
+**Insight:** Experimental presentation can raise engagement, but if core actions are not redundantly signaled users slow down or misclick.
+**Lesson:** Keep one unconventional interaction layer (visual style/layout) while reinforcing core actions with conventional cues (clear button hierarchy, explicit state labels, keyboard/focus affordances).
+
+## 40. Narrative Context Logic Must Have One Owner
+
+**Insight:** Keeping duplicate context maps/builders across server prompt files and runtime files creates silent drift even when tests are green.
+**Lesson:** Keep `buildNarrativeContext` + translation/transition maps in one canonical module and import from there everywhere else; enforce this with anti-duplication tests.
