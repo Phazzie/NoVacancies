@@ -197,7 +197,9 @@ function testTranslationQualityFloor() {
 		/export\s+function\s+detectThreadTransitions\s*\(/,
 		/export\s+function\s+translateThreadStateNarrative\s*\(/,
 		/export\s+function\s+translateBoundaries\s*\(/,
-		/export\s+function\s+translateLessonHistory\s*\(/
+		/export\s+function\s+translateLessonHistory\s*\(/,
+		/export\s+function\s+formatThreadState\s*\(/,
+		/export\s+function\s+getContinuePrompt\s*\(/
 	];
 
 	for (const pattern of forbiddenDuplicatePatterns) {
@@ -510,12 +512,12 @@ function testRegressionGuard() {
 			`SYSTEM_PROMPT is only ${promptLength} chars — likely a stub`);
 	}
 
-	// NarrativeContext feature flag defaults to true
+	// Legacy runtime feature flags should be fully removed
 	const contractsSource = readSource('src/lib/contracts/game.ts');
-	assert(/narrativeContextV2:\s*true/.test(contractsSource),
-		'narrativeContextV2 defaults to true');
-	assert(/transitionBridges:\s*true/.test(contractsSource),
-		'transitionBridges defaults to true');
+	assert(!/narrativeContextV2/.test(contractsSource),
+		'narrativeContextV2 flag removed from contracts');
+	assert(!/transitionBridges/.test(contractsSource),
+		'transitionBridges flag removed from contracts');
 
 	// Runtime imports from narrative.ts (not hardcoded prompts)
 	assert(/from\s+['"]\$lib\/server\/ai\/narrative['"]/.test(grokSource),

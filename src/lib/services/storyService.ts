@@ -1,18 +1,13 @@
 import type { GameState, NarrativeContext, Scene, StoryThreads } from '../contracts';
 import { appendDebugError } from '../debug/errorLog';
 
-export interface OpeningSceneRequest {
-	featureFlags?: GameState['featureFlags'];
-}
-
 export interface StoryServiceOptions {
-	useNarrativeContext?: boolean;
 	previousThreads?: StoryThreads;
 	enableTransitionBridges?: boolean;
 }
 
 export interface StoryService {
-	getOpeningScene(request?: OpeningSceneRequest): Promise<Scene>;
+	getOpeningScene(): Promise<Scene>;
 	getNextScene(
 		currentSceneId: string,
 		choiceId: string,
@@ -103,13 +98,11 @@ export function createApiStoryService(config: ApiStoryServiceConfig = {}): Story
 	const endpoint = (path: string): string => `${basePath}${path}`;
 
 	return {
-		async getOpeningScene(request) {
+		async getOpeningScene() {
 			const payload = await postJson<{ scene: unknown }>(
 				fetchImpl,
 				endpoint('/story/opening'),
-				{
-					featureFlags: request?.featureFlags ?? null
-				}
+				{}
 			);
 			return ensureSceneShape(payload.scene, '/story/opening');
 		},

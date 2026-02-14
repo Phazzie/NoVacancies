@@ -1,5 +1,5 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { createGameState, type GameState, type NarrativeContext, type RuntimeFeatureFlags } from '$lib/contracts';
+import { createGameState, type GameState, type NarrativeContext } from '$lib/contracts';
 import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry, selectImageProvider, selectTextProvider } from '$lib/server/ai/providers';
 import { AiProviderError, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
@@ -12,15 +12,8 @@ export interface NextRoutePayload {
 	narrativeContext?: NarrativeContext | null;
 }
 
-function safeFeatureFlags(value: unknown): Partial<RuntimeFeatureFlags> {
-	if (!value || typeof value !== 'object') return {};
-	return value as Partial<RuntimeFeatureFlags>;
-}
-
-export function buildOpeningInput(payload: { featureFlags?: unknown }): GenerateSceneInput {
-	const gameState = createGameState({
-		featureFlags: safeFeatureFlags(payload.featureFlags)
-	});
+export function buildOpeningInput(): GenerateSceneInput {
+	const gameState = createGameState();
 	return {
 		currentSceneId: null,
 		choiceId: null,

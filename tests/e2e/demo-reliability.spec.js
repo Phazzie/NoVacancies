@@ -18,8 +18,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('api story opening rejects mock override and stays Grok-only', async ({ request }) => {
 		const openingResponse = await request.post('/api/story/opening', {
 			data: {
-				useMocks: true,
-				featureFlags: { narrativeContextV2: true, transitionBridges: true }
+				useMocks: true
 			}
 		});
 		const openingBody = await openingResponse.json();
@@ -97,9 +96,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 
 	test('story opening remains playable for AI-mode request payload shape', async ({ request }) => {
 		const response = await request.post('/api/story/opening', {
-			data: {
-				featureFlags: { narrativeContextV2: true, transitionBridges: true }
-			}
+			data: {}
 		});
 		const body = await response.json();
 		if (HAS_XAI_KEY) {

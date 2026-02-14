@@ -84,11 +84,6 @@ export interface ChoiceHistoryEntry {
 	timestamp: number;
 }
 
-export interface RuntimeFeatureFlags {
-	narrativeContextV2: boolean;
-	transitionBridges: boolean;
-}
-
 export interface NarrativeContext {
 	sceneCount: number;
 	arcPosition: string;
@@ -117,7 +112,6 @@ export interface GameState {
 	storyThreads: StoryThreads;
 	sceneLog: SceneLogEntry[];
 	pendingTransitionBridge: { keys: string[]; lines: string[] } | null;
-	featureFlags: RuntimeFeatureFlags;
 	apiKey: string | null;
 	sceneCount: number;
 	startTime: number;
@@ -127,35 +121,13 @@ export interface GameSettings {
 	showLessons: boolean;
 	apiKey: string;
 	unlockedEndings: EndingType[];
-	featureFlags: RuntimeFeatureFlags;
 }
-
-export const DEFAULT_FEATURE_FLAGS: RuntimeFeatureFlags = Object.freeze({
-	narrativeContextV2: true,
-	transitionBridges: true
-});
 
 export const DEFAULT_SETTINGS: GameSettings = Object.freeze({
 	showLessons: true,
 	apiKey: '',
-	unlockedEndings: [],
-	featureFlags: DEFAULT_FEATURE_FLAGS
+	unlockedEndings: []
 });
-
-export function normalizeFeatureFlags(
-	candidate: Partial<RuntimeFeatureFlags> = {}
-): RuntimeFeatureFlags {
-	return {
-		narrativeContextV2:
-			typeof candidate.narrativeContextV2 === 'boolean'
-				? candidate.narrativeContextV2
-				: DEFAULT_FEATURE_FLAGS.narrativeContextV2,
-		transitionBridges:
-			typeof candidate.transitionBridges === 'boolean'
-				? candidate.transitionBridges
-				: DEFAULT_FEATURE_FLAGS.transitionBridges
-	};
-}
 
 export function createStoryThreads(): StoryThreads {
 	return {
@@ -172,7 +144,6 @@ export function createStoryThreads(): StoryThreads {
 }
 
 export function createGameState(options?: {
-	featureFlags?: Partial<RuntimeFeatureFlags>;
 	apiKey?: string | null;
 	now?: () => number;
 }): GameState {
@@ -184,7 +155,6 @@ export function createGameState(options?: {
 		storyThreads: createStoryThreads(),
 		sceneLog: [],
 		pendingTransitionBridge: null,
-		featureFlags: normalizeFeatureFlags(options?.featureFlags),
 		apiKey: options?.apiKey ?? null,
 		sceneCount: 0,
 		startTime: now()
@@ -284,7 +254,6 @@ export function cloneGameState(state: GameState): GameState {
 				keys: [...state.pendingTransitionBridge.keys],
 				lines: [...state.pendingTransitionBridge.lines]
 			}
-			: null,
-		featureFlags: { ...state.featureFlags }
+			: null
 	};
 }

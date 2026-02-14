@@ -85,8 +85,7 @@
  */
 
 import { lessons } from '$lib/server/ai/lessons';
-import { EndingTypes, ImageKeys, type NarrativeContext, type StoryThreads } from '$lib/contracts';
-import { translateBoundaries, translateThreadStateNarrative } from '$lib/game/narrativeContext';
+import { EndingTypes, ImageKeys, type NarrativeContext } from '$lib/contracts';
 
 export {
 	NARRATIVE_CONTEXT_CHAR_BUDGET,
@@ -124,84 +123,6 @@ function formatLessonsForPrompt(): string {
         .join('\n\n');
 }
 
-
-/**
- * Format story threads into human-readable text for AI prompts
- * @param {import('./contracts.js').StoryThreads} threads
- * @returns {string}
- */
-export function formatThreadState(threads: StoryThreads | null | undefined): string {
-    if (!threads) {
-        return '(No thread data available)';
-    }
-
-    const conflictLabels = ['cooperative', 'mild tension', 'neutral', 'defensive', 'hostile'];
-    const conflictDesc = conflictLabels[threads.oswaldoConflict + 2] || 'neutral';
-    
-    const realizationLabels = ['oblivious', 'questioning', 'aware', 'clarity'];
-    const realizationDesc = realizationLabels[threads.sydneyRealization] || 'oblivious';
-    
-    const awarenessLabels = ['blind', 'glimpse', 'seeing', 'understands'];
-    const awarenessDesc = awarenessLabels[threads.oswaldoAwareness] || 'blind';
-
-    const narrativeRead = translateThreadStateNarrative(threads)
-        .map((line) => `- ${line}`)
-        .join('\n');
-
-    const boundaryRead = translateBoundaries(threads.boundariesSet)
-        .map((line) => `- ${line}`)
-        .join('\n');
-    
-    return `
-## STORY CONTINUITY STATE
-
-- **Oswaldo Conflict:** ${threads.oswaldoConflict} (${conflictDesc})
-- **Trina Tension:** ${threads.trinaTension}/3
-- **Money Resolved:** ${threads.moneyResolved ? '✓ YES' : '✗ NO'}
-- **Car Incident Mentioned:** ${threads.carMentioned ? '✓ YES' : '✗ NO'}
-- **Sydney's Realization:** ${threads.sydneyRealization}/3 (${realizationDesc})
-- **Boundaries Set:** ${threads.boundariesSet.length > 0 ? threads.boundariesSet.join(', ') : 'none yet'}
-- **Oswaldo's Awareness:** ${threads.oswaldoAwareness}/3 (${awarenessDesc})
-- **Exhaustion Level:** ${threads.exhaustionLevel}/5
-- **Dex Triangulation:** ${threads.dexTriangulation}/3
-
-### NARRATIVE READ (use this voice, not dashboard language)
-${narrativeRead}
-
-### BOUNDARY READ
-${boundaryRead}
-
-**Instructions:** Maintain consistency with these states. If Oswaldo was hostile, do not make him suddenly friendly without cause. If the money is resolved, do not reintroduce the problem. Preserve tone trajectory unless the player makes a clear pivoting choice.`;
-}
-
-/**
- * Build a compact long-arc memory summary sampled from prior scenes.
- * Keeps continuity alive beyond the last few raw turns.
- * @param {string[]} previousScenes
- * @param {number} cadence
- * @returns {string}
- */
-function buildLongArcSummary(previousScenes: string[], cadence = 4): string {
-    if (!Array.isArray(previousScenes) || previousScenes.length < cadence) return '';
-
-    const sampled = [];
-    for (let i = cadence - 1; i < previousScenes.length; i += cadence) {
-        sampled.push(previousScenes[i]);
-    }
-
-    const summaryLines = sampled.slice(-3).map((entry, index) => {
-        const compact = entry
-            .replace(/\s+/g, ' ')
-            .replace(/^\[Choice:\s*/i, 'Choice: ')
-            .trim()
-            .slice(0, 170);
-        return `${index + 1}. ${compact}${compact.length >= 170 ? '...' : ''}`;
-    });
-
-    if (summaryLines.length === 0) return '';
-
-    return `\n## LONG-ARC MEMORY (sampled every ~${cadence} scenes)\n${summaryLines.join('\n')}\n`;
-}
 
 function formatNarrativeContextSection(context: NarrativeContext): string {
     const recentText = context.recentSceneProse.length > 0
@@ -485,82 +406,7 @@ Example when there are NO meaningful thread changes (omit field entirely):
   "mood": "dark"
 }`;
 
-/**
- * Template for continuing the story
- * @param {string[]} previousScenes - Array of previous scene texts
- * @param {string} lastChoice - The choice text the player selected
- * @param {number} sceneCount - How many scenes have been shown
- * @param {string} [suggestedEnding] - Specific ending to steer toward
- * @param {import('./contracts.js').StoryThreads} [threads] - Current story continuity threads
- * @returns {string}
- */
-export function getContinuePrompt(
-	previousScenes: string[],
-	lastChoice: string,
-	sceneCount: number,
-	suggestedEnding: string | null = null,
-	threads: StoryThreads | null = null
-): string {
-    const history =
-        previousScenes.length > 5
-            ? previousScenes.slice(-5).join('\n---\n')
-            : previousScenes.join('\n---\n');
-
-    // Include thread state if available
-    let threadSection = '';
-    if (threads) {
-        threadSection = formatThreadState(threads);
-    }
-
-    const longArcSummary = buildLongArcSummary(previousScenes, 4);
-
-    let endingGuidance = '';
-
-    if (sceneCount >= 8) {
-        endingGuidance = '\n\nIMPORTANT: We are approaching the end of the story.';
-
-        if (suggestedEnding) {
-            endingGuidance += ` Based on the player's choices, please steer the narrative toward the **${suggestedEnding.toUpperCase()}** ending.`;
-            
-            if (suggestedEnding === EndingTypes.RARE) {
-                endingGuidance += ' He should name the damage once, but the change should feel fragile and likely temporary.';
-            } else if (suggestedEnding === EndingTypes.EXIT) {
-                endingGuidance += ' Sydney should leave into uncertainty, debt pressure, and emotional fallout. Not relief.';
-            } else if (suggestedEnding === EndingTypes.SHIFT) {
-                endingGuidance += ' Sydney should set one boundary, and the room should immediately test it.';
-            } else {
-                endingGuidance += ' Sydney stays in the cycle. Nothing improves; denial gets thinner.';
-            }
-        } else {
-            endingGuidance += ' Consider steering toward a fitting ending based on the player choice patterns, but keep all outcomes costly or uneasy. No clean victory ending.';
-        }
-    }
-
-    return `## STORY SO FAR
-${history}
-${threadSection}
-${longArcSummary}
-
-## PLAYER'S CHOICE
-The player chose: "${lastChoice}"
-
-## YOUR TASK
-Continue the story based on this choice. Remember:
-- Keep it 150-250 words
-- Provide 2-3 meaningful choices (unless this is an ending)
-- Write naturally first, then assign lessonId after writing (prefer null if no single lesson dominates)
-- Maintain dark humor as coping
-- Include one concrete callback to recent history or thread state
-- Do not open the new scene with the same action, image, or setting detail as the previous scene
-- Do not reuse a beat listed in RECENT BEAT MEMORY as the opening move unless thread state clearly escalated
-- Include "storyThreadUpdates" with only changed thread fields (omit field if unchanged)
-- The choice should have consequences${endingGuidance}
-
-Respond with valid JSON only.`;
-}
-
-/**
- * Continue prompt powered by app-owned NarrativeContext.
+/**`r`n * Continue prompt powered by app-owned NarrativeContext.
  * @param {import('./contracts.js').NarrativeContext} narrativeContext
  * @param {string|null} suggestedEnding
  * @returns {string}
@@ -720,3 +566,4 @@ export function suggestEndingFromHistory(history: Array<{ choiceId: string }>): 
     if (shiftScore >= 4 && shiftScore >= exitScore) return EndingTypes.SHIFT;
     return EndingTypes.LOOP;
 }
+

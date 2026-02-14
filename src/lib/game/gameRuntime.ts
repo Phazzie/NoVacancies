@@ -4,12 +4,10 @@ import {
 	createGameState,
 	isValidChoiceId,
 	mergeThreadUpdates,
-	normalizeFeatureFlags,
 	validateScene,
 	type EndingType,
 	type GameSettings,
 	type GameState,
-	type RuntimeFeatureFlags,
 	type Scene
 } from '../contracts';
 import { buildNarrativeContext, detectThreadTransitions } from './narrativeContext';
@@ -38,10 +36,6 @@ export interface GameTurnResult {
 	ending: EndingPayload | null;
 }
 
-export interface StartGameOptions {
-	featureFlags?: Partial<RuntimeFeatureFlags>;
-}
-
 export interface GameRuntimeOptions {
 	storyService?: StoryService;
 	settingsStorage?: SettingsStorage;
@@ -50,7 +44,7 @@ export interface GameRuntimeOptions {
 }
 
 export interface GameRuntime {
-	startGame(options?: StartGameOptions): Promise<GameTurnResult>;
+	startGame(): Promise<GameTurnResult>;
 	handleChoice(choiceId: string, choiceText?: string): Promise<GameTurnResult>;
 	getCurrentScene(): Scene | null;
 	loadSceneById(sceneId: string): Scene | null;
@@ -58,8 +52,6 @@ export interface GameRuntime {
 	getSettings(): GameSettings;
 	refreshSettings(): GameSettings;
 	updateSettings(patch: Partial<GameSettings>): GameSettings;
-	setFeatureFlags(overrides: Partial<RuntimeFeatureFlags>): RuntimeFeatureFlags;
-	clearFeatureFlags(): RuntimeFeatureFlags;
 	isProcessing(): boolean;
 	getEnding(): EndingPayload | null;
 }
@@ -67,8 +59,7 @@ export interface GameRuntime {
 function cloneSettings(settings: GameSettings): GameSettings {
 	return {
 		...settings,
-		unlockedEndings: [...settings.unlockedEndings],
-		featureFlags: { ...settings.featureFlags }
+		unlockedEndings: [...settings.unlockedEndings]
 	};
 }
 
@@ -103,13 +94,6 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 
 	const updateSettings = (patch: Partial<GameSettings>): GameSettings => {
 		const normalizedPatch: Partial<GameSettings> = { ...patch };
-
-		if (patch.featureFlags) {
-			normalizedPatch.featureFlags = normalizeFeatureFlags({
-				...settings.featureFlags,
-				...patch.featureFlags
-			});
-		}
 		if (patch.unlockedEndings) {
 			normalizedPatch.unlockedEndings = normalizeEndingList(patch.unlockedEndings);
 		}
@@ -186,26 +170,13 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		lastEnding = scene.isEnding ? buildEndingPayload(scene) : null;
 	};
 
-	const startGame = async (startOptions: StartGameOptions = {}): Promise<GameTurnResult> => {
-		const effectiveFlags = normalizeFeatureFlags({
-			...settings.featureFlags,
-			...startOptions.featureFlags
-		});
-		const lockedFeatureFlags: RuntimeFeatureFlags = {
-			...effectiveFlags,
-			narrativeContextV2: true,
-			transitionBridges: true
-		};
-
+	const startGame = async (): Promise<GameTurnResult> => {
 		gameState = createGameState({
-			featureFlags: lockedFeatureFlags,
 			apiKey: null,
 			now
 		});
 
-		const openingScene = await storyService.getOpeningScene({
-			featureFlags: lockedFeatureFlags
-		});
+		const openingScene = await storyService.getOpeningScene();
 		if (!validateScene(openingScene)) {
 			throw new Error('Story service returned invalid opening scene');
 		}
@@ -264,7 +235,6 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 				gameState,
 				narrativeContext,
 				{
-					useNarrativeContext: true,
 					enableTransitionBridges: true
 				}
 			);
@@ -276,23 +246,6 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		} finally {
 			processing = false;
 		}
-	};
-
-	const setFeatureFlags = (overrides: Partial<RuntimeFeatureFlags>): RuntimeFeatureFlags => {
-		const normalized = settingsStorage.saveFeatureFlags({
-			...settings.featureFlags,
-			...overrides,
-			narrativeContextV2: true,
-			transitionBridges: true
-		});
-		settings.featureFlags = normalized;
-		return { ...normalized };
-	};
-
-	const clearFeatureFlags = (): RuntimeFeatureFlags => {
-		const cleared = settingsStorage.clearFeatureFlags();
-		settings.featureFlags = cleared;
-		return { ...cleared };
 	};
 
 	const loadSceneById = (sceneId: string): Scene | null => {
@@ -311,8 +264,6 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		getSettings: () => cloneSettings(settings),
 		refreshSettings,
 		updateSettings,
-		setFeatureFlags,
-		clearFeatureFlags,
 		isProcessing: () => processing,
 		getEnding: () => (lastEnding ? { ...lastEnding, unlockedEndings: [...lastEnding.unlockedEndings] } : null)
 	};

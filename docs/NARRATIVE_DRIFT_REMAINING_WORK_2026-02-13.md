@@ -17,6 +17,10 @@ This document tracks what is still open after the 2026-02-13 drift cleanup pass.
    - Archived stale local pre-migration plan:
      - `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`
      - `docs/archive/2026-02-13_local_narrative_upgrade_plan.md`
+6. Simplified always-on runtime contract surface.
+   - Removed legacy `narrativeContextV2` / `transitionBridges` feature-flag plumbing from contracts/runtime/settings storage.
+   - Removed unused legacy continue prompt path in `src/lib/server/ai/narrative.ts` (`formatThreadState`, `getContinuePrompt`).
+   - Added regression assertions preventing those legacy exports from returning.
 
 ## Remaining Work
 
@@ -79,7 +83,8 @@ Acceptance:
 1. `npm run lint` passed.
 2. `npm test` passed.
 3. `npm run check` passed.
-4. `npm run test:narrative` passed (`192/192` Tier 1 gates).
+4. `npm run test:narrative` passed (`194/194` Tier 1 gates).
+5. `npm run test:e2e` passed (`9 passed, 1 skipped`).
 
 ## Definition of Drift-Cleanup Complete
 Drift cleanup can be considered complete when all are true:

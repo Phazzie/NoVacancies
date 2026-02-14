@@ -1,10 +1,7 @@
 import {
-	DEFAULT_FEATURE_FLAGS,
 	DEFAULT_SETTINGS,
-	normalizeFeatureFlags,
 	type EndingType,
-	type GameSettings,
-	type RuntimeFeatureFlags
+	type GameSettings
 } from '../contracts';
 
 export interface StorageLike {
@@ -20,18 +17,8 @@ export interface StorageBindings {
 
 export const STORAGE_KEYS = Object.freeze({
 	settings: 'sydney-story-settings',
-	endings: 'sydney-story-endings',
-	featureFlags: 'sydney-story-feature-flags'
+	endings: 'sydney-story-endings'
 });
-
-function parseBooleanFlag(value: unknown): boolean | undefined {
-	if (typeof value === 'boolean') return value;
-	if (typeof value !== 'string') return undefined;
-	const normalized = value.trim().toLowerCase();
-	if (['1', 'true', 'on', 'yes', 'enabled', 'enable'].includes(normalized)) return true;
-	if (['0', 'false', 'off', 'no', 'disabled', 'disable'].includes(normalized)) return false;
-	return undefined;
-}
 
 function safeRead(storage: StorageLike | null | undefined, key: string): string | null {
 	if (!storage) return null;
@@ -52,15 +39,6 @@ function safeWrite(storage: StorageLike | null | undefined, key: string, value: 
 	}
 }
 
-function safeRemove(storage: StorageLike | null | undefined, key: string): void {
-	if (!storage) return;
-	try {
-		storage.removeItem(key);
-	} catch {
-		// no-op
-	}
-}
-
 function parseStringArray(raw: string | null): string[] {
 	if (!raw) return [];
 	try {
@@ -75,9 +53,6 @@ function parseStringArray(raw: string | null): string[] {
 export interface SettingsStorage {
 	loadSettings(): GameSettings;
 	saveSettings(patch: Partial<GameSettings>): GameSettings;
-	loadFeatureFlags(): RuntimeFeatureFlags;
-	saveFeatureFlags(flags: Partial<RuntimeFeatureFlags>): RuntimeFeatureFlags;
-	clearFeatureFlags(): RuntimeFeatureFlags;
 	loadUnlockedEndings(): EndingType[];
 	saveUnlockedEndings(endings: EndingType[]): EndingType[];
 }
@@ -85,28 +60,12 @@ export interface SettingsStorage {
 export function createSettingsStorage(bindings: StorageBindings = {}): SettingsStorage {
 	const local = bindings.local ?? null;
 
-	const loadFeatureFlags = (): RuntimeFeatureFlags => {
-		const saved = safeRead(local, STORAGE_KEYS.featureFlags);
-		if (!saved) return { ...DEFAULT_FEATURE_FLAGS };
-		try {
-			const parsed = JSON.parse(saved) as Partial<RuntimeFeatureFlags> | null;
-			if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_FEATURE_FLAGS };
-			return normalizeFeatureFlags({
-				narrativeContextV2: parseBooleanFlag(parsed.narrativeContextV2),
-				transitionBridges: parseBooleanFlag(parsed.transitionBridges)
-			});
-		} catch {
-			return { ...DEFAULT_FEATURE_FLAGS };
-		}
-	};
-
 	const loadUnlockedEndings = (): EndingType[] =>
 		parseStringArray(safeRead(local, STORAGE_KEYS.endings)) as EndingType[];
 
 	const loadSettings = (): GameSettings => {
 		const base: GameSettings = {
 			...DEFAULT_SETTINGS,
-			featureFlags: loadFeatureFlags(),
 			apiKey: '',
 			unlockedEndings: loadUnlockedEndings()
 		};
@@ -121,7 +80,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 				...base,
 				showLessons:
 					typeof parsed.showLessons === 'boolean' ? parsed.showLessons : base.showLessons,
-				featureFlags: base.featureFlags,
 				unlockedEndings: base.unlockedEndings,
 				apiKey: base.apiKey
 			};
@@ -134,7 +92,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 		const next = {
 			...loadSettings(),
 			...patch,
-			featureFlags: normalizeFeatureFlags(patch.featureFlags ?? loadFeatureFlags()),
 			unlockedEndings: (patch.unlockedEndings ?? loadUnlockedEndings()) as EndingType[]
 		};
 
@@ -149,22 +106,8 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 		if (patch.unlockedEndings) {
 			saveUnlockedEndings(next.unlockedEndings);
 		}
-		if (patch.featureFlags) {
-			saveFeatureFlags(next.featureFlags);
-		}
 
 		return next;
-	};
-
-	const saveFeatureFlags = (flags: Partial<RuntimeFeatureFlags>): RuntimeFeatureFlags => {
-		const normalized = normalizeFeatureFlags(flags);
-		safeWrite(local, STORAGE_KEYS.featureFlags, JSON.stringify(normalized));
-		return normalized;
-	};
-
-	const clearFeatureFlags = (): RuntimeFeatureFlags => {
-		safeRemove(local, STORAGE_KEYS.featureFlags);
-		return { ...DEFAULT_FEATURE_FLAGS };
 	};
 
 	const saveUnlockedEndings = (endings: EndingType[]): EndingType[] => {
@@ -178,9 +121,6 @@ export function createSettingsStorage(bindings: StorageBindings = {}): SettingsS
 	return {
 		loadSettings,
 		saveSettings,
-		loadFeatureFlags,
-		saveFeatureFlags,
-		clearFeatureFlags,
 		loadUnlockedEndings,
 		saveUnlockedEndings
 	};

@@ -97,14 +97,11 @@ export const gameStore = {
 	async startGame(): Promise<GameTurnResult> {
 		const engine = getRuntime();
 		const current = get(appGameStateStore);
-		const settings = current.settings || engine.getSettings();
 
 		appGameStateStore.update((state) => ({ ...state, isProcessing: true, error: '' }));
 
 		try {
-			const result = await engine.startGame({
-				featureFlags: settings.featureFlags
-			});
+			const result = await engine.startGame();
 			applyTurnResult(result);
 			return result;
 		} catch (error) {

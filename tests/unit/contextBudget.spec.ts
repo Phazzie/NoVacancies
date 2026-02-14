@@ -10,7 +10,7 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
 
     // Helper: Generate a game state with a massive history
     const createMassiveState = (blockCount: number, blockSize: number) => {
-        const state = createGameState({ featureFlags: {}, apiKey: null });
+        const state = createGameState({ apiKey: null });
         // Fill history with enough entries to push them into "older summaries"
         // MAX_RECENT_SCENE_PROSE is 2, so anything before the last 2 goes to summaries.
         const filler = 'A'.repeat(blockSize);
@@ -41,7 +41,7 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
     });
 
     test('MUST prioritize recent history over older summaries', () => {
-        const state = createGameState({ featureFlags: {}, apiKey: null });
+        const state = createGameState({ apiKey: null });
         
         // Add "Old" data (will be summarized)
         state.sceneLog.push({ 

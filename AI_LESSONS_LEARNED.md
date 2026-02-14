@@ -230,3 +230,8 @@
 
 **Insight:** Even when runtime code is cleaned up, stale active plan docs with legacy paths (`js/*`) cause execution confusion and false "remaining work" signals.
 **Lesson:** Archive outdated plans immediately, keep one active cleanup tracker, and point `README.md` docs map at the active files so implementation focus stays aligned with current architecture.
+
+## 42. Always-On Flags Become Debt If Left in Contracts
+
+**Insight:** Keeping feature flags that are permanently forced on (`narrativeContextV2`, `transitionBridges`) adds fake states, extra storage plumbing, and misleading test assertions without delivering operational control.
+**Lesson:** Once rollout is complete, delete the flag fields and associated APIs end-to-end (contracts, runtime, storage, tests) so there is one truthful execution path.
