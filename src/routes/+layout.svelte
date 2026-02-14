@@ -11,12 +11,13 @@
 
 <svelte:head>
 	<title>No Vacancies</title>
+	<meta name="description" content="A choose-your-own-adventure story about invisible labor and what finally changes." />
 </svelte:head>
 
 <div class="app-shell">
 	<header class="masthead">
 		<div class="brand">
-			<p class="eyebrow">LIVE NARRATIVE BUILD</p>
+			<p class="eyebrow">Interactive Fiction</p>
 			<h1>No Vacancies</h1>
 		</div>
 		<nav class="top-nav" aria-label="Primary navigation">

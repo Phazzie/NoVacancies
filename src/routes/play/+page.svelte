@@ -94,8 +94,10 @@
 	}
 </script>
 
-<h2>Play</h2>
-<p class="play-tagline">Quiet control. Rising pressure.</p>
+<div class="play-header">
+	<h2>Play</h2>
+	<p class="play-tagline">Quiet control. Rising pressure.</p>
+</div>
 
 {#if error}
 	<p class="error-banner">{error}</p>
@@ -112,7 +114,7 @@
 			<img class="scene-image" src={imagePath()} alt="Scene illustration" />
 			<div class="image-overlay">
 				<p class="image-overlay-label">Scene {sceneCount}</p>
-				<p class="mode-pill" data-testid="mode-pill">AI Mode</p>
+				<p class="mode-pill" data-testid="mode-pill">AI</p>
 			</div>
 			<div class="arc-card">
 				<div class="arc-head">
@@ -137,6 +139,7 @@
 				<p class="progress-text">Live Scene</p>
 				<p class="mode-pill mode-pill-outline">Turn Active</p>
 			</div>
+
 			<div class="scene-text">{scene.sceneText}</div>
 
 			{#if showLessons && scene.lessonId}
@@ -162,7 +165,7 @@
 				<div class="choices-list">
 					{#each scene.choices as choice, index}
 						<button
-							class="btn btn-primary choice-btn"
+							class="btn choice-btn"
 							on:click={() => triggerChoiceByIndex(index)}
 							disabled={isProcessing}
 						>
@@ -177,3 +180,13 @@
 		</section>
 	</div>
 {/if}
+
+<style>
+	.play-header {
+		margin-bottom: 4px;
+	}
+
+	.play-header h2 {
+		margin-bottom: 0;
+	}
+</style>

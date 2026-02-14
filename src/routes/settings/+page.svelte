@@ -23,7 +23,7 @@
 <h2>Settings</h2>
 
 {#if !settings}
-	<p>Loading settings...</p>
+	<p class="hint">Loading settings...</p>
 {:else}
 	<section class="settings-section">
 		<h3>Story Mode</h3>
@@ -32,6 +32,7 @@
 
 	<section class="settings-section">
 		<h3>Lesson Insights</h3>
+		<p class="hint" style="margin-bottom: 12px;">Show contextual lesson cards during gameplay.</p>
 		<div class="toggle-row">
 			<button
 				class="btn {settings.showLessons ? 'btn-primary' : 'btn-secondary'}"

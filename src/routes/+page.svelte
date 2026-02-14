@@ -49,24 +49,26 @@
 	}
 </script>
 
-<h2>Carry What Matters</h2>
-<p class="lede">A story about invisible labor, pressure, and what finally changes.</p>
+<div class="home-hero">
+	<h2>Carry What Matters</h2>
+	<p class="lede">A story about invisible labor, pressure, and what finally changes.</p>
 
-<div class="home-actions">
-	<button class="btn btn-primary" on:click={beginStory}>Begin Story</button>
-	<a class="btn btn-secondary" href="/settings">Open Settings</a>
+	<div class="home-actions">
+		<button class="btn btn-primary" on:click={beginStory}>Begin Story</button>
+		<a class="btn btn-secondary" href="/settings">Settings</a>
+	</div>
 </div>
 
 <section class="readiness-card" aria-live="polite">
 	<div class="readiness-head">
-		<h3>Demo Readiness</h3>
+		<h3>Readiness</h3>
 		<button class="btn btn-secondary btn-sm" on:click={loadReadiness}>Refresh</button>
 	</div>
 
 	{#if readinessError}
 		<p class="error-banner">{readinessError}</p>
 	{:else if !readiness}
-		<p class="hint">Loading readiness checks...</p>
+		<p class="hint">Checking systems...</p>
 	{:else}
 		<div class="readiness-progress-wrap">
 			<div class="readiness-progress-label">
@@ -93,3 +95,9 @@
 		</ul>
 	{/if}
 </section>
+
+<style>
+	.home-hero {
+		margin-bottom: 8px;
+	}
+</style>

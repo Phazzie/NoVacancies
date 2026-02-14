@@ -76,3 +76,9 @@
 		{/each}
 	</ul>
 {/if}
+
+<style>
+	.debug-actions {
+		margin-top: 12px;
+	}
+</style>
