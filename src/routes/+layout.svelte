@@ -32,4 +32,23 @@
 	<main class="panel">
 		<slot />
 	</main>
+
+	<footer class="app-footer">
+		<p>No Vacancies &middot; An interactive fiction experience</p>
+	</footer>
 </div>
+
+<style>
+	.app-footer {
+		padding: 16px 20px;
+		text-align: center;
+	}
+
+	.app-footer p {
+		margin: 0;
+		font-size: 0.7rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text-dim);
+	}
+</style>

@@ -95,8 +95,8 @@
 </script>
 
 <div class="play-header">
+	<p class="play-kicker">Quiet control. Rising pressure.</p>
 	<h2>Play</h2>
-	<p class="play-tagline">Quiet control. Rising pressure.</p>
 </div>
 
 {#if error}
@@ -106,7 +106,7 @@
 {#if !scene}
 	<div class="scene-loading-card">
 		<p class="loading-kicker">Live Story Feed</p>
-		<p>Loading scene...</p>
+		<p class="loading-body">Loading scene...</p>
 	</div>
 {:else}
 	<div class="play-grid play-command-deck" data-testid="play-command-deck">
@@ -136,7 +136,7 @@
 
 		<section class="scene-meta">
 			<div class="mode-row">
-				<p class="progress-text">Live Scene</p>
+				<p class="progress-text">Scene {sceneCount}</p>
 				<p class="mode-pill mode-pill-outline">Turn Active</p>
 			</div>
 
@@ -183,10 +183,25 @@
 
 <style>
 	.play-header {
-		margin-bottom: 4px;
+		margin-bottom: 6px;
 	}
 
 	.play-header h2 {
 		margin-bottom: 0;
+	}
+
+	.play-kicker {
+		margin: 0 0 4px;
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--accent);
+		text-shadow: 0 0 20px var(--accent-glow);
+	}
+
+	.loading-body {
+		color: var(--text-secondary);
+		position: relative;
 	}
 </style>
