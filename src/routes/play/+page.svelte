@@ -94,114 +94,72 @@
 	}
 </script>
 
-<div class="play-header">
-	<p class="play-kicker">Quiet control. Rising pressure.</p>
-	<h2>Play</h2>
-</div>
-
 {#if error}
-	<p class="error-banner">{error}</p>
+	<div style="padding: 24px;">
+		<p class="error-banner">{error}</p>
+	</div>
 {/if}
 
 {#if !scene}
-	<div class="scene-loading-card">
-		<p class="loading-kicker">Live Story Feed</p>
-		<p class="loading-body">Loading scene...</p>
+	<div class="scene-loading">
+		<p class="loading-label">Live Story</p>
+		<p class="loading-text">Composing your scene...</p>
 	</div>
 {:else}
-	<div class="play-grid play-command-deck" data-testid="play-command-deck">
-		<section class="scene-image-wrap">
-			<img class="scene-image" src={imagePath()} alt="Scene illustration" />
-			<div class="image-overlay">
-				<p class="image-overlay-label">Scene {sceneCount}</p>
-				<p class="mode-pill" data-testid="mode-pill">AI</p>
+	<div data-testid="play-command-deck">
+		<!-- Full-bleed scene image -->
+		<div class="scene-banner">
+			<img src={imagePath()} alt="Scene illustration" />
+			<div class="scene-badges">
+				<span class="badge">Scene {sceneCount}</span>
+				<span class="badge badge-amber" data-testid="mode-pill">AI</span>
 			</div>
-			<div class="arc-card">
-				<div class="arc-head">
-					<p class="arc-label">{getArcLabel(sceneCount)}</p>
-					<p class="pressure-pill">{getPressureLabel(sceneCount)}</p>
-				</div>
-				<div
-					class="arc-track"
-					role="progressbar"
-					aria-label="Narrative arc progress"
-					aria-valuemin="0"
-					aria-valuemax="100"
-					aria-valuenow={getArcProgress(sceneCount)}
-				>
-					<div class="arc-fill" style={`width: ${getArcProgress(sceneCount)}%`}></div>
-				</div>
+			<div class="arc-bar" role="progressbar" aria-label="Narrative arc progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow={getArcProgress(sceneCount)}>
+				<div class="arc-bar-fill" style={`width: ${getArcProgress(sceneCount)}%`}></div>
 			</div>
-		</section>
+		</div>
 
-		<section class="scene-meta">
-			<div class="mode-row">
-				<p class="progress-text">Scene {sceneCount}</p>
-				<p class="mode-pill mode-pill-outline">Turn Active</p>
+		<!-- Centered story body -->
+		<div class="story-body">
+			<div class="story-meta">
+				<span class="story-arc-label">{getArcLabel(sceneCount)}</span>
+				<span class="story-pressure">{getPressureLabel(sceneCount)}</span>
 			</div>
 
-			<div class="scene-text">{scene.sceneText}</div>
+			<div class="scene-prose">{scene.sceneText}</div>
 
 			{#if showLessons && scene.lessonId}
-				<p class="lesson-pill">
-					Lesson Insight #{scene.lessonId}
+				<div class="lesson-aside">
+					<p class="lesson-label">
+						Lesson {scene.lessonId}{#if lessonDetails} &mdash; {lessonDetails.title}{/if}
+					</p>
 					{#if lessonDetails}
-						: {lessonDetails.title}
-					{/if}
-				</p>
-				{#if lessonDetails}
-					<div class="lesson-card">
 						<p class="lesson-quote">{lessonDetails.quote}</p>
 						<p class="lesson-insight">{lessonDetails.insight}</p>
-					</div>
-				{/if}
+					{/if}
+				</div>
 			{:else if showLessons}
-				<p class="lesson-muted">No lesson insight tagged on this scene.</p>
+				<p class="lesson-muted">No lesson insight on this scene.</p>
 			{/if}
 
 			{#if scene.choices.length === 0}
-				<a class="btn btn-primary" href="/ending">View Ending</a>
+				<a class="btn btn-primary" href="/ending" style="width: 100%; text-align: center;">View Ending</a>
 			{:else}
-				<div class="choices-list">
+				<div class="choices-section">
 					{#each scene.choices as choice, index}
 						<button
-							class="btn choice-btn"
+							class="choice-btn"
 							on:click={() => triggerChoiceByIndex(index)}
 							disabled={isProcessing}
 						>
-							<span class="choice-hotkey">{choiceHotkeys[index]}</span>
-							<span class="choice-copy">{choice.text}</span>
-							<span class="choice-hint">Press {choiceHotkeys[index]}</span>
+							<span class="choice-key">{choiceHotkeys[index]}</span>
+							<span class="choice-text">{choice.text}</span>
+							<span class="choice-shortcut">Press {choiceHotkeys[index]}</span>
 						</button>
 					{/each}
 				</div>
-				<p class="choice-legend">Quick keys: 1 / 2 / 3</p>
+				<p class="choices-hint">Quick keys: 1 / 2 / 3</p>
 			{/if}
-		</section>
+		</div>
 	</div>
 {/if}
-
-<style>
-	.play-header {
-		margin-bottom: 6px;
-	}
-
-	.play-header h2 {
-		margin-bottom: 0;
-	}
-
-	.play-kicker {
-		margin: 0 0 4px;
-		font-size: 0.65rem;
-		font-weight: 700;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
-		color: var(--accent);
-		text-shadow: 0 0 20px var(--accent-glow);
-	}
-
-	.loading-body {
-		color: var(--text-secondary);
-		position: relative;
-	}
-</style>

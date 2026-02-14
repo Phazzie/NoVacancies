@@ -49,20 +49,17 @@
 	}
 </script>
 
-<div class="home-hero">
-	<p class="home-kicker">A story in scenes</p>
-	<h2>Carry What Matters</h2>
-	<p class="lede">A story about invisible labor, pressure, and what finally changes.</p>
-
+<div class="home-cover">
+	<p class="home-genre">Interactive Fiction</p>
+	<h1 class="home-title">No Vacancies</h1>
+	<p class="home-subtitle">A story about invisible labor, pressure, and what finally changes.</p>
 	<div class="home-actions">
 		<button class="btn btn-primary" on:click={beginStory}>Begin Story</button>
 		<a class="btn btn-secondary" href="/settings">Settings</a>
 	</div>
 </div>
 
-<div class="home-divider"></div>
-
-<section class="readiness-card" aria-live="polite">
+<section class="readiness-section" aria-live="polite">
 	<div class="readiness-head">
 		<h3>System Readiness</h3>
 		<button class="btn btn-secondary btn-sm" on:click={loadReadiness}>Refresh</button>
@@ -98,26 +95,3 @@
 		</ul>
 	{/if}
 </section>
-
-<style>
-	.home-hero {
-		margin-bottom: 0;
-		padding-bottom: 4px;
-	}
-
-	.home-kicker {
-		margin: 0 0 8px;
-		font-size: 0.65rem;
-		font-weight: 700;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
-		color: var(--teal);
-		text-shadow: 0 0 16px var(--teal-glow);
-	}
-
-	.home-divider {
-		height: 1px;
-		margin: 8px 0;
-		background: linear-gradient(90deg, transparent, var(--border-hover), transparent);
-	}
-</style>
