@@ -141,3 +141,7 @@ Include these sections in final handoff:
 - Contradictory or ambiguous instructions
 
 Keep AGENTS files short, prescriptive, and stable.
+
+## ExecPlans
+
+When writing complex features or significant refactors, use an ExecPlan from `PLAN.md` from design through implementation, and keep `PLAN.md` updated as a living document while work is in progress.
