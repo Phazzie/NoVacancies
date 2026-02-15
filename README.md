@@ -16,6 +16,7 @@ Demo readiness UX:
 
 Play UX:
 - `/play` uses a command-deck layout with clearer scene hierarchy, arc progress meter, and keyboard choice shortcuts (`1`, `2`, `3`) for faster turn selection.
+- `/play` also exposes quick utility controls (restart current run, jump to `/debug`) plus scene/arc/mood chips so operators can triage runs faster during demos.
 
 ## Run
 

@@ -314,11 +314,11 @@ ${formatLessonsForPrompt()}
 - Sydney speaks in clipped responses or not at all
 
 ### SHOW DON'T TELL
-❌ "Sydney felt tired and resentful"
-✅ "You've been awake since 5. He asked what's for breakfast."
+BAD: "Sydney felt tired and resentful"
+GOOD: "You've been awake since 5. He asked what's for breakfast."
 
-❌ "Oswaldo was being selfish"
-✅ "He ate the last Hot Pocket. The one you were saving."
+BAD: "Oswaldo was being selfish"
+GOOD: "He ate the last Hot Pocket. The one you were saving."
 
 ### SENSORY GROUNDING
 Every scene should have ONE specific sensory detail:
@@ -334,6 +334,15 @@ Every scene should have ONE specific sensory detail:
 - Keep consequences felt in behavior shifts, not announced as labels.
 - Keep sentences short and declarative; cut hedging and abstract summaries.
 
+### FORBIDDEN PHRASING (VOICE SAFETY)
+- Do not use these lines or close paraphrases:
+  - "the lesson is"
+  - "what this teaches us is"
+  - "in the end, Sydney realized"
+  - "everything happens for a reason"
+  - therapy-summary phrasing like "validate your feelings", "safe space", "process this trauma"
+- If a draft drifts this way, rewrite as behavior + motive + consequence.
+- Nothing explains itself. Everything is caught doing something.
 ## VISUAL GUARDRAILS (FOR IMAGE KEY CHOICE)
 - Never depict Oswaldo's face or bare skin in any image.
 - If using 'oswaldo_sleeping' or 'oswaldo_awake', frame from behind, partial silhouette, or with clothing/blankets fully covering skin.
@@ -344,10 +353,10 @@ Every scene should have ONE specific sensory detail:
 
 ## ENDINGS
 You may create custom endings as poetic 1-3 word phrases. Examples:
-- "loop" — Nothing changes. She just loses the excuse that it might.
-- "shift" — One boundary lands, then the room starts looking for a new loophole.
-- "exit" — She leaves this room and carries the bill, the withdrawal, and the silence with her.
-- "rare" — He names the damage once, then backslides before sunset.
+- "loop" - Nothing changes. She just loses the excuse that it might.
+- "shift" - One boundary lands, then the room starts looking for a new loophole.
+- "exit" - She leaves this room and carries the bill, the withdrawal, and the silence with her.
+- "rare" - He names the damage once, then backslides before sunset.
 - Or create your own: "cold clarity", "bad bargain", "still here", "half-measure"
 
 No clean wins. Endings should feel bad, costly, or at best uneasy.
@@ -406,7 +415,8 @@ Example when there are NO meaningful thread changes (omit field entirely):
   "mood": "dark"
 }`;
 
-/**`r`n * Continue prompt powered by app-owned NarrativeContext.
+/**
+ * Continue prompt powered by app-owned NarrativeContext.
  * @param {import('./contracts.js').NarrativeContext} narrativeContext
  * @param {string|null} suggestedEnding
  * @returns {string}
@@ -497,6 +507,11 @@ Do not shorten for style.
 Do not add new plot events unless required to satisfy schema.
 Keep continuity facts unchanged.
 If uncertain about lesson mapping, set lessonId to null.
+Apply forbidden phrasing safety from system instructions:
+- avoid lesson-summary slogans ("the lesson is", "what this teaches us is")
+- avoid closure-summary phrasing ("in the end, Sydney realized", "everything happens for a reason")
+- avoid therapy-summary phrasing ("validate your feelings", "safe space", "process this trauma")
+- if draft contains them, rewrite as behavior + motive + consequence.
 {
   "sceneText": "string",
   "choices": [{"id": "string", "text": "string"}],
@@ -566,4 +581,3 @@ export function suggestEndingFromHistory(history: Array<{ choiceId: string }>): 
     if (shiftScore >= 4 && shiftScore >= exitScore) return EndingTypes.SHIFT;
     return EndingTypes.LOOP;
 }
-

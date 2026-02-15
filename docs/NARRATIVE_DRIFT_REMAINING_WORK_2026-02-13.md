@@ -56,7 +56,7 @@ Status: Open
 
 Action:
 1. Rename adversarial fixture IDs that still reference removed heuristic semantics (for clarity only).
-2. Normalize fixture/doc punctuation encoding where mojibake is visible (`â€”`).
+2. Normalize fixture/doc punctuation encoding where mojibake is visible (for example, broken em-dash sequences).
 
 Why:
 1. Current IDs/descriptions are functionally valid but semantically stale and can mislead future reviewers.
@@ -94,3 +94,4 @@ Drift cleanup can be considered complete when all are true:
 4. Anti-duplication tests guard against reintroduction.
 5. E2E runtime validation is green for the same commit being released.
 6. Local changes are committed and pushed.
+

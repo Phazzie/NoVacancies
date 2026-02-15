@@ -89,6 +89,15 @@
 		}
 	}
 
+	async function restartRun(): Promise<void> {
+		if (isProcessing) return;
+		try {
+			await gameStore.startGame();
+		} catch {
+			// store captures message
+		}
+	}
+
 	function imagePath(): string {
 		return gameStore.getImagePath(scene?.imageKey, scene?.sceneId);
 	}
@@ -136,6 +145,19 @@
 			<div class="mode-row">
 				<p class="progress-text">Live Scene</p>
 				<p class="mode-pill mode-pill-outline">Turn Active</p>
+			</div>
+			<div class="meta-chip-row">
+				<p class="meta-chip">Scene {sceneCount}</p>
+				<p class="meta-chip">{getArcLabel(sceneCount)}</p>
+				{#if scene.mood}
+					<p class="meta-chip">Mood: {scene.mood}</p>
+				{/if}
+			</div>
+			<div class="play-utility-row">
+				<button class="btn btn-secondary btn-sm" on:click={restartRun} disabled={isProcessing}>
+					Restart Run
+				</button>
+				<a class="btn btn-secondary btn-sm" href="/debug">Open Debug</a>
 			</div>
 			<div class="scene-text">{scene.sceneText}</div>
 

@@ -167,12 +167,12 @@ function testTranslationQualityFloor() {
 	const qualityAnchors = [
 		'One more loophole just lost its key.',
 		'Advance the consequence; do not replay the reveal.',
-		'Continuity memory dropped this turn. Keep behavior conservative and avoid abrupt reversals.',
-		'Assume fast pivots between charm, dodge, and blame.',
-		'Keep her as ambient drain with entitlement intact.',
-		'Keep her observing the mismatch between words and labor.',
-		'make behavior lag unless earned.',
-		'Her fatigue is underreported. Keep a visible cost on every ask.'
+		'Continuity memory blanked this turn. Keep moves small, causal, and costly.',
+		'Expect charm, dodge, then blame.',
+		'steady entitlement tax.',
+		'Keep the mismatch visible until she says it plain.',
+		'words outrun behavior unless earned.',
+		'Charge interest on every ask.'
 	];
 
 	for (const anchor of qualityAnchors) {

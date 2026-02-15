@@ -1,51 +1,30 @@
+import { expect, test } from '@playwright/test';
+import { createStoryThreads } from '../../src/lib/contracts/game';
+import { detectThreadTransitions } from '../../src/lib/game/narrativeContext';
 
-import { test, expect } from '@playwright/test';
-import { detectThreadTransitions, TRANSITION_BRIDGE_MAP } from '../../src/lib/game/narrativeContext';
+test.describe('Transition Bridge Selection', () => {
+	test('selects mapped bridge lines for changed thread keys', () => {
+		const previous = createStoryThreads();
+		const current = {
+			...previous,
+			oswaldoConflict: 2,
+			dexTriangulation: 2
+		};
 
-// Wu-Bob Principle: "One Bridge At A Time"
-// When the world falls apart (multiple threads breaking), we need a traffic cop.
+		const bridge = detectThreadTransitions(previous, current);
 
-test.describe('Transition Bridge Logic', () => {
+		expect(bridge.keys).toEqual(expect.arrayContaining(['oswaldoConflict', 'dexTriangulation']));
+		expect(bridge.lines.length).toBeGreaterThan(0);
+		expect(bridge.lines.join(' ')).toContain('open war');
+	});
 
-    test('MUST prioritize transitions deterministically when multiple threads update', () => {
-        // Arrange
-        const previousThreads = {
-            oswaldoConflict: 0, // -> 2 (Bridge available)
-            trinaTension: 0,    // -> 2 (Bridge available)
-            moneyResolved: false,
-            carMentioned: false,
-            sydneyRealization: 0,
-            boundariesSet: [],
-            oswaldoAwareness: 0,
-            exhaustionLevel: 0
-        };
+	test('returns empty bridge when there are no thread changes', () => {
+		const previous = createStoryThreads();
+		const current = { ...previous };
 
-        const currentThreads = {
-            ...previousThreads,
-            oswaldoConflict: 2, // Trigger!
-            trinaTension: 2     // Trigger!
-        };
-
-        // Act
-        const result = detectThreadTransitions(previousThreads, currentThreads);
-
-        // Assert
-        // We know TRANSITION_BRIDGE_MAP has an order. We expect *one* bridge, not a mashup.
-        expect(result.lines.length).toBeGreaterThan(0);
-        
-        // Verify it picked one of the two, not undefined
-        const isOswaldo = result.lines[0].includes('Oswaldo'); // Assuming content hints
-        const isTrina = result.lines[0].includes('Trina');
-        
-        // This assertion just ensures we get valid content, the specifics depend on the map priority
-        expect(result.lines[0]).toBeTruthy();
-    });
-
-    test('MUST return empty transition if NO thresholds crossed', () => {
-        const t1 = { oswaldoConflict: 0 } as any;
-        const t2 = { oswaldoConflict: 0 } as any; // No change
-        
-        const result = detectThreadTransitions(t1, t2);
-        expect(result.lines).toEqual([]);
-    });
+		const bridge = detectThreadTransitions(previous, current);
+		expect(bridge.keys).toEqual([]);
+		expect(bridge.lines).toEqual([]);
+	});
 });
+

@@ -74,4 +74,40 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
         expect(recentText).toContain('CRITICAL_DATA_1');
         expect(recentText).toContain('CRITICAL_DATA_2');
     });
+
+	test('trims older summaries before touching recent prose', () => {
+		const state = createGameState({ apiKey: null });
+
+		// Many older entries force summary trimming pressure.
+		for (let i = 0; i < 12; i += 1) {
+			state.sceneLog.push({
+				sceneId: `old_${i}`,
+				sceneText: `OLDER_BLOCK_${i} ` + 'X'.repeat(320),
+				viaChoiceText: 'choice',
+				isEnding: false
+			});
+		}
+
+		// Last two entries become protected recent prose.
+		state.sceneLog.push({
+			sceneId: 'recent_keep_1',
+			sceneText: 'RECENT_PROSE_KEEP_1 ' + 'Y'.repeat(220),
+			viaChoiceText: 'choice',
+			isEnding: false
+		});
+		state.sceneLog.push({
+			sceneId: 'recent_keep_2',
+			sceneText: 'RECENT_PROSE_KEEP_2 ' + 'Z'.repeat(220),
+			viaChoiceText: 'choice',
+			isEnding: false
+		});
+
+		const context = buildNarrativeContext(state, { maxChars: 1400 });
+		expect(context.meta.droppedOlderSummaries).toBeGreaterThan(0);
+		expect(context.meta.droppedRecentProse).toBe(0);
+
+		const recentText = context.recentSceneProse.map((p: { text: string }) => p.text).join(' ');
+		expect(recentText).toContain('RECENT_PROSE_KEEP_1');
+		expect(recentText).toContain('RECENT_PROSE_KEEP_2');
+	});
 });

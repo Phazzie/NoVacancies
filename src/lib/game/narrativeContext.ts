@@ -156,7 +156,7 @@ export function translateBoundaries(boundaries: string[] = []): string[] {
 
 export function translateLessonHistory(lessonsEncountered: number[] = []): string[] {
 	if (!Array.isArray(lessonsEncountered) || lessonsEncountered.length === 0) {
-		return ['No lesson has clearly landed yet; keep discovery mode active.'];
+		return ['Nothing has landed clean yet. Keep discovery active and make each choice draw blood.'];
 	}
 
 	const uniqueIds = [...new Set(lessonsEncountered)]
@@ -172,7 +172,7 @@ export function translateLessonHistory(lessonsEncountered: number[] = []): strin
 
 export function translateThreadStateNarrative(threads: StoryThreads | null): string[] {
 	if (!threads) {
-		return ['Continuity memory dropped this turn. Keep behavior conservative and avoid abrupt reversals.'];
+		return ['Continuity memory blanked this turn. Keep moves small, causal, and costly.'];
 	}
 
 	const boundariesCount = Array.isArray(threads.boundariesSet) ? threads.boundariesSet.length : 0;
@@ -185,19 +185,19 @@ export function translateThreadStateNarrative(threads: StoryThreads | null): str
 
 	return [
 		OSWALDO_CONFLICT_TRANSLATIONS[String(threads.oswaldoConflict)] ||
-			'Oswaldo is unreadable this turn. Assume fast pivots between charm, dodge, and blame.',
+			'Oswaldo keeps switching masks mid-sentence. Expect charm, dodge, then blame.',
 		TRINA_TENSION_TRANSLATIONS[String(threads.trinaTension)] ||
-			"Trina's pressure is off-camera right now. Keep her as ambient drain with entitlement intact.",
+			'Trina is quiet on-screen, not harmless. Keep her as a steady entitlement tax.',
 		MONEY_TRANSLATIONS[String(!!threads.moneyResolved)],
 		CAR_TRANSLATIONS[String(!!threads.carMentioned)],
 		SYDNEY_REALIZATION_TRANSLATIONS[String(threads.sydneyRealization)] ||
-			'She has not named the pattern yet. Keep her observing the mismatch between words and labor.',
+			'She still calls it chaos, not pattern. Keep the mismatch visible until she says it plain.',
 		OSWALDO_AWARENESS_TRANSLATIONS[String(threads.oswaldoAwareness)] ||
-			'His awareness is unstable. Even if he names the load, make behavior lag unless earned.',
+			'He can clock the load and still sidestep it. Let words outrun behavior unless earned.',
 		DEX_TRIANGULATION_TRANSLATIONS[String(threads.dexTriangulation)] ||
 			'Dex is playing both sides off-camera. Keep him socially useful and informationally dangerous.',
 		EXHAUSTION_TRANSLATIONS[String(threads.exhaustionLevel)] ||
-			'Her fatigue is underreported. Keep a visible cost on every ask.',
+			'Her tank reads higher than it is. Charge interest on every ask.',
 		boundaryCountLine
 	];
 }

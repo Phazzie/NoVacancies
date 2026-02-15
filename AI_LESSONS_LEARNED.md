@@ -235,3 +235,8 @@
 
 **Insight:** Keeping feature flags that are permanently forced on (`narrativeContextV2`, `transitionBridges`) adds fake states, extra storage plumbing, and misleading test assertions without delivering operational control.
 **Lesson:** Once rollout is complete, delete the flag fields and associated APIs end-to-end (contracts, runtime, storage, tests) so there is one truthful execution path.
+
+## 43. If You Remove Taste Heuristics, Put the Taste Contract in Prompt + Recovery
+
+**Insight:** Deleting regex taste filters improves reliability, but voice can still drift if recovery prompts are less strict than primary prompts.
+**Lesson:** Keep voice constraints in both the system prompt and the recovery prompt (same banned-phrase policy, same rewrite rule), then verify with deterministic quality-floor tests.

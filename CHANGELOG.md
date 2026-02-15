@@ -4,6 +4,10 @@
 
 ### Changed
 
+- **Prompt Voice-Safety Reinforcement:** Added explicit forbidden-phrasing guidance to the main system prompt and recovery prompt path so didactic/therapy-summary drift is redirected to behavior+motive+consequence framing (`src/lib/server/ai/narrative.ts`).
+- **Narrative Prompt Encoding Cleanup:** Replaced mojibake-affected prompt markers/punctuation with ASCII-safe wording in active narrative prompt assets (`src/lib/server/ai/narrative.ts`, `docs/NARRATIVE_DRIFT_REMAINING_WORK_2026-02-13.md`).
+- **Context/Transition Test Hardening:** Added deterministic unit coverage that proves context budgeting trims older summaries before recent prose and that transition bridges emit mapped lines only when thread deltas exist (`tests/unit/contextBudget.spec.ts`, `tests/unit/transitionBridge.spec.ts`).
+- **Play Utility Controls:** Added lightweight `/play` utility affordances (restart-run action, scene/arc/mood chips, debug shortcut) without changing core turn-processing behavior (`src/routes/play/+page.svelte`, `src/app.css`).
 - **Legacy Runtime Deletion:** Removed the entire legacy `js/` runtime tree (`app/contracts/prompts/renderer/services`) from the repo to eliminate duplicate architecture and prompt drift risk.
 - **Game Runtime Dependency Cleanup:** Removed active mock-service wiring from `src/lib/game/gameRuntime.ts` and `src/lib/game/store.ts`; runtime now requires an explicit API story service path.
 - **Provider Selection Simplification:** Removed remaining `useMocks` provider branching in server-side provider selection and opening/probe route helpers.
