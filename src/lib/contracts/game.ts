@@ -227,7 +227,7 @@ export function isValidChoiceId(choiceId: unknown): choiceId is string {
 export function cloneScene(scene: Scene): Scene {
 	return {
 		...scene,
-		choices: scene.choices.map((choice) => ({ ...choice })),
+		choices: Array.isArray(scene.choices) ? scene.choices.map((choice) => ({ ...choice })) : [],
 		storyThreadUpdates: scene.storyThreadUpdates
 			? {
 				...scene.storyThreadUpdates,

@@ -163,7 +163,7 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 	const isEnding = Boolean(candidate.isEnding);
 	const endingType = isEnding ? validateEndingType(candidate.endingType) : null;
 
-	return {
+	const scene: Scene = {
 		sceneId: typeof candidate.sceneId === 'string' ? candidate.sceneId || fallbackSceneId : fallbackSceneId,
 		sceneText: typeof candidate.sceneText === 'string' ? candidate.sceneText.trim() : '',
 		choices,
@@ -182,6 +182,8 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 				? candidate.storyThreadUpdates
 				: null
 	};
+
+	return scene;
 }
 
 function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
