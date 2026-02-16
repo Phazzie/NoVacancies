@@ -1,4 +1,4 @@
-import { validateEndingType, validateScene, type Scene, type StoryThreads } from '$lib/contracts';
+import { validateEndingType, validateScene, type Choice, type Scene, type StoryThreads } from '$lib/contracts';
 import type { AiConfig } from '$lib/server/ai/config';
 import {
 	SYSTEM_PROMPT,
@@ -142,7 +142,8 @@ function normalizeChoiceId(text: string, index: number): string {
 }
 
 function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Scene {
-	const choices = Array.isArray(candidate.choices)
+	// Enforce choices as a proper array at construction time
+	const choices: Choice[] = Array.isArray(candidate.choices)
 		? candidate.choices
 				.map((choice, index) => {
 					const text = typeof choice?.text === 'string' ? choice.text.trim() : '';
@@ -163,10 +164,10 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 	const isEnding = Boolean(candidate.isEnding);
 	const endingType = isEnding ? validateEndingType(candidate.endingType) : null;
 
-	const scene: Scene = {
+	return {
 		sceneId: typeof candidate.sceneId === 'string' ? candidate.sceneId || fallbackSceneId : fallbackSceneId,
 		sceneText: typeof candidate.sceneText === 'string' ? candidate.sceneText.trim() : '',
-		choices: Array.isArray(choices) ? choices : [],
+		choices,
 		lessonId: typeof candidate.lessonId === 'number' ? candidate.lessonId : null,
 		imageKey: typeof candidate.imageKey === 'string' ? candidate.imageKey : 'hotel_room',
 		imagePrompt: typeof candidate.imagePrompt === 'string' ? candidate.imagePrompt : undefined,
@@ -182,8 +183,6 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 				? candidate.storyThreadUpdates
 				: null
 	};
-
-	return scene;
 }
 
 function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
