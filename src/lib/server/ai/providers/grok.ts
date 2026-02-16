@@ -163,10 +163,10 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 	const isEnding = Boolean(candidate.isEnding);
 	const endingType = isEnding ? validateEndingType(candidate.endingType) : null;
 
-	return {
+	const scene: Scene = {
 		sceneId: typeof candidate.sceneId === 'string' ? candidate.sceneId || fallbackSceneId : fallbackSceneId,
 		sceneText: typeof candidate.sceneText === 'string' ? candidate.sceneText.trim() : '',
-		choices,
+		choices: Array.isArray(choices) ? choices : [],
 		lessonId: typeof candidate.lessonId === 'number' ? candidate.lessonId : null,
 		imageKey: typeof candidate.imageKey === 'string' ? candidate.imageKey : 'hotel_room',
 		imagePrompt: typeof candidate.imagePrompt === 'string' ? candidate.imagePrompt : undefined,
@@ -182,6 +182,8 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 				? candidate.storyThreadUpdates
 				: null
 	};
+
+	return scene;
 }
 
 function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
