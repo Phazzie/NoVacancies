@@ -3,6 +3,7 @@ import { createGameState, type GameState, type NarrativeContext } from '$lib/con
 import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry, selectImageProvider, selectTextProvider } from '$lib/server/ai/providers';
 import { AiProviderError, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
+import { recordImageGenerationFailure, recordImageGenerationSuccess } from '$lib/server/ai/diagnostics';
 import { emitAiServerTelemetry, sanitizeForErrorMessage } from '$lib/server/ai/telemetry';
 
 export interface NextRoutePayload {
@@ -78,9 +79,19 @@ export async function resolveImagePayload(prompt: string) {
 	const registry = createProviderRegistry(config);
 	const provider = selectImageProvider(config, registry);
 
+	const started = Date.now();
 	try {
-		return await provider.generateImage?.({ prompt });
+		const image = await provider.generateImage?.({ prompt });
+		recordImageGenerationSuccess(Date.now() - started);
+		return image;
 	} catch (error) {
+		const typed = error instanceof AiProviderError ? error : null;
+		recordImageGenerationFailure({
+			latencyMs: Date.now() - started,
+			code: typed?.code,
+			status: typed?.status,
+			message: sanitizeForErrorMessage(error)
+		});
 		throw error;
 	}
 }

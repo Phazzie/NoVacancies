@@ -16,6 +16,19 @@
 		status: 'ready' | 'almost' | 'blocked';
 		summary: string;
 		checks: ReadinessCheck[];
+		activeCartridge: {
+			id: string;
+			title: string;
+			version: string;
+		};
+		imageGeneration: {
+			attempts: number;
+			successes: number;
+			failures: number;
+			averageLatencyMs: number | null;
+			topRecentFailureCategories: Array<{ category: string; count: number }>;
+			humanDiagnostics: string[];
+		};
 		updatedAt: string;
 	}
 
@@ -68,6 +81,24 @@
 	{:else if !readiness}
 		<p class="hint">Loading readiness checks...</p>
 	{:else}
+		<div class="readiness-meta-grid">
+			<div>
+				<div class="readiness-item-title">Active cartridge</div>
+				<div class="readiness-item-detail">
+					{readiness.activeCartridge.title} ({readiness.activeCartridge.id}) · v{readiness.activeCartridge.version}
+				</div>
+			</div>
+			<div>
+				<div class="readiness-item-title">Image generation</div>
+				<div class="readiness-item-detail">
+					{readiness.imageGeneration.successes}/{readiness.imageGeneration.attempts} successful
+					{#if readiness.imageGeneration.averageLatencyMs !== null}
+						· avg {readiness.imageGeneration.averageLatencyMs}ms
+					{/if}
+				</div>
+			</div>
+		</div>
+
 		<div class="readiness-progress-wrap">
 			<div class="readiness-progress-label">
 				<span>{readiness.score}%</span>
@@ -91,5 +122,14 @@
 				</li>
 			{/each}
 		</ul>
+
+		<div class="readiness-diagnostics" aria-live="polite">
+			<div class="readiness-item-title">Telemetry diagnostics</div>
+			<ul class="hint-list">
+				{#each readiness.imageGeneration.humanDiagnostics as line}
+					<li>{line}</li>
+				{/each}
+			</ul>
+		</div>
 	{/if}
 </section>

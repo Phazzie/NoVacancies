@@ -2,11 +2,45 @@
 	import { onMount } from 'svelte';
 	import { appendDebugError, clearDebugErrors, readDebugErrors, type DebugErrorEntry } from '$lib/debug/errorLog';
 
+	interface DebugDiagnosticsPayload {
+		activeCartridge: {
+			id: string;
+			title: string;
+			version: string;
+		};
+		imageGeneration: {
+			attempts: number;
+			successes: number;
+			failures: number;
+			averageLatencyMs: number | null;
+			topRecentFailureCategories: Array<{ category: string; count: number }>;
+			humanDiagnostics: string[];
+		};
+		updatedAt: string;
+	}
+
 	let entries: DebugErrorEntry[] = [];
 	let hydrated = false;
+	let diagnostics: DebugDiagnosticsPayload | null = null;
+	let diagnosticsError = '';
 
 	function refresh(): void {
 		entries = readDebugErrors();
+		void loadDiagnostics();
+	}
+
+	async function loadDiagnostics(): Promise<void> {
+		diagnosticsError = '';
+		try {
+			const response = await fetch('/api/debug/diagnostics');
+			if (!response.ok) {
+				throw new Error('Failed to load diagnostics');
+			}
+			diagnostics = (await response.json()) as DebugDiagnosticsPayload;
+		} catch (error) {
+			diagnostics = null;
+			diagnosticsError = error instanceof Error ? error.message : 'Failed to load diagnostics';
+		}
 	}
 
 	function clearAll(): void {
@@ -45,6 +79,7 @@
 	onMount(() => {
 		hydrated = true;
 		refresh();
+		void loadDiagnostics();
 	});
 </script>
 
@@ -57,6 +92,22 @@
 	<button class="btn btn-secondary btn-sm" on:click={addTestEntry}>Add Test Entry</button>
 	<button class="btn btn-secondary btn-sm" on:click={clearAll}>Clear Log</button>
 </div>
+
+{#if diagnosticsError}
+	<p class="error-banner">{diagnosticsError}</p>
+{:else if diagnostics}
+	<section class="debug-diagnostics" aria-live="polite">
+		<h3>Runtime Diagnostics</h3>
+		<p class="hint">
+			Cartridge: {diagnostics.activeCartridge.title} ({diagnostics.activeCartridge.id}) · v{diagnostics.activeCartridge.version}
+		</p>
+		<ul class="hint-list">
+			{#each diagnostics.imageGeneration.humanDiagnostics as line}
+				<li>{line}</li>
+			{/each}
+		</ul>
+	</section>
+{/if}
 
 {#if entries.length === 0}
 	<p class="hint">No debug errors recorded yet.</p>
