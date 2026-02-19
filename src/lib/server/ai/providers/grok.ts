@@ -410,83 +410,67 @@ export class GrokAiProvider implements AiProvider {
 			});
 		}
 
-		let attempt = 0;
-		const maxAttempts = this.config.maxRetries + 1;
-		let lastError: unknown = null;
-
-		while (attempt < maxAttempts) {
-			const controller = new AbortController();
-			const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
-			try {
-				const response = await this.fetchImpl(XAI_IMAGE_URL, {
-					method: 'POST',
-					headers: {
-						'content-type': 'application/json',
-						authorization: `Bearer ${this.config.xaiApiKey}`
-					},
-					body: JSON.stringify({
-						model: this.config.grokImageModel,
-						prompt: input.prompt
-					}),
-					signal: controller.signal
-				});
-
-				if (!response.ok) {
-					const status = response.status;
-					throw new AiProviderError(`xAI image request failed (${status})`, {
-						code:
-							status === 401 || status === 403
-								? 'auth'
-								: status === 429
-									? 'rate_limit'
-									: 'provider_down',
-						retryable: isRetryableStatus(status),
-						status
-					});
-				}
-
-				const payload = (await response.json()) as {
-					data?: Array<{ url?: string; b64_json?: string }>;
-				};
-				const image = payload.data?.[0];
-				if (!image || (!image.url && !image.b64_json)) {
-					throw new AiProviderError('xAI image response missing data', {
-						code: 'invalid_response',
-						retryable: false
-					});
-				}
-
-				return {
-					url: typeof image.url === 'string' ? image.url : undefined,
-					b64: typeof image.b64_json === 'string' ? image.b64_json : undefined
-				};
-			} catch (error) {
-				lastError = error;
-				const retryable =
-					error instanceof AiProviderError
-						? error.retryable
-						: error instanceof Error && error.name === 'AbortError';
-				if (!retryable || attempt >= maxAttempts - 1) break;
-				const backoff = this.config.retryBackoffMs[Math.min(attempt, this.config.retryBackoffMs.length - 1)];
-				await sleep(backoff);
-			} finally {
-				clearTimeout(timeout);
-			}
-			attempt += 1;
-		}
-
-		if (lastError instanceof AiProviderError) throw lastError;
-		if (lastError instanceof Error && lastError.name === 'AbortError') {
-			throw new AiProviderError('xAI image request timed out', {
-				code: 'timeout',
-				retryable: true,
-				status: 504
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
+		try {
+			const response = await this.fetchImpl(XAI_IMAGE_URL, {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					authorization: `Bearer ${this.config.xaiApiKey}`
+				},
+				body: JSON.stringify({
+					model: this.config.grokImageModel,
+					prompt: input.prompt
+				}),
+				signal: controller.signal
 			});
+
+			if (!response.ok) {
+				const status = response.status;
+				throw new AiProviderError(`xAI image request failed (${status})`, {
+					code:
+						status === 401 || status === 403
+							? 'auth'
+							: status === 429
+								? 'rate_limit'
+								: 'provider_down',
+					retryable: isRetryableStatus(status),
+					status
+				});
+			}
+
+			const payload = (await response.json()) as {
+				data?: Array<{ url?: string; b64_json?: string }>;
+			};
+			const image = payload.data?.[0];
+			if (!image || (!image.url && !image.b64_json)) {
+				throw new AiProviderError('xAI image response missing data', {
+					code: 'invalid_response',
+					retryable: false
+				});
+			}
+
+			return {
+				url: typeof image.url === 'string' ? image.url : undefined,
+				b64: typeof image.b64_json === 'string' ? image.b64_json : undefined
+			};
+		} catch (error) {
+			if (error instanceof AiProviderError) throw error;
+			if (error instanceof Error && error.name === 'AbortError') {
+				throw new AiProviderError('xAI image request timed out', {
+					code: 'timeout',
+					retryable: true,
+					status: 504
+				});
+			}
+			throw new AiProviderError('xAI image request failed', {
+				code: 'unknown',
+				retryable: false
+			});
+		} finally {
+			clearTimeout(timeout);
 		}
-		throw new AiProviderError('xAI image request failed', {
-			code: 'unknown',
-			retryable: false
-		});
 	}
 
 	async probe(): Promise<ProviderProbeResult> {

@@ -13,10 +13,12 @@ Demo readiness UX:
 - Home route (`/`) now includes a "Demo Readiness" progress dashboard backed by `/api/demo/readiness`.
 - Score/checks are runtime-derived (provider mode, key presence, outage mode, probe state) so you can quickly gauge demo readiness.
 - Debug route (`/debug`) shows persisted runtime/client/API error events to speed up playthrough troubleshooting.
+- Image pipeline status (in-flight count, cache size, recent request outcomes) is exposed in both `/debug` and readiness checks for fast operator triage.
 
 Play UX:
 - `/play` uses a command-deck layout with clearer scene hierarchy, arc progress meter, and keyboard choice shortcuts (`1`, `2`, `3`) for faster turn selection.
 - `/play` also exposes quick utility controls (restart current run, jump to `/debug`) plus scene/arc/mood chips so operators can triage runs faster during demos.
+- `/settings` now includes a Creator Image Pipeline panel with generation state, bounded-retry history, cache key visibility, and creator actions (regenerate/accept/reject/fallback-to-static).
 
 ## Run
 

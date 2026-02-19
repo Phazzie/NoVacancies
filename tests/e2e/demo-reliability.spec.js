@@ -68,6 +68,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 				'outage_hard_fail',
 				'auth_bypass_disabled',
 				'image_mode_static_default',
+				'image_pipeline_status',
 				'provider_probe'
 			])
 		);
@@ -92,6 +93,38 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		expect(blocked.status()).toBe(422);
 		const body = await blocked.json();
 		expect(String(body.error || '')).toMatch(/guardrail/i);
+	});
+
+
+	test('image pipeline status + creator actions are exposed via API', async ({ request }) => {
+		const statusResponse = await request.get('/api/image');
+		expect(statusResponse.ok()).toBeTruthy();
+		const statusBody = await statusResponse.json();
+		expect(typeof statusBody.status?.cacheEntries).toBe('number');
+
+		const generateResponse = await request.post('/api/image', {
+			data: {
+				action: 'generate',
+				prompt: 'Sydney checking four phones in a motel room at dawn'
+			}
+		});
+		const generateBody = await generateResponse.json();
+		if (HAS_XAI_KEY) {
+			expect([200, 422]).toContain(generateResponse.status());
+			expect(typeof generateBody.request?.status).toBe('string');
+		} else {
+			expect(generateResponse.status()).toBe(422);
+			expect(generateBody.request?.error?.reasonCode).toBe('image_disabled');
+		}
+
+		if (generateBody.request?.requestId && generateBody.request?.status === 'success') {
+			const rejectResponse = await request.post('/api/image', {
+				data: { action: 'reject', requestId: generateBody.request.requestId }
+			});
+			expect(rejectResponse.ok()).toBeTruthy();
+			const rejectBody = await rejectResponse.json();
+			expect(rejectBody.request?.decision).toBe('rejected');
+		}
 	});
 
 	test('story opening remains playable for AI-mode request payload shape', async ({ request }) => {
