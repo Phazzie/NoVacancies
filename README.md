@@ -10,11 +10,19 @@ No Vacancies is an interactive narrative game about invisible labor and relation
 - PWA assets: `static/manifest.json`, `static/service-worker.js`
 
 Demo readiness UX:
+
 - Home route (`/`) now includes a "Demo Readiness" progress dashboard backed by `/api/demo/readiness`.
 - Score/checks are runtime-derived (provider mode, key presence, outage mode, probe state) so you can quickly gauge demo readiness.
 - Debug route (`/debug`) shows persisted runtime/client/API error events to speed up playthrough troubleshooting.
 
+Creator UX:
+
+- New creator workspace routes under `/create/*` guide a safe four-step flow: template selection, draft editing, play preview, and publish/unpublish controls.
+- Draft state and published version state are persisted separately in local storage so editing never overwrites deployed versions.
+- Clear Draft/Ready/Published badges and publish-time validation messages prevent accidental release of incomplete content.
+
 Play UX:
+
 - `/play` uses a command-deck layout with clearer scene hierarchy, arc progress meter, and keyboard choice shortcuts (`1`, `2`, `3`) for faster turn selection.
 - `/play` also exposes quick utility controls (restart current run, jump to `/debug`) plus scene/arc/mood chips so operators can triage runs faster during demos.
 
@@ -36,6 +44,7 @@ cp .env.example .env.local
 ```
 
 Server/runtime variables used by the SvelteKit AI provider layer:
+
 - `AI_PROVIDER`: `grok` only (`mock` is disabled).
 - `AI_OUTAGE_MODE`: `hard_fail` (required in preview/production).
 - `XAI_API_KEY`: required in Grok-only mode.
@@ -45,6 +54,7 @@ Server/runtime variables used by the SvelteKit AI provider layer:
 - `AI_MAX_OUTPUT_TOKENS`, `AI_REQUEST_TIMEOUT_MS`, `AI_MAX_RETRIES`: optional reliability tuning.
 
 Default mode policy:
+
 - Text defaults to Grok (`AI Generated` mode in settings).
 - Images default to pre-generated/static unless `ENABLE_GROK_IMAGES=1`.
 - If Grok is unavailable or misconfigured, requests fail fast (no mock fallback path).
@@ -68,6 +78,7 @@ npm run test:e2e
 ```
 
 Notes:
+
 - `npm test` enforces the active-runtime decommission guard (`src/**`, `js/**`, `tests/e2e/**`, and `package.json` must stay free of legacy provider markers).
 - `npm run test:narrative` runs deterministic Tier 1 narrative quality gates (prompt wiring, context coverage, continuity dimensions, sanity contract, and fixture-based adversarial checks).
 - `npm run test:e2e` runs Playwright against the SvelteKit app.
