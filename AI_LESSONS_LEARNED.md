@@ -240,3 +240,8 @@
 
 **Insight:** Deleting regex taste filters improves reliability, but voice can still drift if recovery prompts are less strict than primary prompts.
 **Lesson:** Keep voice constraints in both the system prompt and the recovery prompt (same banned-phrase policy, same rewrite rule), then verify with deterministic quality-floor tests.
+
+## 36. Image Generation Reliability Needs Explicit Lifecycle State
+
+**Insight:** A single "generate image" call hides too much operational reality during demos (queueing, retries, cache reuse, creator decision state), making failures hard to triage quickly.
+**Lesson:** Treat image generation as a tracked request lifecycle (`queued` → `running` → `success`/`failed`) with bounded retries and reason codes, and expose that state in both creator UI and debug/readiness surfaces.

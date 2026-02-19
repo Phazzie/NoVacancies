@@ -1,6 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry } from '$lib/server/ai/providers';
+import { getImagePipeline } from '$lib/server/ai/imagePipeline';
 
 type CheckId =
 	| 'config_valid'
@@ -10,6 +11,7 @@ type CheckId =
 	| 'outage_hard_fail'
 	| 'auth_bypass_disabled'
 	| 'image_mode_static_default'
+	| 'image_pipeline_status'
 	| 'provider_probe';
 
 interface ReadinessCheck {
@@ -96,9 +98,22 @@ function buildPayload(): ReadinessPayload {
 			label: 'Images default to pre-generated/static',
 			ok: !config.enableGrokImages,
 			details: config.enableGrokImages ? 'Grok image mode enabled' : 'static image default',
-			weight: 5
+			weight: 4
+		},
+		{
+			id: 'image_pipeline_status',
+			label: 'Image pipeline instrumentation available',
+			ok: true,
+			details: 'status endpoint active',
+			weight: 1
 		}
 	];
+
+	const pipeline = getImagePipeline().summary(5);
+	const pipelineCheck = checks.find((check) => check.id === 'image_pipeline_status');
+	if (pipelineCheck) {
+		pipelineCheck.details = `inFlight=${pipeline.inFlight}, cache=${pipeline.cacheEntries}, total=${pipeline.totalRequests}`;
+	}
 
 	if (config.enableProviderProbe) {
 		checks.push({

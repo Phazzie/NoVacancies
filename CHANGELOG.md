@@ -4,6 +4,9 @@
 
 ### Changed
 
+- **Image Pipeline Orchestration:** Rebuilt `/api/image` around request-state records (`queued`/`running`/`success`/`failed`), bounded retry tracking with reason codes, cache-key reuse, and explicit creator actions (`generate`, `regenerate`, `accept`, `reject`, `fallback_to_static`) with guardrail-safe messaging (`src/routes/api/image/+server.ts`, `src/lib/server/ai/imagePipeline.ts`, `src/lib/server/ai/providers/grok.ts`, `src/lib/client/imageCreatorState.ts`, `src/routes/settings/+page.svelte`).
+- **Demo Ops Visibility for Images:** Added image pipeline instrumentation to readiness scoring and debug UI so operators can inspect in-flight work, cache state, and recent request outcomes during demo prep (`src/routes/api/demo/readiness/+server.ts`, `src/routes/debug/+page.svelte`, `tests/e2e/demo-reliability.spec.js`).
+
 - **Prompt Voice-Safety Reinforcement:** Added explicit forbidden-phrasing guidance to the main system prompt and recovery prompt path so didactic/therapy-summary drift is redirected to behavior+motive+consequence framing (`src/lib/server/ai/narrative.ts`).
 - **Narrative Prompt Encoding Cleanup:** Replaced mojibake-affected prompt markers/punctuation with ASCII-safe wording in active narrative prompt assets (`src/lib/server/ai/narrative.ts`, `docs/NARRATIVE_DRIFT_REMAINING_WORK_2026-02-13.md`).
 - **Context/Transition Test Hardening:** Added deterministic unit coverage that proves context budgeting trims older summaries before recent prose and that transition bridges emit mapped lines only when thread deltas exist (`tests/unit/contextBudget.spec.ts`, `tests/unit/transitionBridge.spec.ts`).
