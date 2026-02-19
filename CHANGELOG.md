@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Creator Workflow Route Group:** Added `/create/*` creator pages for template start, draft editing (metadata/prompts/theme/assets), play preview, and publish/unpublish version control with separate persisted draft vs publish state, explicit Draft/Ready/Published badges, and pre-publish validation messaging (`src/routes/create/+layout.svelte`, `src/routes/create/template/+page.svelte`, `src/routes/create/editor/+page.svelte`, `src/routes/create/preview/+page.svelte`, `src/routes/create/publish/+page.svelte`, `src/lib/creator/storyBuilder.ts`, `src/lib/creator/store.ts`, `src/routes/+layout.svelte`, `src/app.css`).
 - **Prompt Voice-Safety Reinforcement:** Added explicit forbidden-phrasing guidance to the main system prompt and recovery prompt path so didactic/therapy-summary drift is redirected to behavior+motive+consequence framing (`src/lib/server/ai/narrative.ts`).
 - **Narrative Prompt Encoding Cleanup:** Replaced mojibake-affected prompt markers/punctuation with ASCII-safe wording in active narrative prompt assets (`src/lib/server/ai/narrative.ts`, `docs/NARRATIVE_DRIFT_REMAINING_WORK_2026-02-13.md`).
 - **Context/Transition Test Hardening:** Added deterministic unit coverage that proves context budgeting trims older summaries before recent prose and that transition bridges emit mapped lines only when thread deltas exist (`tests/unit/contextBudget.spec.ts`, `tests/unit/transitionBridge.spec.ts`).
@@ -148,4 +149,3 @@
 - **Ending UX:** Endings no longer auto-jump to recap mid-typewriter. Players now click `View Recap` after ending text completes.
 - **Lesson Timing:** Lesson insight popup now appears only after scene text has finished typing.
 - **Regression Coverage:** Added renderer + e2e checks for delayed lesson display and recap transition/copy/download flow.
-

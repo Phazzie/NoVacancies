@@ -22,6 +22,7 @@
 		<nav class="top-nav" aria-label="Primary navigation">
 			<a href="/" class:active={$page.url.pathname === '/'}>Home</a>
 			<a href="/play" class:active={$page.url.pathname === '/play'}>Play</a>
+			<a href="/create" class:active={$page.url.pathname.startsWith('/create')}>Create</a>
 			<a href="/settings" class:active={$page.url.pathname === '/settings'}>Settings</a>
 			<a href="/ending" class:active={$page.url.pathname === '/ending'}>Ending</a>
 			<a href="/debug" class:active={$page.url.pathname === '/debug'}>Debug</a>
