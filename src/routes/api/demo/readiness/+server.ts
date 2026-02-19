@@ -1,5 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { loadAiConfig } from '$lib/server/ai/config';
+import { getImageGenerationDiagnostics, formatImageDiagnosticsSummary } from '$lib/server/ai/diagnostics';
+import { NARRATIVE_CARTRIDGE } from '$lib/server/ai/narrative';
 import { createProviderRegistry } from '$lib/server/ai/providers';
 
 type CheckId =
@@ -25,6 +27,19 @@ interface ReadinessPayload {
 	status: 'ready' | 'almost' | 'blocked';
 	summary: string;
 	checks: ReadinessCheck[];
+	activeCartridge: {
+		id: string;
+		title: string;
+		version: string;
+	};
+	imageGeneration: {
+		attempts: number;
+		successes: number;
+		failures: number;
+		averageLatencyMs: number | null;
+		topRecentFailureCategories: Array<{ category: string; count: number }>;
+		humanDiagnostics: string[];
+	};
 	updatedAt: string;
 }
 
@@ -36,10 +51,16 @@ function summarize(payload: ReadinessPayload): string {
 }
 
 function buildConfigFailurePayload(errorMessage: string): ReadinessPayload {
+	const imageGeneration = getImageGenerationDiagnostics();
 	return {
 		score: 0,
 		status: 'blocked',
 		summary: 'Blocked by: AI runtime config is invalid.',
+		activeCartridge: NARRATIVE_CARTRIDGE,
+		imageGeneration: {
+			...imageGeneration,
+			humanDiagnostics: formatImageDiagnosticsSummary(imageGeneration)
+		},
 		updatedAt: new Date().toISOString(),
 		checks: [
 			{
@@ -55,6 +76,7 @@ function buildConfigFailurePayload(errorMessage: string): ReadinessPayload {
 
 function buildPayload(): ReadinessPayload {
 	const config = loadAiConfig();
+	const imageGeneration = getImageGenerationDiagnostics();
 	const checks: ReadinessCheck[] = [
 		{
 			id: 'provider_grok',
@@ -137,6 +159,11 @@ function buildPayload(): ReadinessPayload {
 		status,
 		summary: '',
 		checks,
+		activeCartridge: NARRATIVE_CARTRIDGE,
+		imageGeneration: {
+			...imageGeneration,
+			humanDiagnostics: formatImageDiagnosticsSummary(imageGeneration)
+		},
 		updatedAt: new Date().toISOString()
 	};
 	payload.summary = summarize(payload);

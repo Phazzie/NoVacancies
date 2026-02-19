@@ -87,6 +87,12 @@
 import { lessons } from '$lib/server/ai/lessons';
 import { EndingTypes, ImageKeys, type NarrativeContext } from '$lib/contracts';
 
+export const NARRATIVE_CARTRIDGE = {
+	id: 'no-vacancies',
+	title: 'No Vacancies',
+	version: '2026.02.16'
+} as const;
+
 export {
 	NARRATIVE_CONTEXT_CHAR_BUDGET,
 	BOUNDARY_TRANSLATIONS,

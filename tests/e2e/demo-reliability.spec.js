@@ -48,6 +48,14 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		expect(['ready', 'almost', 'blocked']).toContain(body.status);
 		expect(Array.isArray(body.checks)).toBeTruthy();
 		expect(body.checks.length).toBeGreaterThan(0);
+		expect(body.activeCartridge).toMatchObject({
+			id: 'no-vacancies',
+			title: 'No Vacancies'
+		});
+		expect(typeof body.activeCartridge.version).toBe('string');
+		expect(body.imageGeneration).toBeTruthy();
+		expect(typeof body.imageGeneration.attempts).toBe('number');
+		expect(Array.isArray(body.imageGeneration.humanDiagnostics)).toBeTruthy();
 
 		const checkIds = body.checks.map((check) => check.id);
 		const totalWeight = body.checks.reduce((sum, check) => sum + Number(check.weight || 0), 0);
@@ -116,6 +124,8 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await expect(page.getByRole('heading', { level: 2, name: 'Carry What Matters' })).toBeVisible();
 		await expect(page.getByRole('heading', { level: 3, name: 'Demo Readiness' })).toBeVisible();
 		await expect(page.getByRole('progressbar')).toBeVisible();
+		await expect(page.getByText(/Active cartridge/i)).toBeVisible();
+		await expect(page.getByText(/Telemetry diagnostics/i)).toBeVisible();
 
 		await page.goto('/settings');
 		await expectPathname(page, '/settings');
@@ -134,6 +144,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await page.goto('/debug');
 		await expectPathname(page, '/debug');
 		await expect(page.getByRole('heading', { level: 2, name: 'Debug' })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 3, name: 'Runtime Diagnostics' })).toBeVisible();
 
 		await page.goto('/ending');
 		await expectPathname(page, '/ending');

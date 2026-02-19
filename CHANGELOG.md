@@ -4,6 +4,8 @@
 
 ### Changed
 
+- **Readiness/Debug Telemetry Enrichment:** Added active cartridge identity, image generation success/failure counters, average generation latency, and top recent failure categories to readiness/debug API surfaces and UI cards; diagnostics are rendered as human-readable text and keep sensitive fields redacted (`src/lib/server/ai/diagnostics.ts`, `src/lib/server/ai/narrative.ts`, `src/lib/server/ai/routeHelpers.ts`, `src/routes/api/demo/readiness/+server.ts`, `src/routes/api/debug/diagnostics/+server.ts`, `src/routes/+page.svelte`, `src/routes/debug/+page.svelte`, `src/app.css`, `tests/e2e/demo-reliability.spec.js`, `README.md`).
+
 - **Prompt Voice-Safety Reinforcement:** Added explicit forbidden-phrasing guidance to the main system prompt and recovery prompt path so didactic/therapy-summary drift is redirected to behavior+motive+consequence framing (`src/lib/server/ai/narrative.ts`).
 - **Narrative Prompt Encoding Cleanup:** Replaced mojibake-affected prompt markers/punctuation with ASCII-safe wording in active narrative prompt assets (`src/lib/server/ai/narrative.ts`, `docs/NARRATIVE_DRIFT_REMAINING_WORK_2026-02-13.md`).
 - **Context/Transition Test Hardening:** Added deterministic unit coverage that proves context budgeting trims older summaries before recent prose and that transition bridges emit mapped lines only when thread deltas exist (`tests/unit/contextBudget.spec.ts`, `tests/unit/transitionBridge.spec.ts`).
@@ -148,4 +150,3 @@
 - **Ending UX:** Endings no longer auto-jump to recap mid-typewriter. Players now click `View Recap` after ending text completes.
 - **Lesson Timing:** Lesson insight popup now appears only after scene text has finished typing.
 - **Regression Coverage:** Added renderer + e2e checks for delayed lesson display and recap transition/copy/download flow.
-

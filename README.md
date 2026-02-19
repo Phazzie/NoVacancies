@@ -12,6 +12,7 @@ No Vacancies is an interactive narrative game about invisible labor and relation
 Demo readiness UX:
 - Home route (`/`) now includes a "Demo Readiness" progress dashboard backed by `/api/demo/readiness`.
 - Score/checks are runtime-derived (provider mode, key presence, outage mode, probe state) so you can quickly gauge demo readiness.
+- Readiness/debug diagnostics now include active cartridge metadata plus image-generation health telemetry (success/failure counters, avg latency, top failure categories) with human-readable summaries.
 - Debug route (`/debug`) shows persisted runtime/client/API error events to speed up playthrough troubleshooting.
 
 Play UX:
