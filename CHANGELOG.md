@@ -100,6 +100,7 @@
 - **Play Layout Tuning:** Updated `/play` layout to reduce oversized image dominance (desktop split layout + bounded image height/aspect) so story text and choices remain visible without excessive scrolling.
 - **Lesson Catalog Sharing:** Moved lesson catalog to shared runtime module (`src/lib/narrative/lessonsCatalog.ts`) so both server prompt generation and client lesson rendering use the same canonical lesson data.
 - **Cache Bust for Stale UI:** Bumped service worker cache key to `sydney-story-v4-sveltekit` so old cached shells (including stale key-entry UI) are invalidated on refresh.
+- **PWA Logging Health:** Wrapped production console warnings in `dev` check and moved PWA registration failures to a persistent debug log (`src/lib/client/pwa.ts`).
 
 ## [Unreleased] - 2026-02-05
 
