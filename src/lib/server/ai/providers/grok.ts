@@ -51,6 +51,13 @@ interface ChatCallResult {
 	latencyMs: number;
 }
 
+/**
+ * Generate a normalized choice identifier from choice text.
+ *
+ * @param text - The choice label to normalize into an identifier.
+ * @param index - Numeric fallback used when the normalized id would be empty.
+ * @returns The normalized id: lowercase, non-alphanumeric characters replaced with underscores, leading/trailing underscores removed, truncated to 30 characters; or `choice_<index>` if the result is empty.
+ */
 function normalizeChoiceId(text: string, index: number): string {
 	const slug = text
 		.toLowerCase()
@@ -60,6 +67,12 @@ function normalizeChoiceId(text: string, index: number): string {
 	return slug || `choice_${index}`;
 }
 
+/**
+ * Extracts the JSON-like substring bounded by the first `{` and the last `}` in the input text.
+ *
+ * @param text - The input string to search for a JSON object
+ * @returns A substring starting with the first `{` and ending with the last `}` from `text`, or `"{}"` if no such range exists
+ */
 function extractJsonObject(text: string): string {
 	const start = text.indexOf('{');
 	const end = text.lastIndexOf('}');
@@ -69,10 +82,25 @@ function extractJsonObject(text: string): string {
 	return text.slice(start, end + 1);
 }
 
+/**
+ * Pause execution for the given duration.
+ *
+ * @param ms - Delay duration in milliseconds
+ * @returns A promise that resolves once the specified delay has elapsed
+ */
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Convert a raw SceneCandidate into a validated Scene with normalized fields and sensible defaults.
+ *
+ * Trims and filters choice text, ensures each choice has a stable id (generating one when needed), casts or defaults top-level fields (sceneId, sceneText, lessonId, imageKey, imagePrompt, isEnding, endingType, mood), and preserves optional thread and mechanic update maps when present.
+ *
+ * @param candidate - The parsed scene candidate to normalize
+ * @param fallbackSceneId - Scene id to use when `candidate.sceneId` is missing or empty
+ * @returns A Scene whose fields have been normalized, validated, and populated with defaults where appropriate
+ */
 function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Scene {
 	const choices = Array.isArray(candidate.choices)
 		? candidate.choices
@@ -120,6 +148,14 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 	};
 }
 
+/**
+ * Builds the prompt string used to generate either an opening scene or a continuation scene.
+ *
+ * @param input - Input containing story configuration and, for continuations, narrative context
+ * @param mode - 'opening' to produce an opening-scene prompt, 'next' to produce a continuation prompt
+ * @returns The prompt string to send to the AI for scene generation
+ * @throws AiProviderError If `mode` is 'next' and `input.narrativeContext` is missing (code: 'invalid_response')
+ */
 function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
 	if (mode === 'opening') {
 		return getOpeningPrompt(input.storyConfig);

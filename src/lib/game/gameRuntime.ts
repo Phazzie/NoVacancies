@@ -69,6 +69,12 @@ export interface GameRuntime {
 	getActiveConfig(): StoryConfig | null;
 }
 
+/**
+ * Create a copy of a GameSettings object with collection fields duplicated.
+ *
+ * @param settings - The original game settings to copy
+ * @returns A clone of `settings` where `unlockedEndings` is a new array and `featureFlags` is a new object
+ */
 function cloneSettings(settings: GameSettings): GameSettings {
 	return {
 		...settings,
@@ -82,6 +88,13 @@ function normalizeEndingList(endings: EndingType[]): EndingType[] {
 	return [...deduped];
 }
 
+/**
+ * Create a GameRuntime that manages game state, scene progression, settings, feature flags, and story interactions.
+ *
+ * @param options - Runtime dependencies and overrides (e.g., `storyService` required in Grok-only mode, optional `settingsStorage`, `storageBindings`, and `now` time provider).
+ * @returns A GameRuntime instance exposing methods to start a game, handle choices, query current scene and state, manage settings and feature flags, check processing status, retrieve the last ending, and get the active story configuration.
+ * @throws Error if a required `storyService` is not provided in Grok-only mode.
+ */
 export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime {
 	const now = options.now ?? Date.now;
 	const storyService = options.storyService;

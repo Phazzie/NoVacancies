@@ -6,9 +6,14 @@ Your goal is to drive the story forward based on the player's choices.
 Maintain tone, consistency, and track narrative state.`;
 
 /**
- * Format the Narrative Context into a prompt section
- * @param {import('./contracts.js').NarrativeContext} context
- * @returns {string}
+ * Render a NarrativeContext into a structured prompt section for the AI Game Master.
+ *
+ * Conditionally includes subsections for active lessons, thread state, boundaries, recent state shifts,
+ * previously summarized scenes, recent scene prose (last two scenes with scene ID and viaChoiceText),
+ * and recent beat memory when those fields are present and non-empty.
+ *
+ * @param context - The narrative context containing counts, arc position, and optional arrays used to populate sections.
+ * @returns A single string with newline-separated lines representing the formatted "## NARRATIVE CONTEXT" section.
  */
 export function formatNarrativeContextSection(context: NarrativeContext): string {
     const lines = [
@@ -67,11 +72,16 @@ export function formatNarrativeContextSection(context: NarrativeContext): string
 }
 
 /**
- * Continue prompt powered by app-owned NarrativeContext.
- * @param {import('./contracts.js').NarrativeContext} narrativeContext
- * @param {StoryConfig} storyConfig
- * @param {string|null} suggestedEnding
- * @returns {string}
+ * Builds the full continuation prompt for the AI Game Master using the provided narrative context and story configuration.
+ *
+ * The prompt includes a formatted narrative context, the player's last choice, task instructions (story title, premise, characters,
+ * scene length, choice requirements, continuity constraints), available mechanic update fields, and—when the scene count is high—
+ * targeted ending guidance derived from `suggestedEnding` and `storyConfig.endingRules` (with legacy fallbacks when `legacyMode` is set).
+ *
+ * @param narrativeContext - Current narrative state; `sceneCount` and `lastChoiceText` affect ending guidance and the player's choice line.
+ * @param storyConfig - Story metadata and rules (title, premise, characters, mechanics, endingRules, legacyMode) used to populate instructions and available fields.
+ * @param suggestedEnding - Optional ending id or type to bias ending guidance when the story is approaching its end.
+ * @returns The assembled prompt string to send to the model (contains the context section, task instructions, and a requirement to respond with valid JSON only).
  */
 export function getContinuePromptFromContext(
 	narrativeContext: NarrativeContext,
@@ -146,9 +156,12 @@ Respond with valid JSON only.`;
 }
 
 /**
- * Template for the opening scene
- * @param {StoryConfig} storyConfig
- * @returns {string}
+ * Builds the opening-scene prompt for the AI Game Master.
+ *
+ * Uses the provided story configuration to compose a prompt containing the story title, premise, and the configured opening prompt.
+ *
+ * @param storyConfig - Story configuration containing `title`, `premise`, and `openingPrompt`
+ * @returns The prompt string instructing the AI to generate the opening scene and to respond with valid JSON
  */
 export function getOpeningPrompt(storyConfig: StoryConfig): string {
     return `## OPENING SCENE
@@ -163,9 +176,12 @@ Respond with valid JSON only.`;
 }
 
 /**
- * Error recovery prompt when AI generates invalid JSON
- * @param {string} invalidOutput - What the AI generated
- * @returns {string}
+ * Builds a recovery prompt that asks the AI to replace a malformed response with valid JSON.
+ *
+ * The prompt includes up to the first 500 characters of the invalid output for context and requires a response in an exact JSON shape with fields such as `sceneText`, `choices`, `lessonId`, `imageKey`, `imagePrompt`, `isEnding`, `endingType`, `mood`, and optional `storyThreadUpdates` and `mechanicUpdates`.
+ *
+ * @param invalidOutput - The previous AI output; up to 500 characters are included in the prompt for reference.
+ * @returns The recovery prompt string instructing the AI to respond with the specified JSON schema only.
  */
 export function getRecoveryPrompt(invalidOutput: string): string {
     return `Your previous response was not valid JSON. 

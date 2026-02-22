@@ -59,6 +59,12 @@ export class AiProviderError extends Error {
 	}
 }
 
+/**
+ * Checks whether an HTTP status code indicates a retryable error.
+ *
+ * @param status - The HTTP status code to evaluate
+ * @returns `true` if `status` is 408, 429, or greater than or equal to 500; `false` otherwise.
+ */
 export function isRetryableStatus(status: number): boolean {
 	return status === 408 || status === 429 || status >= 500;
 }

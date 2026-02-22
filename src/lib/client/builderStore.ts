@@ -20,6 +20,17 @@ const EMPTY_STORY: StoryConfig = {
     endingRules: []
 };
 
+/**
+ * Creates a Svelte store for constructing and editing a StoryConfig.
+ *
+ * The store is initialized with a default StoryConfig template and exposes helpers
+ * to initialize from an id or create a new story, update individual fields,
+ * persist the story, and manage characters and mechanics by index.
+ *
+ * @returns An object containing `subscribe` and `set` from the Svelte store and helper methods:
+ * `init(id)`, `updateField(field, value)`, `save()`, `addCharacter(char)`, `updateCharacter(index, char)`,
+ * `removeCharacter(index)`, `addMechanic(mech)`, `updateMechanic(index, mech)`, and `removeMechanic(index)`.
+ */
 function createBuilderStore() {
     const { subscribe, set, update } = writable<StoryConfig>(JSON.parse(JSON.stringify(EMPTY_STORY)));
 

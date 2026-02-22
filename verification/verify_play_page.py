@@ -1,6 +1,11 @@
 from playwright.sync_api import sync_playwright
 
 def run():
+    """
+    Open a Chromium browser, navigate to http://localhost:5173/play, wait up to 10000 ms for either a `.scene-text` element or an `.error-banner`, capture a screenshot to verification/play_page_fixed.png, and close the browser.
+    
+    If the selector wait times out or another exception occurs, the exception is printed and execution continues to take the screenshot.
+    """
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()

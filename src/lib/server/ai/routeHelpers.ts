@@ -16,11 +16,24 @@ export interface NextRoutePayload {
 	storyConfig?: StoryConfig;
 }
 
+/**
+ * Normalize an arbitrary value into a Partial<RuntimeFeatureFlags>.
+ *
+ * @param value - The value to validate and cast; may be any type.
+ * @returns The input cast as `Partial<RuntimeFeatureFlags>` when `value` is an object, otherwise an empty object.
+ */
 function safeFeatureFlags(value: unknown): Partial<RuntimeFeatureFlags> {
 	if (!value || typeof value !== 'object') return {};
 	return value as Partial<RuntimeFeatureFlags>;
 }
 
+/**
+ * Resolve the StoryConfig to use for generation, preferring an explicit config and falling back to the default story.
+ *
+ * @param storyId - Optional story identifier (currently unused; reserved for future DB/file lookup).
+ * @param config - Optional StoryConfig to use directly.
+ * @returns The provided `config` if present; otherwise the default `NO_VACANCIES_STORY`.
+ */
 function resolveStoryConfig(storyId?: string, config?: StoryConfig): StoryConfig {
 	if (config) return config;
 	// Future: look up storyId in DB/File system
@@ -28,6 +41,15 @@ function resolveStoryConfig(storyId?: string, config?: StoryConfig): StoryConfig
 	return NO_VACANCIES_STORY;
 }
 
+/**
+ * Build the initial GenerateSceneInput for starting a story session.
+ *
+ * @param payload - Options used to create the opening input.
+ * @param payload.featureFlags - Arbitrary runtime feature flags; non-object values are treated as empty.
+ * @param payload.storyId - Optional story identifier used to resolve a story configuration when `storyConfig` is not provided.
+ * @param payload.storyConfig - Optional explicit story configuration to use instead of resolving by `storyId`.
+ * @returns A GenerateSceneInput with null `currentSceneId` and `choiceId`, a fresh `gameState`, and a resolved `storyConfig`.
+ */
 export function buildOpeningInput(payload: { featureFlags?: unknown; storyId?: string; storyConfig?: StoryConfig }): GenerateSceneInput {
 	const gameState = createGameState({
 		featureFlags: safeFeatureFlags(payload.featureFlags)
@@ -40,6 +62,12 @@ export function buildOpeningInput(payload: { featureFlags?: unknown; storyId?: s
 	};
 }
 
+/**
+ * Constructs the GenerateSceneInput used to advance to the next scene from a route payload.
+ *
+ * @param payload - Route payload containing optional navigation fields (currentSceneId, choiceId, gameState, narrativeContext, storyId, storyConfig)
+ * @returns An input object whose `currentSceneId` is taken from the payload or the base game state, `choiceId` is taken from the payload or set to `null`, `gameState` is the provided state or a newly created one, `narrativeContext` is taken from the payload or set to `null`, and `storyConfig` is resolved from the provided `storyConfig` or `storyId` (falling back to the default story configuration)
+ */
 export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
 	const baseState = payload.gameState ?? createGameState();
 	return {

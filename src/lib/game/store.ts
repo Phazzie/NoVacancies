@@ -56,6 +56,14 @@ function mapUserFacingError(error: unknown): string {
 	return raw || 'Something went wrong while loading AI.';
 }
 
+/**
+ * Get the singleton GameRuntime, creating and initializing it if not already created.
+ *
+ * On first call, constructs the runtime with environment-appropriate services and storage bindings,
+ * retrieves the runtime settings and active story config, and updates appGameStateStore (settings, activeStoryConfig, isReady).
+ *
+ * @returns The initialized GameRuntime singleton.
+ */
 function getRuntime(): GameRuntime {
 	if (runtime) return runtime;
 
@@ -79,6 +87,15 @@ function getRuntime(): GameRuntime {
 	return runtime;
 }
 
+/**
+ * Apply a game turn result to the global app game state.
+ *
+ * Updates the store's scene, gameState, and ending from the provided result, clears any error,
+ * marks processing as finished, sets the app ready flag, and records the given active story config.
+ *
+ * @param result - The turn result whose `scene`, `gameState`, and `ending` will be persisted to state
+ * @param config - The active `StoryConfig` to store, or `null` to clear the active config
+ */
 function applyTurnResult(result: GameTurnResult, config: StoryConfig | null): void {
 	appGameStateStore.update((state) => ({
 		...state,

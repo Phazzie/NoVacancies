@@ -101,6 +101,14 @@ async function postJson<TResponse>(
 	return body as TResponse;
 }
 
+/**
+ * Creates a StoryService implementation that communicates with server endpoints under a configurable base path.
+ *
+ * @param config - Optional settings for the API client:
+ *   - `basePath`: root path prepended to all endpoint paths (defaults to `/api`).
+ *   - `fetchImpl`: `fetch`-compatible implementation to use for network requests (defaults to global `fetch`).
+ * @returns A StoryService whose methods call the server endpoints for opening, next, recovery scenes and story config, and whose `isAvailable` returns `true`.
+ */
 export function createApiStoryService(config: ApiStoryServiceConfig = {}): StoryService {
 	const basePath = config.basePath ?? '/api';
 	const fetchImpl = config.fetchImpl ?? fetch;

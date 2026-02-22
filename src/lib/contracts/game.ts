@@ -162,6 +162,11 @@ export function normalizeFeatureFlags(
 	};
 }
 
+/**
+ * Creates a new StoryThreads object populated with default narrative thread values.
+ *
+ * @returns A StoryThreads object with numeric counters set to 0 (except `exhaustionLevel` set to 1), boolean flags `moneyResolved` and `carMentioned` set to `false`, and an empty `boundariesSet` array.
+ */
 export function createStoryThreads(): StoryThreads {
 	return {
 		oswaldoConflict: 0,
@@ -176,6 +181,16 @@ export function createStoryThreads(): StoryThreads {
 	};
 }
 
+/**
+ * Create a new initial GameState with optional overrides.
+ *
+ * @param options - Optional overrides for the initial state
+ * @param options.storyId - Identifier for the story; defaults to `'no-vacancies'`
+ * @param options.featureFlags - Partial runtime feature flags to merge with defaults
+ * @param options.apiKey - Optional API key to attach to the state; defaults to `null`
+ * @param options.now - Function returning the current time in milliseconds; defaults to `Date.now`
+ * @returns The initialized GameState with default structures (threads, mechanics, history, etc.) and `startTime` set to the current epoch milliseconds
+ */
 export function createGameState(options?: {
 	storyId?: string;
 	featureFlags?: Partial<RuntimeFeatureFlags>;
@@ -199,6 +214,13 @@ export function createGameState(options?: {
 	};
 }
 
+/**
+ * Merge partial StoryThreads updates into an existing StoryThreads object, concatenating any provided `boundariesSet` entries onto the existing list.
+ *
+ * @param currentThreads - The source StoryThreads to apply updates to
+ * @param updates - Partial updates to apply; if omitted or null, `currentThreads` is returned unchanged. Provided non-undefined fields replace the corresponding values on the result; when `boundariesSet` is provided and non-empty, its elements are appended to the existing `boundariesSet` array.
+ * @returns A new StoryThreads object with the updates applied. `boundariesSet` contains the original entries followed by any appended entries from `updates`.
+ */
 export function mergeThreadUpdates(
 	currentThreads: StoryThreads,
 	updates?: Partial<StoryThreads> | null
@@ -227,6 +249,13 @@ export function mergeThreadUpdates(
 	return merged;
 }
 
+/**
+ * Merge mechanic updates into the current mechanics, appending arrays and overwriting non-array values.
+ *
+ * @param current - The existing mechanics map to merge into
+ * @param updates - Optional updates to apply; if `null` or `undefined`, a shallow copy of `current` is returned
+ * @returns A new mechanics map with array values concatenated onto existing arrays and non-array values replaced
+ */
 export function mergeMechanicUpdates(
 	current: Record<string, MechanicValue>,
 	updates?: Record<string, MechanicValue> | null
@@ -247,6 +276,12 @@ export function mergeMechanicUpdates(
 	return merged;
 }
 
+/**
+ * Determines whether a value matches the required Scene structure.
+ *
+ * @param scene - Value to validate as a Scene
+ * @returns `true` if `scene` has the required Scene properties (`sceneId`, `sceneText`, `choices` array, `isEnding`, and `endingType` when `isEnding` is true), `false` otherwise.
+ */
 export function validateScene(scene: unknown): scene is Scene {
 	if (!scene || typeof scene !== 'object') return false;
 	const typedScene = scene as Scene;
@@ -282,6 +317,15 @@ export function isValidChoiceId(choiceId: unknown): choiceId is string {
 	return typeof choiceId === 'string' && /^[a-z0-9_-]{1,80}$/i.test(choiceId);
 }
 
+/**
+ * Creates a cloned Scene where the top-level object and key nested collections are copied to avoid shared mutation.
+ *
+ * The returned Scene is a shallow copy of `scene` with deep copies of the `choices` array (each choice object), a copied
+ * `storyThreadUpdates.boundariesSet` array when present, and a deep-cloned `mechanicUpdates` object; other nested fields are preserved by shallow copy.
+ *
+ * @param scene - The Scene to clone
+ * @returns A new Scene object equal in value to `scene` but safe to mutate without affecting the original
+ */
 export function cloneScene(scene: Scene): Scene {
 	return {
 		...scene,
@@ -298,6 +342,12 @@ export function cloneScene(scene: Scene): Scene {
 	};
 }
 
+/**
+ * Create a deep clone of a GameState that does not share nested mutable structures with the original.
+ *
+ * @param state - The GameState to clone
+ * @returns A new GameState whose nested arrays and objects (history, lessonsEncountered, storyThreads.boundariesSet, mechanics, sceneLog, pendingTransitionBridge, featureFlags, etc.) are copied so mutations do not affect the source
+ */
 export function cloneGameState(state: GameState): GameState {
 	return {
 		...state,
