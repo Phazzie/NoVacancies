@@ -1,14 +1,18 @@
 import type { GameState, NarrativeContext, Scene, StoryThreads } from '../contracts';
+import type { StoryConfig } from '../contracts/story';
 import { appendDebugError } from '../debug/errorLog';
 
 export interface OpeningSceneRequest {
 	featureFlags?: GameState['featureFlags'];
+	storyId?: string;
+	storyConfig?: StoryConfig;
 }
 
 export interface StoryServiceOptions {
 	useNarrativeContext?: boolean;
 	previousThreads?: StoryThreads;
 	enableTransitionBridges?: boolean;
+	storyConfig?: StoryConfig;
 }
 
 export interface StoryService {
@@ -20,6 +24,7 @@ export interface StoryService {
 		narrativeContext?: NarrativeContext | null,
 		options?: StoryServiceOptions
 	): Promise<Scene>;
+	getStoryConfig?(storyId?: string): Promise<StoryConfig>;
 	getRecoveryScene?(): Promise<Scene>;
 	getSceneById?(sceneId: string): Scene | undefined;
 	isAvailable?(): boolean;
@@ -108,7 +113,9 @@ export function createApiStoryService(config: ApiStoryServiceConfig = {}): Story
 				fetchImpl,
 				endpoint('/story/opening'),
 				{
-					featureFlags: request?.featureFlags ?? null
+					featureFlags: request?.featureFlags ?? null,
+					storyId: request?.storyId,
+					storyConfig: request?.storyConfig
 				}
 			);
 			return ensureSceneShape(payload.scene, '/story/opening');
@@ -119,9 +126,23 @@ export function createApiStoryService(config: ApiStoryServiceConfig = {}): Story
 				choiceId,
 				gameState,
 				narrativeContext,
-				options
+				storyId: gameState.storyId,
+				storyConfig: options.storyConfig,
+				options: {
+					useNarrativeContext: options.useNarrativeContext,
+					previousThreads: options.previousThreads,
+					enableTransitionBridges: options.enableTransitionBridges
+				}
 			});
 			return ensureSceneShape(payload.scene, '/story/next');
+		},
+		async getStoryConfig(storyId) {
+			const payload = await postJson<{ config: StoryConfig }>(
+				fetchImpl,
+				endpoint('/story/config'),
+				{ storyId }
+			);
+			return payload.config;
 		},
 		async getRecoveryScene() {
 			const payload = await postJson<{ scene: unknown }>(

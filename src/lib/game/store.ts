@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { get, writable } from 'svelte/store';
 import type { GameSettings, GameState, Scene } from '$lib/contracts';
+import type { StoryConfig } from '$lib/contracts/story';
 import type { GameTurnResult } from '$lib/game/gameRuntime';
 import { createGameRuntime, type GameRuntime } from '$lib/game/gameRuntime';
 import { resolveImagePath } from '$lib/game/imagePaths';
@@ -15,6 +16,7 @@ export interface AppGameState {
 	isProcessing: boolean;
 	error: string;
 	isReady: boolean;
+	activeStoryConfig: StoryConfig | null;
 }
 
 const initialState: AppGameState = {
@@ -24,7 +26,8 @@ const initialState: AppGameState = {
 	ending: null,
 	isProcessing: false,
 	error: '',
-	isReady: false
+	isReady: false,
+	activeStoryConfig: null
 };
 
 const appGameStateStore = writable<AppGameState>(initialState);
@@ -71,11 +74,12 @@ function getRuntime(): GameRuntime {
 	);
 
 	const settings = runtime.getSettings();
-	appGameStateStore.update((state) => ({ ...state, settings, isReady: true }));
+	const activeStoryConfig = runtime.getActiveConfig();
+	appGameStateStore.update((state) => ({ ...state, settings, activeStoryConfig, isReady: true }));
 	return runtime;
 }
 
-function applyTurnResult(result: GameTurnResult): void {
+function applyTurnResult(result: GameTurnResult, config: StoryConfig | null): void {
 	appGameStateStore.update((state) => ({
 		...state,
 		scene: result.scene,
@@ -83,7 +87,8 @@ function applyTurnResult(result: GameTurnResult): void {
 		ending: result.ending,
 		error: '',
 		isProcessing: false,
-		isReady: true
+		isReady: true,
+		activeStoryConfig: config
 	}));
 }
 
@@ -92,9 +97,10 @@ export const gameStore = {
 	initialize(): void {
 		const engine = getRuntime();
 		const settings = engine.refreshSettings();
-		appGameStateStore.update((state) => ({ ...state, settings, isReady: true }));
+		const config = engine.getActiveConfig();
+		appGameStateStore.update((state) => ({ ...state, settings, activeStoryConfig: config, isReady: true }));
 	},
-	async startGame(): Promise<GameTurnResult> {
+	async startGame(options?: { storyId?: string; storyConfig?: StoryConfig }): Promise<GameTurnResult> {
 		const engine = getRuntime();
 		const current = get(appGameStateStore);
 		const settings = current.settings || engine.getSettings();
@@ -103,9 +109,12 @@ export const gameStore = {
 
 		try {
 			const result = await engine.startGame({
-				featureFlags: settings.featureFlags
+				featureFlags: settings.featureFlags,
+				storyId: options?.storyId,
+				storyConfig: options?.storyConfig
 			});
-			applyTurnResult(result);
+			const config = engine.getActiveConfig();
+			applyTurnResult(result, config);
 			return result;
 		} catch (error) {
 			const message = mapUserFacingError(error);
@@ -128,7 +137,8 @@ export const gameStore = {
 
 		try {
 			const result = await engine.handleChoice(choiceId, choiceText);
-			applyTurnResult(result);
+			const config = engine.getActiveConfig();
+			applyTurnResult(result, config);
 			return result;
 		} catch (error) {
 			const message = mapUserFacingError(error);

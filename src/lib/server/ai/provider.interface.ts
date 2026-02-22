@@ -1,4 +1,5 @@
 import type { GameState, NarrativeContext, Scene } from '$lib/contracts';
+import type { StoryConfig } from '$lib/contracts/story';
 
 export type AiProviderName = 'grok';
 export type AiErrorCode =
@@ -23,6 +24,7 @@ export interface GenerateSceneInput {
 	choiceId: string | null;
 	gameState: GameState;
 	narrativeContext?: NarrativeContext | null;
+	storyConfig: StoryConfig;
 }
 
 export interface GenerateImageInput {
@@ -60,4 +62,3 @@ export class AiProviderError extends Error {
 export function isRetryableStatus(status: number): boolean {
 	return status === 408 || status === 429 || status >= 500;
 }
-

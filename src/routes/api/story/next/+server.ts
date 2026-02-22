@@ -1,5 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { asRouteError, buildNextInput, resolveTextScene } from '$lib/server/ai/routeHelpers';
+import type { StoryConfig } from '$lib/contracts/story';
 
 export const POST: RequestHandler = async (event) => {
 	try {
@@ -8,6 +9,8 @@ export const POST: RequestHandler = async (event) => {
 			choiceId?: string;
 			gameState?: import('$lib/contracts').GameState;
 			narrativeContext?: import('$lib/contracts').NarrativeContext | null;
+			storyId?: string;
+			storyConfig?: StoryConfig;
 		};
 		const input = buildNextInput(payload);
 		const scene = await resolveTextScene(input, 'next');
@@ -16,4 +19,3 @@ export const POST: RequestHandler = async (event) => {
 		return asRouteError(event, error);
 	}
 };
-

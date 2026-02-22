@@ -45,6 +45,8 @@ export interface Choice {
 	nextSceneId?: string;
 }
 
+export type MechanicValue = number | boolean | string[];
+
 export interface Scene {
 	sceneId: string;
 	sceneText: string;
@@ -56,6 +58,7 @@ export interface Scene {
 	endingType: EndingType | null;
 	mood?: Mood;
 	storyThreadUpdates?: Partial<StoryThreads> | null;
+	mechanicUpdates?: Record<string, MechanicValue> | null;
 }
 
 export interface StoryThreads {
@@ -111,10 +114,12 @@ export interface NarrativeContext {
 }
 
 export interface GameState {
+	storyId: string;
 	currentSceneId: string;
 	history: ChoiceHistoryEntry[];
 	lessonsEncountered: number[];
 	storyThreads: StoryThreads;
+	mechanics: Record<string, MechanicValue>;
 	sceneLog: SceneLogEntry[];
 	pendingTransitionBridge: { keys: string[]; lines: string[] } | null;
 	featureFlags: RuntimeFeatureFlags;
@@ -172,16 +177,19 @@ export function createStoryThreads(): StoryThreads {
 }
 
 export function createGameState(options?: {
+	storyId?: string;
 	featureFlags?: Partial<RuntimeFeatureFlags>;
 	apiKey?: string | null;
 	now?: () => number;
 }): GameState {
 	const now = options?.now ?? Date.now;
 	return {
+		storyId: options?.storyId ?? 'no-vacancies',
 		currentSceneId: SceneIds.OPENING,
 		history: [],
 		lessonsEncountered: [],
 		storyThreads: createStoryThreads(),
+		mechanics: {},
 		sceneLog: [],
 		pendingTransitionBridge: null,
 		featureFlags: normalizeFeatureFlags(options?.featureFlags),
@@ -216,6 +224,26 @@ export function mergeThreadUpdates(
 		}
 	}
 
+	return merged;
+}
+
+export function mergeMechanicUpdates(
+	current: Record<string, MechanicValue>,
+	updates?: Record<string, MechanicValue> | null
+): Record<string, MechanicValue> {
+	if (!updates) return { ...current };
+	const merged = { ...current };
+
+	for (const [key, value] of Object.entries(updates)) {
+		if (Array.isArray(value)) {
+			// Append for sets
+			const existing = Array.isArray(merged[key]) ? (merged[key] as string[]) : [];
+			merged[key] = [...existing, ...value];
+		} else {
+			// Overwrite for others
+			merged[key] = value;
+		}
+	}
 	return merged;
 }
 
@@ -265,7 +293,8 @@ export function cloneScene(scene: Scene): Scene {
 					? { boundariesSet: [...scene.storyThreadUpdates.boundariesSet] }
 					: {})
 			}
-			: scene.storyThreadUpdates ?? null
+			: scene.storyThreadUpdates ?? null,
+		mechanicUpdates: scene.mechanicUpdates ? JSON.parse(JSON.stringify(scene.mechanicUpdates)) : null
 	};
 }
 
@@ -278,6 +307,7 @@ export function cloneGameState(state: GameState): GameState {
 			...state.storyThreads,
 			boundariesSet: [...state.storyThreads.boundariesSet]
 		},
+		mechanics: JSON.parse(JSON.stringify(state.mechanics)),
 		sceneLog: state.sceneLog.map((entry) => ({ ...entry })),
 		pendingTransitionBridge: state.pendingTransitionBridge
 			? {

@@ -4,6 +4,7 @@ import {
 	createGameState,
 	isValidChoiceId,
 	mergeThreadUpdates,
+	mergeMechanicUpdates,
 	normalizeFeatureFlags,
 	validateScene,
 	type EndingType,
@@ -12,6 +13,7 @@ import {
 	type RuntimeFeatureFlags,
 	type Scene
 } from '../contracts';
+import type { StoryConfig } from '../contracts/story';
 import { buildNarrativeContext, detectThreadTransitions } from './narrativeContext';
 import {
 	createSettingsStorage,
@@ -40,6 +42,8 @@ export interface GameTurnResult {
 
 export interface StartGameOptions {
 	featureFlags?: Partial<RuntimeFeatureFlags>;
+	storyId?: string;
+	storyConfig?: StoryConfig;
 }
 
 export interface GameRuntimeOptions {
@@ -62,6 +66,7 @@ export interface GameRuntime {
 	clearFeatureFlags(): RuntimeFeatureFlags;
 	isProcessing(): boolean;
 	getEnding(): EndingPayload | null;
+	getActiveConfig(): StoryConfig | null;
 }
 
 function cloneSettings(settings: GameSettings): GameSettings {
@@ -95,6 +100,7 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 	let currentScene: Scene | null = null;
 	let lastEnding: EndingPayload | null = null;
 	let processing = false;
+	let activeStoryConfig: StoryConfig | null = null;
 
 	const refreshSettings = (): GameSettings => {
 		settings = settingsStorage.loadSettings();
@@ -165,6 +171,10 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			gameState.storyThreads = mergeThreadUpdates(gameState.storyThreads, scene.storyThreadUpdates);
 		}
 
+		if (scene.mechanicUpdates) {
+			gameState.mechanics = mergeMechanicUpdates(gameState.mechanics, scene.mechanicUpdates);
+		}
+
 		const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
 		gameState.pendingTransitionBridge = transitionBridge.lines.length > 0 ? transitionBridge : null;
 		gameState.currentSceneId = scene.sceneId;
@@ -200,11 +210,31 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		gameState = createGameState({
 			featureFlags: lockedFeatureFlags,
 			apiKey: null,
-			now
+			now,
+			storyId: startOptions.storyId || (startOptions.storyConfig ? startOptions.storyConfig.id : undefined)
 		});
 
+		// Initialize active config
+		activeStoryConfig = startOptions.storyConfig || null;
+		if (!activeStoryConfig && storyService.getStoryConfig) {
+			try {
+				activeStoryConfig = await storyService.getStoryConfig(gameState.storyId);
+			} catch (e) {
+				console.warn('Failed to load story config, proceeding with defaults', e);
+			}
+		}
+
+		if (activeStoryConfig && activeStoryConfig.mechanics) {
+			// Initialize mechanics with start values
+			activeStoryConfig.mechanics.forEach(m => {
+				gameState!.mechanics[m.id] = m.startValue ?? (m.type === 'set' ? [] : 0);
+			});
+		}
+
 		const openingScene = await storyService.getOpeningScene({
-			featureFlags: lockedFeatureFlags
+			featureFlags: lockedFeatureFlags,
+			storyId: gameState.storyId,
+			storyConfig: activeStoryConfig || undefined
 		});
 		if (!validateScene(openingScene)) {
 			throw new Error('Story service returned invalid opening scene');
@@ -230,6 +260,10 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 				gameState.storyThreads,
 				openingScene.storyThreadUpdates
 			);
+		}
+
+		if (openingScene.mechanicUpdates) {
+			gameState.mechanics = mergeMechanicUpdates(gameState.mechanics, openingScene.mechanicUpdates);
 		}
 
 		currentScene = cloneScene(openingScene);
@@ -265,7 +299,8 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 				narrativeContext,
 				{
 					useNarrativeContext: true,
-					enableTransitionBridges: true
+					enableTransitionBridges: true,
+					storyConfig: activeStoryConfig || undefined
 				}
 			);
 			if (!validateScene(nextScene)) {
@@ -314,6 +349,7 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		setFeatureFlags,
 		clearFeatureFlags,
 		isProcessing: () => processing,
-		getEnding: () => (lastEnding ? { ...lastEnding, unlockedEndings: [...lastEnding.unlockedEndings] } : null)
+		getEnding: () => (lastEnding ? { ...lastEnding, unlockedEndings: [...lastEnding.unlockedEndings] } : null),
+		getActiveConfig: () => activeStoryConfig ? JSON.parse(JSON.stringify(activeStoryConfig)) : null
 	};
 }

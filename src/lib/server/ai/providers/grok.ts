@@ -1,4 +1,4 @@
-import { validateEndingType, validateScene, type Scene, type StoryThreads } from '$lib/contracts';
+import { validateEndingType, validateScene, type Scene, type StoryThreads, type MechanicValue } from '$lib/contracts';
 import type { AiConfig } from '$lib/server/ai/config';
 import {
 	SYSTEM_PROMPT,
@@ -41,6 +41,7 @@ interface SceneCandidate {
 	endingType?: unknown;
 	mood?: unknown;
 	storyThreadUpdates?: Partial<StoryThreads> | null;
+	mechanicUpdates?: Record<string, MechanicValue> | null;
 }
 
 interface ChatCallResult {
@@ -50,95 +51,26 @@ interface ChatCallResult {
 	latencyMs: number;
 }
 
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function extractJsonObject(text: string): string {
-	const trimmed = text.trim();
-	if (!trimmed) throw new Error('Empty provider response');
-
-	const candidates: string[] = [];
-	const seen = new Set<string>();
-
-	const pushCandidate = (value: string) => {
-		const candidate = value.trim();
-		if (!candidate || seen.has(candidate)) return;
-		seen.add(candidate);
-		candidates.push(candidate);
-	};
-
-	const fencedRegex = /```(?:json)?\s*([\s\S]*?)\s*```/gi;
-	let fencedMatch: RegExpExecArray | null = null;
-	while ((fencedMatch = fencedRegex.exec(trimmed)) !== null) {
-		if (fencedMatch[1]) pushCandidate(fencedMatch[1]);
-	}
-
-	if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-		pushCandidate(trimmed);
-	}
-
-	// Scan for balanced JSON object slices while respecting quoted strings.
-	const maxObjectsToScan = 10;
-	let objectsFound = 0;
-	for (let start = 0; start < trimmed.length && objectsFound < maxObjectsToScan; start += 1) {
-		if (trimmed[start] !== '{') continue;
-
-		let depth = 0;
-		let inString = false;
-		let escaped = false;
-
-		for (let i = start; i < trimmed.length; i += 1) {
-			const ch = trimmed[i];
-			if (inString) {
-				if (escaped) {
-					escaped = false;
-				} else if (ch === '\\') {
-					escaped = true;
-				} else if (ch === '"') {
-					inString = false;
-				}
-				continue;
-			}
-
-			if (ch === '"') {
-				inString = true;
-				continue;
-			}
-			if (ch === '{') depth += 1;
-			if (ch === '}') {
-				depth -= 1;
-				if (depth === 0) {
-					pushCandidate(trimmed.slice(start, i + 1));
-					objectsFound += 1;
-					start = i;
-					break;
-				}
-			}
-		}
-	}
-
-	for (const candidate of candidates) {
-		try {
-			const parsed = JSON.parse(candidate);
-			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-				return candidate;
-			}
-		} catch {
-			// try next candidate
-		}
-	}
-
-	throw new Error('No parseable JSON object found in provider response');
-}
-
 function normalizeChoiceId(text: string, index: number): string {
-	const normalized = text
+	const slug = text
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '_')
 		.replace(/^_+|_+$/g, '')
-		.slice(0, 64);
-	return normalized || `choice_${index + 1}`;
+		.slice(0, 30);
+	return slug || `choice_${index}`;
+}
+
+function extractJsonObject(text: string): string {
+	const start = text.indexOf('{');
+	const end = text.lastIndexOf('}');
+	if (start === -1 || end === -1 || end <= start) {
+		return '{}';
+	}
+	return text.slice(start, end + 1);
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Scene {
@@ -180,13 +112,17 @@ function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Sce
 		storyThreadUpdates:
 			candidate.storyThreadUpdates && typeof candidate.storyThreadUpdates === 'object'
 				? candidate.storyThreadUpdates
+				: null,
+		mechanicUpdates:
+			candidate.mechanicUpdates && typeof candidate.mechanicUpdates === 'object'
+				? candidate.mechanicUpdates
 				: null
 	};
 }
 
 function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): string {
 	if (mode === 'opening') {
-		return getOpeningPrompt();
+		return getOpeningPrompt(input.storyConfig);
 	}
 
 	if (!input.narrativeContext) {
@@ -195,7 +131,7 @@ function buildScenePrompt(input: GenerateSceneInput, mode: 'opening' | 'next'): 
 			retryable: false
 		});
 	}
-	return getContinuePromptFromContext(input.narrativeContext, null);
+	return getContinuePromptFromContext(input.narrativeContext, input.storyConfig, null);
 }
 
 export class GrokAiProvider implements AiProvider {

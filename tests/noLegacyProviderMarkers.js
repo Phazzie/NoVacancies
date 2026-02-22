@@ -32,7 +32,7 @@ const PARITY_CHECKS = [
 		require: [/scene_word_count_soft_limit/, /ending_scene_word_count_soft_limit/]
 	},
 	{
-		file: 'src/lib/server/ai/narrative.ts',
+		file: 'src/lib/data/defaultStory.ts',
 		require: [/He will ride five miles for strangers and five inches for nobody in this room\./]
 	}
 ];

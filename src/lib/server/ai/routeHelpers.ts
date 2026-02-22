@@ -4,12 +4,16 @@ import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry, selectImageProvider, selectTextProvider } from '$lib/server/ai/providers';
 import { AiProviderError, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
 import { emitAiServerTelemetry, sanitizeForErrorMessage } from '$lib/server/ai/telemetry';
+import { NO_VACANCIES_STORY } from '$lib/data/defaultStory';
+import type { StoryConfig } from '$lib/contracts/story';
 
 export interface NextRoutePayload {
 	currentSceneId?: string;
 	choiceId?: string;
 	gameState?: GameState;
 	narrativeContext?: NarrativeContext | null;
+	storyId?: string;
+	storyConfig?: StoryConfig;
 }
 
 function safeFeatureFlags(value: unknown): Partial<RuntimeFeatureFlags> {
@@ -17,14 +21,22 @@ function safeFeatureFlags(value: unknown): Partial<RuntimeFeatureFlags> {
 	return value as Partial<RuntimeFeatureFlags>;
 }
 
-export function buildOpeningInput(payload: { featureFlags?: unknown }): GenerateSceneInput {
+function resolveStoryConfig(storyId?: string, config?: StoryConfig): StoryConfig {
+	if (config) return config;
+	// Future: look up storyId in DB/File system
+	// For now, always return default
+	return NO_VACANCIES_STORY;
+}
+
+export function buildOpeningInput(payload: { featureFlags?: unknown; storyId?: string; storyConfig?: StoryConfig }): GenerateSceneInput {
 	const gameState = createGameState({
 		featureFlags: safeFeatureFlags(payload.featureFlags)
 	});
 	return {
 		currentSceneId: null,
 		choiceId: null,
-		gameState
+		gameState,
+		storyConfig: resolveStoryConfig(payload.storyId, payload.storyConfig)
 	};
 }
 
@@ -34,7 +46,8 @@ export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
 		currentSceneId: payload.currentSceneId ?? baseState.currentSceneId,
 		choiceId: payload.choiceId ?? null,
 		gameState: baseState,
-		narrativeContext: payload.narrativeContext ?? null
+		narrativeContext: payload.narrativeContext ?? null,
+		storyConfig: resolveStoryConfig(payload.storyId, payload.storyConfig)
 	};
 }
 
