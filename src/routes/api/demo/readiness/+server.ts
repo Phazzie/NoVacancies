@@ -4,13 +4,13 @@ import { createProviderRegistry } from '$lib/server/ai/providers';
 
 type CheckId =
 	| 'config_valid'
-	| 'provider_grok'
-	| 'text_enabled'
-	| 'api_key_present'
-	| 'outage_hard_fail'
-	| 'auth_bypass_disabled'
-	| 'image_mode_static_default'
-	| 'provider_probe';
+	| 'ai_provider'
+	| 'text_generation'
+	| 'api_key_status'
+	| 'outage_policy'
+	| 'security_mode'
+	| 'image_generation'
+	| 'connectivity_probe';
 
 interface ReadinessCheck {
 	id: CheckId;
@@ -30,7 +30,7 @@ interface ReadinessPayload {
 
 function summarize(payload: ReadinessPayload): string {
 	const missing = payload.checks.filter((check) => !check.ok).map((check) => check.label);
-	if (payload.status === 'ready') return 'Ready to demo Grok mode.';
+	if (payload.status === 'ready') return 'Ready to demo AI mode.';
 	if (!missing.length) return 'Almost ready. Run one full playthrough check.';
 	return `Blocked by: ${missing.join(', ')}.`;
 }
@@ -57,74 +57,74 @@ function buildPayload(): ReadinessPayload {
 	const config = loadAiConfig();
 	const checks: ReadinessCheck[] = [
 		{
-			id: 'provider_grok',
-			label: 'Grok provider selected',
+			id: 'ai_provider',
+			label: 'AI Provider Configured',
 			ok: config.provider === 'grok',
-			details: `provider=${config.provider}`,
+			details: 'Standard provider active',
 			weight: 20
 		},
 		{
-			id: 'text_enabled',
-			label: 'Grok text generation enabled',
+			id: 'text_generation',
+			label: 'Text Generation Enabled',
 			ok: config.enableGrokText,
-			details: `ENABLE_GROK_TEXT=${config.enableGrokText ? '1' : '0'}`,
+			details: config.enableGrokText ? 'Generation active' : 'Generation disabled',
 			weight: 15
 		},
 		{
-			id: 'api_key_present',
-			label: 'XAI_API_KEY is configured',
+			id: 'api_key_status',
+			label: 'API Key Configured',
 			ok: config.xaiApiKey.length > 0,
-			details: config.xaiApiKey.length > 0 ? 'present' : 'missing',
+			details: config.xaiApiKey.length > 0 ? 'Key present' : 'Key missing',
 			weight: 35
 		},
 		{
-			id: 'outage_hard_fail',
-			label: 'Outage mode is hard fail',
+			id: 'outage_policy',
+			label: 'Outage Policy Set',
 			ok: config.outageMode === 'hard_fail',
-			details: `AI_OUTAGE_MODE=${config.outageMode}`,
+			details: 'Strict outage handling',
 			weight: 10
 		},
 		{
-			id: 'auth_bypass_disabled',
-			label: 'Auth bypass disabled',
+			id: 'security_mode',
+			label: 'Security Mode Active',
 			ok: !config.aiAuthBypass,
-			details: `AI_AUTH_BYPASS=${config.aiAuthBypass ? '1' : '0'}`,
+			details: !config.aiAuthBypass ? 'Security controls active' : 'Bypass enabled (Warning)',
 			weight: 10
 		},
 		{
-			id: 'image_mode_static_default',
-			label: 'Images default to pre-generated/static',
+			id: 'image_generation',
+			label: 'Image Generation Mode',
 			ok: !config.enableGrokImages,
-			details: config.enableGrokImages ? 'Grok image mode enabled' : 'static image default',
+			details: config.enableGrokImages ? 'Dynamic generation' : 'Static defaults',
 			weight: 5
 		}
 	];
 
 	if (config.enableProviderProbe) {
 		checks.push({
-			id: 'provider_probe',
-			label: 'Provider probe enabled',
+			id: 'connectivity_probe',
+			label: 'Connectivity Probe',
 			ok: true,
-			details: 'ENABLE_PROVIDER_PROBE=1',
+			details: 'Probe enabled',
 			weight: 5
 		});
 	} else {
 		checks.push({
-			id: 'provider_probe',
-			label: 'Provider probe enabled',
+			id: 'connectivity_probe',
+			label: 'Connectivity Probe',
 			ok: false,
-			details: 'ENABLE_PROVIDER_PROBE=0 (optional but recommended before demo)',
+			details: 'Probe disabled',
 			weight: 5
 		});
 	}
 
 	const score = checks.reduce((sum, check) => sum + (check.ok ? check.weight : 0), 0);
 	const criticalReady =
-		checks.find((c) => c.id === 'provider_grok')?.ok &&
-		checks.find((c) => c.id === 'text_enabled')?.ok &&
-		checks.find((c) => c.id === 'api_key_present')?.ok &&
-		checks.find((c) => c.id === 'outage_hard_fail')?.ok &&
-		checks.find((c) => c.id === 'auth_bypass_disabled')?.ok;
+		checks.find((c) => c.id === 'ai_provider')?.ok &&
+		checks.find((c) => c.id === 'text_generation')?.ok &&
+		checks.find((c) => c.id === 'api_key_status')?.ok &&
+		checks.find((c) => c.id === 'outage_policy')?.ok &&
+		checks.find((c) => c.id === 'security_mode')?.ok;
 
 	const status: ReadinessPayload['status'] = criticalReady
 		? score >= 90
@@ -148,18 +148,18 @@ export const GET: RequestHandler = async (event) => {
 		const payload = buildPayload();
 
 		// Optional live probe enrichment for extra confidence without exposing secrets.
-		if (payload.checks.find((check) => check.id === 'provider_probe')?.ok) {
+		if (payload.checks.find((check) => check.id === 'connectivity_probe')?.ok) {
 			const config = loadAiConfig();
 			const providers = createProviderRegistry(config);
 			const probe = await providers.grok.probe?.();
 			if (probe) {
 				const probeOk = Boolean(probe.authValid && probe.modelAvailable);
-				const existing = payload.checks.find((check) => check.id === 'provider_probe');
+				const existing = payload.checks.find((check) => check.id === 'connectivity_probe');
 				if (existing) {
 					existing.ok = probeOk;
 					existing.details = probeOk
-						? `probe ok (${probe.latencyMs}ms)`
-						: `probe failed (auth=${probe.authValid}, model=${probe.modelAvailable})`;
+						? `Probe succeeded (${probe.latencyMs}ms)`
+						: `Probe failed (Auth=${probe.authValid}, Model=${probe.modelAvailable})`;
 				}
 				payload.score = payload.checks.reduce(
 					(sum, check) => sum + (check.ok ? check.weight : 0),

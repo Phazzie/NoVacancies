@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased] - 2026-02-22
+
+### Security
+
+- **Hardening:** Sanitized `/api/demo/readiness` output to prevent leakage of internal configuration details (e.g., specific provider usage, auth bypass status).
+
+
 ## [Unreleased] - 2026-02-07
 
 ### Changed
