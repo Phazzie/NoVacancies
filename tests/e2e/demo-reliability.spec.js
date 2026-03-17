@@ -62,17 +62,17 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 
 		expect(checkIds).toEqual(
 			expect.arrayContaining([
-				'provider_grok',
-				'text_enabled',
-				'api_key_present',
-				'outage_hard_fail',
-				'auth_bypass_disabled',
-				'image_mode_static_default',
-				'provider_probe'
+				'ai_provider',
+				'text_generation',
+				'api_key_status',
+				'outage_policy',
+				'security_mode',
+				'image_generation',
+				'connectivity_probe'
 			])
 		);
 
-		const apiKeyCheck = body.checks.find((check) => check.id === 'api_key_present');
+		const apiKeyCheck = body.checks.find((check) => check.id === 'api_key_status');
 		expect(Boolean(apiKeyCheck)).toBeTruthy();
 		if (HAS_XAI_KEY) {
 			expect(apiKeyCheck.ok).toBeTruthy();
