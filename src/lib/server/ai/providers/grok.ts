@@ -17,6 +17,7 @@ import {
 	isRetryableStatus
 } from '$lib/server/ai/provider.interface';
 import { emitAiServerTelemetry } from '$lib/server/ai/telemetry';
+import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
 
 const XAI_CHAT_URL = 'https://api.x.ai/v1/chat/completions';
 const XAI_IMAGE_URL = 'https://api.x.ai/v1/images/generations';
@@ -394,21 +395,8 @@ export class GrokAiProvider implements AiProvider {
 				retryable: false
 			});
 		}
-		const lowerPrompt = input.prompt.toLowerCase();
-		if (/oswaldo/.test(lowerPrompt) && /(face|bare skin|shirtless|nude|naked|skin exposed)/.test(lowerPrompt)) {
-			throw new AiProviderError('Image prompt violates Oswaldo guardrail', {
-				code: 'guardrail',
-				retryable: false,
-				status: 422
-			});
-		}
-		if (!input.prompt.trim()) {
-			throw new AiProviderError('Image prompt is empty', {
-				code: 'invalid_response',
-				retryable: false,
-				status: 400
-			});
-		}
+
+		assertImagePromptGuardrails(input.prompt);
 
 		let attempt = 0;
 		const maxAttempts = this.config.maxRetries + 1;
