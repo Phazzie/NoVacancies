@@ -66,6 +66,7 @@
 
 			<div class="home-actions">
 				<button class="btn btn-primary" on:click={beginStory}>Begin Story</button>
+				<a class="btn btn-secondary" href="/builder">Open Builder</a>
 				<a class="btn btn-secondary" href="/settings">Open Settings</a>
 			</div>
 		</div>

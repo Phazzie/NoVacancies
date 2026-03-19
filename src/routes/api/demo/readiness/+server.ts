@@ -1,6 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry } from '$lib/server/ai/providers';
+import { getActiveStoryCartridge } from '$lib/stories';
 
 type CheckId =
 	| 'config_valid'
@@ -25,6 +26,7 @@ interface ReadinessPayload {
 	status: 'ready' | 'almost' | 'blocked';
 	summary: string;
 	checks: ReadinessCheck[];
+	activeStory: { id: string; title: string };
 	updatedAt: string;
 }
 
@@ -40,6 +42,7 @@ function buildConfigFailurePayload(errorMessage: string): ReadinessPayload {
 		score: 0,
 		status: 'blocked',
 		summary: 'Blocked by: AI runtime config is invalid.',
+		activeStory: { id: 'unknown', title: 'unknown' },
 		updatedAt: new Date().toISOString(),
 		checks: [
 			{
@@ -132,11 +135,13 @@ function buildPayload(): ReadinessPayload {
 			: 'almost'
 		: 'blocked';
 
+	const activeStory = getActiveStoryCartridge();
 	const payload: ReadinessPayload = {
 		score,
 		status,
 		summary: '',
 		checks,
+		activeStory: { id: activeStory.id, title: activeStory.title },
 		updatedAt: new Date().toISOString()
 	};
 	payload.summary = summarize(payload);

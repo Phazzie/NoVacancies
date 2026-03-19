@@ -43,10 +43,18 @@
 			</a>
 			<a
 				href="/settings"
+				class:active={$page.url.pathname === '/builder'}
+				aria-current={$page.url.pathname === '/builder' ? 'page' : undefined}
+			>
+				<span class="route-index">03</span>
+				<span>Builder</span>
+			</a>
+			<a
+				href="/settings"
 				class:active={$page.url.pathname === '/settings'}
 				aria-current={$page.url.pathname === '/settings' ? 'page' : undefined}
 			>
-				<span class="route-index">03</span>
+				<span class="route-index">04</span>
 				<span>Settings</span>
 			</a>
 			<a
@@ -54,7 +62,7 @@
 				class:active={$page.url.pathname === '/ending'}
 				aria-current={$page.url.pathname === '/ending' ? 'page' : undefined}
 			>
-				<span class="route-index">04</span>
+				<span class="route-index">05</span>
 				<span>Ending</span>
 			</a>
 			<a
@@ -62,7 +70,7 @@
 				class:active={$page.url.pathname === '/debug'}
 				aria-current={$page.url.pathname === '/debug' ? 'page' : undefined}
 			>
-				<span class="route-index">05</span>
+				<span class="route-index">06</span>
 				<span>Debug</span>
 			</a>
 		</nav>
