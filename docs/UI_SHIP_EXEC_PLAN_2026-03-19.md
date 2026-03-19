@@ -57,8 +57,8 @@ Out of scope:
 - [x] Confirm remaining polish seams and freeze scope.
 - [x] Apply final shell/branding polish.
 - [x] Run verification and critique/revision checkpoint.
-- [ ] Commit the redesign branch.
-- [ ] Push the redesign branch to GitHub.
+- [x] Commit the redesign branch.
+- [x] Push the redesign branch to GitHub.
 
 ## Remaining Polish Targets
 
@@ -116,6 +116,9 @@ If the last-mile polish causes problems:
   - `npm run test:narrative`
   - `npm run build`
   - `E2E_HOST=127.0.0.1 E2E_PORT=4176 npm run test:e2e`
+- Published result:
+  - commit `f463258` created the shipping redesign snapshot
+  - branch `ui-redesign-noir` pushed to `origin/ui-redesign-noir`
 - Critique checkpoint result:
   - The strongest surviving hater criticism was that `/play` originally looked like a dressed-up loading state when Grok was unavailable.
   - Revision applied before signoff: the blocked `/play` state now uses explicit recovery copy plus direct Settings/Debug exits.
