@@ -1,8 +1,13 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { createGameState, type GameState, type NarrativeContext } from '$lib/contracts';
+import { getActiveStoryCartridge } from '$lib/stories';
 import { loadAiConfig } from '$lib/server/ai/config';
-import { createProviderRegistry, selectImageProvider, selectTextProvider } from '$lib/server/ai/providers';
-import { AiProviderError, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
+import {
+	createProviderRegistry,
+	selectImageProvider,
+	selectTextProvider
+} from '$lib/server/ai/providers';
+import { type GenerateSceneInput } from '$lib/server/ai/provider.interface';
 import { emitAiServerTelemetry, sanitizeForErrorMessage } from '$lib/server/ai/telemetry';
 import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
 
@@ -14,7 +19,11 @@ export interface NextRoutePayload {
 }
 
 export function buildOpeningInput(): GenerateSceneInput {
-	const gameState = createGameState();
+	const cartridge = getActiveStoryCartridge();
+	const gameState = createGameState({
+		initialSceneId: cartridge.initialSceneId,
+		initialStoryThreads: cartridge.createInitialStoryThreads()
+	});
 	return {
 		currentSceneId: null,
 		choiceId: null,
@@ -23,7 +32,13 @@ export function buildOpeningInput(): GenerateSceneInput {
 }
 
 export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
-	const baseState = payload.gameState ?? createGameState();
+	const cartridge = getActiveStoryCartridge();
+	const baseState =
+		payload.gameState ??
+		createGameState({
+			initialSceneId: cartridge.initialSceneId,
+			initialStoryThreads: cartridge.createInitialStoryThreads()
+		});
 	return {
 		currentSceneId: payload.currentSceneId ?? baseState.currentSceneId,
 		choiceId: payload.choiceId ?? null,
@@ -32,7 +47,6 @@ export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
 	};
 }
 
-
 export async function resolveTextScene(input: GenerateSceneInput, mode: 'opening' | 'next') {
 	const config = loadAiConfig();
 	const registry = createProviderRegistry(config);
@@ -40,7 +54,9 @@ export async function resolveTextScene(input: GenerateSceneInput, mode: 'opening
 
 	try {
 		const scene =
-			mode === 'opening' ? await provider.getOpeningScene(input) : await provider.getNextScene(input);
+			mode === 'opening'
+				? await provider.getOpeningScene(input)
+				: await provider.getNextScene(input);
 		emitAiServerTelemetry('story_scene', {
 			provider: provider.name,
 			mode,

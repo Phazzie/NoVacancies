@@ -84,18 +84,30 @@ export interface ChoiceHistoryEntry {
 	timestamp: number;
 }
 
+export interface TransitionBridgeMoment {
+	key: string;
+	before: string;
+	after: string;
+	bridge: string;
+}
+
+export interface TransitionBridge {
+	keys: string[];
+	moments: TransitionBridgeMoment[];
+}
+
 export interface NarrativeContext {
 	sceneCount: number;
-	arcPosition: string;
 	lastChoiceText: string;
+	recentChoiceTexts: string[];
 	threadState: StoryThreads | null;
 	threadNarrativeLines: string[];
 	boundaryNarrativeLines: string[];
 	lessonHistoryLines: string[];
-	recentBeats: string[];
+	recentOpenings: string[];
 	recentSceneProse: Array<{ sceneId: string; text: string; viaChoiceText: string }>;
 	olderSceneSummaries: string[];
-	transitionBridge: { keys: string[]; lines: string[] } | null;
+	transitionBridge: TransitionBridge | null;
 	meta: {
 		contextChars: number;
 		budgetChars: number;
@@ -111,7 +123,7 @@ export interface GameState {
 	lessonsEncountered: number[];
 	storyThreads: StoryThreads;
 	sceneLog: SceneLogEntry[];
-	pendingTransitionBridge: { keys: string[]; lines: string[] } | null;
+	pendingTransitionBridge: TransitionBridge | null;
 	apiKey: string | null;
 	sceneCount: number;
 	startTime: number;
@@ -146,13 +158,15 @@ export function createStoryThreads(): StoryThreads {
 export function createGameState(options?: {
 	apiKey?: string | null;
 	now?: () => number;
+	initialSceneId?: string;
+	initialStoryThreads?: StoryThreads;
 }): GameState {
 	const now = options?.now ?? Date.now;
 	return {
-		currentSceneId: SceneIds.OPENING,
+		currentSceneId: options?.initialSceneId ?? SceneIds.OPENING,
 		history: [],
 		lessonsEncountered: [],
-		storyThreads: createStoryThreads(),
+		storyThreads: options?.initialStoryThreads ?? createStoryThreads(),
 		sceneLog: [],
 		pendingTransitionBridge: null,
 		apiKey: options?.apiKey ?? null,
@@ -252,7 +266,7 @@ export function cloneGameState(state: GameState): GameState {
 		pendingTransitionBridge: state.pendingTransitionBridge
 			? {
 				keys: [...state.pendingTransitionBridge.keys],
-				lines: [...state.pendingTransitionBridge.lines]
+				moments: state.pendingTransitionBridge.moments.map((moment) => ({ ...moment }))
 			}
 			: null
 	};

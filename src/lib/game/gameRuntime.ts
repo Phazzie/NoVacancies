@@ -10,6 +10,7 @@ import {
 	type GameState,
 	type Scene
 } from '../contracts';
+import { getActiveStoryCartridge } from '$lib/stories';
 import { buildNarrativeContext, detectThreadTransitions } from './narrativeContext';
 import {
 	createSettingsStorage,
@@ -80,6 +81,7 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			local: options.storageBindings?.local,
 			session: options.storageBindings?.session
 		});
+	const cartridge = getActiveStoryCartridge();
 
 	let settings = settingsStorage.loadSettings();
 	let gameState: GameState | null = null;
@@ -150,7 +152,7 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		}
 
 		const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
-		gameState.pendingTransitionBridge = transitionBridge.lines.length > 0 ? transitionBridge : null;
+		gameState.pendingTransitionBridge = transitionBridge.moments.length > 0 ? transitionBridge : null;
 		gameState.currentSceneId = scene.sceneId;
 		gameState.sceneCount += 1;
 
@@ -173,7 +175,9 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 	const startGame = async (): Promise<GameTurnResult> => {
 		gameState = createGameState({
 			apiKey: null,
-			now
+			now,
+			initialSceneId: cartridge.initialSceneId,
+			initialStoryThreads: cartridge.createInitialStoryThreads()
 		});
 
 		const openingScene = await storyService.getOpeningScene();
