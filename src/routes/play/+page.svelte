@@ -103,29 +103,57 @@
 	}
 </script>
 
-<h2>Play</h2>
-<p class="play-tagline">Quiet control. Rising pressure.</p>
-
-{#if error}
-	<p class="error-banner">{error}</p>
-{/if}
-
 {#if !scene}
-	<div class="scene-loading-card">
-		<p class="loading-kicker">Live Story Feed</p>
-		<p>Loading scene...</p>
-	</div>
-{:else}
-	<div class="play-grid play-command-deck" data-testid="play-command-deck">
-		<section class="scene-image-wrap">
-			<img class="scene-image" src={imagePath()} alt="Scene illustration" />
-			<div class="image-overlay">
-				<p class="image-overlay-label">Scene {sceneCount}</p>
-				<p class="mode-pill" data-testid="mode-pill">AI Mode</p>
+	<section class:error-state={Boolean(error)} class="scene-loading">
+		{#if error}
+			<p class="loading-label">AI blocked</p>
+			<h2 class="loading-title">Play</h2>
+			<p class="loading-copy">The run cannot start until the AI service is configured.</p>
+			<p class="error-banner">{error}</p>
+			<div class="loading-actions">
+				<a class="btn btn-secondary btn-sm" href="/settings">Open Settings</a>
+				<a class="btn btn-secondary btn-sm" href="/debug">Open Debug</a>
 			</div>
-			<div class="arc-card">
-				<div class="arc-head">
-					<p class="arc-label">{getArcLabel(sceneCount)}</p>
+		{:else}
+			<div class="loading-pulse" aria-hidden="true"></div>
+			<p class="loading-label">Live Story Feed</p>
+			<h2 class="loading-title">Play</h2>
+			<p class="loading-copy">Loading the next pressure point...</p>
+		{/if}
+	</section>
+{:else}
+	<article class="story-stage" data-testid="play-command-deck">
+		{#if error}
+			<p class="error-banner">{error}</p>
+		{/if}
+
+		<header class="story-route-head">
+			<div>
+				<p class="card-kicker">Live run</p>
+				<h2 class="story-route-title">Play</h2>
+				<p class="story-route-tagline">Quiet control. Rising pressure.</p>
+			</div>
+			<div class="play-utility-row">
+				<button class="btn btn-secondary btn-sm" on:click={restartRun} disabled={isProcessing}>
+					Restart Run
+				</button>
+				<a class="btn btn-secondary btn-sm" href="/debug">Open Debug</a>
+			</div>
+		</header>
+
+		<section class="scene-hero">
+			<img class="scene-hero-image" src={imagePath()} alt="Scene illustration" />
+			<div class="scene-hero-scrim"></div>
+			<div class="scene-badge-row">
+				<p class="scene-badge">Scene {sceneCount}</p>
+				<p class="scene-badge scene-badge-accent" data-testid="mode-pill">AI Mode</p>
+				{#if scene.mood}
+					<p class="scene-badge scene-badge-muted">Mood {scene.mood}</p>
+				{/if}
+			</div>
+			<div class="hero-progress">
+				<div class="hero-progress-head">
+					<p class="story-arc-label">{getArcLabel(sceneCount)}</p>
 					<p class="pressure-pill">{getPressureLabel(sceneCount)}</p>
 				</div>
 				<div
@@ -141,39 +169,28 @@
 			</div>
 		</section>
 
-		<section class="scene-meta">
-			<div class="mode-row">
-				<p class="progress-text">Live Scene</p>
-				<p class="mode-pill mode-pill-outline">Turn Active</p>
+		<section class="story-body">
+			<div class="story-meta-row">
+				<p class="story-meta-chip">Turn Active</p>
+				<p class="story-meta-chip">Scene {sceneCount}</p>
+				<p class="story-meta-chip">{getArcLabel(sceneCount)}</p>
 			</div>
-			<div class="meta-chip-row">
-				<p class="meta-chip">Scene {sceneCount}</p>
-				<p class="meta-chip">{getArcLabel(sceneCount)}</p>
-				{#if scene.mood}
-					<p class="meta-chip">Mood: {scene.mood}</p>
-				{/if}
-			</div>
-			<div class="play-utility-row">
-				<button class="btn btn-secondary btn-sm" on:click={restartRun} disabled={isProcessing}>
-					Restart Run
-				</button>
-				<a class="btn btn-secondary btn-sm" href="/debug">Open Debug</a>
-			</div>
+
 			<div class="scene-text">{scene.sceneText}</div>
 
 			{#if showLessons && scene.lessonId}
-				<p class="lesson-pill">
-					Lesson Insight #{scene.lessonId}
+				<section class="lesson-card">
+					<p class="lesson-pill">
+						Lesson Insight #{scene.lessonId}
+						{#if lessonDetails}
+							: {lessonDetails.title}
+						{/if}
+					</p>
 					{#if lessonDetails}
-						: {lessonDetails.title}
-					{/if}
-				</p>
-				{#if lessonDetails}
-					<div class="lesson-card">
 						<p class="lesson-quote">{lessonDetails.quote}</p>
 						<p class="lesson-insight">{lessonDetails.insight}</p>
-					</div>
-				{/if}
+					{/if}
+				</section>
 			{:else if showLessons}
 				<p class="lesson-muted">No lesson insight tagged on this scene.</p>
 			{/if}
@@ -181,7 +198,12 @@
 			{#if scene.choices.length === 0}
 				<a class="btn btn-primary" href="/ending">View Ending</a>
 			{:else}
-				<div class="choices-list">
+				<section class="choices-panel">
+					<div class="choices-head">
+						<p class="card-kicker">Choose the next pressure point</p>
+						<p class="choice-legend">Quick keys: 1 / 2 / 3</p>
+					</div>
+					<div class="choices-list">
 					{#each scene.choices as choice, index}
 						<button
 							class="btn btn-primary choice-btn"
@@ -193,9 +215,9 @@
 							<span class="choice-hint">Press {choiceHotkeys[index]}</span>
 						</button>
 					{/each}
-				</div>
-				<p class="choice-legend">Quick keys: 1 / 2 / 3</p>
+					</div>
+				</section>
 			{/if}
 		</section>
-	</div>
+	</article>
 {/if}

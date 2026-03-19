@@ -138,7 +138,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await page.goto('/ending');
 		await expectPathname(page, '/ending');
 		await expect(page.getByRole('heading', { level: 2, name: 'Ending' })).toBeVisible();
-		await expect(page.getByRole('link', { name: /Open Debug \(Temp\)/i })).toBeVisible();
+		await expect(page.getByRole('link', { name: /Open Debug/i })).toBeVisible();
 	});
 
 	test('settings no longer exposes Static Story toggle', async ({ page }) => {

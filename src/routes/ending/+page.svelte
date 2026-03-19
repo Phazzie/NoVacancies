@@ -15,31 +15,56 @@
 		return () => unsubscribe();
 	});
 
+	function formatDuration(ms: number): string {
+		const seconds = Math.round(ms / 1000);
+		if (seconds < 60) return `${seconds}s`;
+		const minutes = Math.floor(seconds / 60);
+		const remainingSeconds = seconds % 60;
+		return `${minutes}m ${remainingSeconds}s`;
+	}
+
 	async function playAgain(): Promise<void> {
 		await gameStore.startGame();
 		await goto('/play');
 	}
 </script>
 
-<h2>Ending</h2>
-
-{#if !ending}
-	<p>No ending has been reached in this session yet.</p>
-	<div class="ending-actions">
-		<a class="btn btn-primary" href="/play">Go to Play</a>
-		<a class="btn btn-secondary" href="/debug">Open Debug (Temp)</a>
-	</div>
-{:else}
-	<div class="ending-card">
-		<p class="ending-title">{ending.endingType}</p>
-		<p>Scenes: {ending.stats.sceneCount}</p>
-		<p>Insights: {ending.stats.lessonsCount}</p>
-		<p>Duration: {Math.round(ending.stats.durationMs / 1000)}s</p>
-
+<section class="ending-page">
+	{#if !ending}
+		<div class="ending-empty">
+			<p class="card-kicker">No ending logged</p>
+			<h2>Ending</h2>
+			<p class="ending-empty-copy">No ending has been reached in this session yet.</p>
+			<div class="ending-actions">
+				<a class="btn btn-primary" href="/play">Go to Play</a>
+				<a class="btn btn-secondary" href="/debug">Open Debug</a>
+			</div>
+		</div>
+	{:else}
+		<div class="ending-card">
+			<p class="card-kicker">Run closed</p>
+			<h2>Ending</h2>
+			<p class="ending-title">{ending.endingType}</p>
+			<p class="ending-copy">What the room made visible this time.</p>
+			<div class="ending-stats">
+				<div class="ending-stat">
+					<span class="ending-stat-number">{ending.stats.sceneCount}</span>
+					<span class="ending-stat-label">Scenes</span>
+				</div>
+				<div class="ending-stat">
+					<span class="ending-stat-number">{ending.stats.lessonsCount}</span>
+					<span class="ending-stat-label">Insights</span>
+				</div>
+				<div class="ending-stat">
+					<span class="ending-stat-number">{formatDuration(ending.stats.durationMs)}</span>
+					<span class="ending-stat-label">Duration</span>
+				</div>
+			</div>
+		</div>
 		<div class="ending-actions">
 			<button class="btn btn-primary" on:click={playAgain}>Play Again</button>
 			<a class="btn btn-secondary" href="/play">Back to Play</a>
-			<a class="btn btn-secondary" href="/debug">Open Debug (Temp)</a>
+			<a class="btn btn-secondary" href="/debug">Open Debug</a>
 		</div>
-	</div>
-{/if}
+	{/if}
+</section>

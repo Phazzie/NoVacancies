@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased] - 2026-03-19
+
+### Changed
+
+- **UI-First Motel-Noir Redesign:** Rebuilt the shared shell and route presentation around a darker motel-noir visual system so `/`, `/play`, `/ending`, `/settings`, and `/debug` read as one authored product instead of a mixed utility dashboard (`src/app.css`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `src/routes/settings/+page.svelte`, `src/routes/debug/+page.svelte`, `src/routes/ending/+page.svelte`).
+- **Play Route Narrative Focus:** Reworked `/play` into a prose-first command deck with stronger scene framing, clearer utility controls, improved blocked/error handling, and direct operator exits to settings/debug when Grok is unavailable (`src/routes/play/+page.svelte`, `src/app.css`).
+- **Runtime Shell Branding Polish:** Aligned browser metadata and PWA shell details with the redesign by updating theme colors, description copy, and favicon/icon wiring (`src/app.html`, `static/manifest.json`).
+- **Ending Copy Cleanup:** Removed the temporary label from the ending-page debug shortcut so the operator action matches the rest of the app (`src/routes/ending/+page.svelte`, `tests/e2e/demo-reliability.spec.js`).
+- **Legacy Static Shell Archival:** Moved stale root `index.html` and `style.css` into `docs/archive/2026-03-19_legacy_static_shell/` so SvelteKit route rendering remains the canonical dev/runtime shell during local Vite execution.
+
 ## [Unreleased] - 2026-02-22
 
 ### Security
@@ -157,4 +167,3 @@
 - **Ending UX:** Endings no longer auto-jump to recap mid-typewriter. Players now click `View Recap` after ending text completes.
 - **Lesson Timing:** Lesson insight popup now appears only after scene text has finished typing.
 - **Regression Coverage:** Added renderer + e2e checks for delayed lesson display and recap transition/copy/download flow.
-

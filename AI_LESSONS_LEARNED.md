@@ -245,3 +245,8 @@
 
 **Insight:** Console warnings in production can clutter the user's devtools and sometimes leak minor architectural details.
 **Lesson:** Wrap client-side console warnings and logs in `if (dev)` checks (from `$app/environment`). For actual errors that need persistence for troubleshooting, use the project's internal debug logging service (`appendDebugError`) so they appear on the `/debug` dashboard instead of the public console.
+
+## 45. Archive Orphaned Root Shells Before Judging a SvelteKit UI
+
+**Insight:** Stale root `index.html` / `style.css` files from an older static app can hijack local Vite output and make the active SvelteKit routes look broken, stale, or inexplicably off-brand.
+**Lesson:** When a SvelteKit UI looks wrong in local dev, verify that the root shell is still canonical. Archive or remove orphaned static entry files first so screenshots, browser checks, and CSS debugging reflect the actual route app you are redesigning.
