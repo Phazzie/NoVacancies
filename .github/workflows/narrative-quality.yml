@@ -51,6 +51,7 @@ jobs:
     continue-on-error: true
     permissions:
       contents: read
+      id-token: write
       pull-requests: write
       issues: write
     steps:
