@@ -9,26 +9,6 @@ function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForReadiness(url, getAbortError, timeoutMs = 180000) {
-	const started = Date.now();
-	while (Date.now() - started < timeoutMs) {
-		const abortError = getAbortError();
-		if (abortError) {
-			throw abortError;
-		}
-		try {
-			const response = await fetch(url);
-			if (response.ok) {
-				return;
-			}
-		} catch {
-			// server still booting
-		}
-		await wait(400);
-	}
-	throw new Error(`Timed out waiting for ${url}`);
-}
-
 function formatCapturedOutput(stdout, stderr) {
 	const sections = [];
 	const trimmedStdout = stdout.trim();
@@ -40,6 +20,75 @@ function formatCapturedOutput(stdout, stderr) {
 		sections.push(`Captured stderr:\n${trimmedStderr.slice(-2400)}`);
 	}
 	return sections.length ? `\n${sections.join('\n\n')}` : '';
+}
+
+/**
+ * Resolve the npm executable to use for spawning child processes.
+ * When invoked via `npm test`, npm sets npm_execpath to the actual npm script
+ * path (which may be a JS file or a binary), so using it avoids PATH issues.
+ */
+function resolveNpm() {
+	const npmExecPath = typeof process.env.npm_execpath === 'string' ? process.env.npm_execpath : '';
+	if (npmExecPath) {
+		if (npmExecPath.endsWith('.js') || npmExecPath.endsWith('.cjs')) {
+			return {
+				cmd: process.execPath,
+				argsPrefix: [npmExecPath]
+			};
+		}
+		return {
+			cmd: npmExecPath,
+			argsPrefix: []
+		};
+	}
+
+	return {
+		cmd: process.platform === 'win32' ? 'npm.cmd' : 'npm',
+		argsPrefix: []
+	};
+}
+
+/**
+ * Poll `url` until it responds with a 2xx status.
+ * Races against early child-process exit so the test fails fast instead of
+ * hanging when the dev server crashes during startup.
+ */
+async function waitForReadiness(url, child, timeoutMs = 120000) {
+	const exitPromise = new Promise((_, reject) => {
+		const handleExit = (code, signal) => {
+			reject(
+				new Error(
+					`Dev server exited before becoming ready (code=${code ?? '?'}, signal=${signal ?? 'none'})`
+				)
+			);
+		};
+		const handleError = (error) => {
+			reject(new Error(`Dev server spawn error: ${error.message}`));
+		};
+
+		child.once('exit', handleExit);
+		child.once('error', handleError);
+	});
+
+	const pollPromise = (async () => {
+		const started = Date.now();
+		while (Date.now() - started < timeoutMs) {
+			try {
+				const response = await fetch(url);
+				if (response.ok) {
+					child.removeAllListeners('exit');
+					child.removeAllListeners('error');
+					return;
+				}
+			} catch {
+				// server still booting
+			}
+			await wait(400);
+		}
+		throw new Error(`Timed out waiting for ${url}`);
+	})();
+
+	await Promise.race([pollPromise, exitPromise]);
 }
 
 async function findFreePort(startPort) {
@@ -70,21 +119,6 @@ async function findDistinctFreePorts(startPort, count) {
 	return ports;
 }
 
-function resolveNpmCommand() {
-	const npmExec = typeof process.env.npm_execpath === 'string' ? process.env.npm_execpath : '';
-	if (npmExec) {
-		return {
-			command: process.execPath,
-			argsPrefix: [npmExec]
-		};
-	}
-
-	return {
-		command: process.platform === 'win32' ? 'npm.cmd' : 'npm',
-		argsPrefix: []
-	};
-}
-
 async function runScenario({
 	label,
 	port,
@@ -110,7 +144,7 @@ async function runScenario({
 	};
 	console.log(`[smoke] starting ${label} on port ${port}`);
 
-	const { command, argsPrefix } = resolveNpmCommand();
+	const { cmd, argsPrefix } = resolveNpm();
 	const args = [
 		...argsPrefix,
 		'run',
@@ -123,7 +157,7 @@ async function runScenario({
 		'--strictPort'
 	];
 
-	const child = spawn(command, args, {
+	const child = spawn(cmd, args, {
 		env,
 		stdio: ['ignore', 'pipe', 'pipe'],
 		detached: true
@@ -131,36 +165,16 @@ async function runScenario({
 
 	let stdout = '';
 	let stderr = '';
-	let spawnError = null;
-	let exitDetails = null;
 	child.stdout.on('data', (chunk) => {
 		stdout += chunk.toString();
 	});
 	child.stderr.on('data', (chunk) => {
 		stderr += chunk.toString();
 	});
-	child.once('error', (error) => {
-		spawnError = error;
-	});
-	child.once('exit', (code, signal) => {
-		exitDetails = { code, signal };
-	});
 
 	try {
 		const url = `http://${HOST}:${port}/api/demo/readiness`;
-		const getAbortError = () => {
-			if (spawnError) {
-				return new Error(`${label}: failed to start dev server (${spawnError.message})`);
-			}
-			if (exitDetails) {
-				return new Error(
-					`${label}: dev server exited before readiness (code=${exitDetails.code}, signal=${exitDetails.signal})${formatCapturedOutput(stdout, stderr)}`
-				);
-			}
-			return null;
-		};
-
-		await waitForReadiness(url, getAbortError).catch((error) => {
+		await waitForReadiness(url, child).catch((error) => {
 			throw new Error(
 				`${label}: ${error instanceof Error ? error.message : String(error)}${formatCapturedOutput(stdout, stderr)}`
 			);
@@ -207,6 +221,10 @@ async function runScenario({
 			`${label}: builder fallback should stay story-neutral`
 		);
 		console.log(`[smoke] passed ${label}`);
+	} catch (error) {
+		throw new Error(
+			`${label}: ${error instanceof Error ? error.message : String(error)}${formatCapturedOutput(stdout, stderr)}`
+		);
 	} finally {
 		if (!child.pid) return;
 		try {
@@ -216,10 +234,6 @@ async function runScenario({
 		try {
 			process.kill(-child.pid, 'SIGKILL');
 		} catch {}
-	}
-
-	if (stdout.includes('ERR') || stderr.includes('ERR')) {
-		// No-op: keep stderr available for troubleshooting if future failures occur.
 	}
 }
 
