@@ -175,15 +175,20 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		test.setTimeout(90000);
 		await page.goto('/builder');
 		await expect(page.getByRole('heading', { level: 1, name: 'Builder' })).toBeVisible();
+		await expect(page.getByTestId('builder-ready')).toHaveText('ready');
 		await page.getByLabel('Story premise').fill(
 			'A night janitor at a frozen warehouse keeps covering for her brother until the cold starts sounding personal.'
 		);
 		await page.getByRole('button', { name: /Generate Draft/i }).click();
 
+		await expect(page.locator('.builder-status-line')).toContainText(/Draft generated/i, {
+			timeout: 30000
+		});
+		await expect(page.locator('.builder-source-pill')).toBeVisible({ timeout: 30000 });
 		await expect(page.getByLabel('Story Title')).toBeVisible();
 		await expect(page.getByLabel('Setting')).toBeVisible();
 		await expect(page.getByLabel('Aesthetic Statement')).toBeVisible();
-		await expect(page.locator('.builder-source-pill')).toBeVisible();
+		await expect(page.getByLabel('Story Title')).not.toHaveValue('Starter Story');
 		await expect(page.getByLabel('Story Title')).not.toHaveValue('No Vacancies');
 	});
 });

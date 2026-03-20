@@ -17,10 +17,12 @@
 	let statusMessage = 'Start with a premise. The builder will draft structure before you edit.';
 	let generateState: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
 	let lastDraftSource: 'ai' | 'fallback' | null = null;
+	let builderReady = false;
 
 	onMount(() => {
 		draft = loadBuilderDraft(draftScope, fallbackDraft);
 		premise = draft.premise;
+		builderReady = true;
 	});
 
 	$: saveBuilderDraft(draftScope, draft);
@@ -136,6 +138,7 @@
 		<div class="builder-status-card">
 			<p class="card-kicker">Draft status</p>
 			<p class="builder-status-line">{statusMessage}</p>
+			<p class="sr-only" data-testid="builder-ready">{builderReady ? 'ready' : 'loading'}</p>
 			{#if lastDraftSource}
 				<p class="builder-source-pill">Source: {lastDraftSource === 'ai' ? 'Grok draft' : 'Fallback draft'}</p>
 			{/if}
