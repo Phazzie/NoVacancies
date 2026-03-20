@@ -168,7 +168,8 @@ p {
 }
 
 .brand-name {
-	font-size: clamp(2rem, 3.8vw, 3rem);
+	font-size: clamp(1.4rem, 2.4vw, 2rem);
+	line-height: 1.15;
 	font-style: italic;
 	color: var(--text-100);
 	text-shadow: 0 0 24px rgba(237, 178, 110, 0.12);
@@ -452,130 +453,6 @@ p {
 	line-height: 1.65;
 }
 
-.readiness-card {
-	padding: 28px;
-	border-radius: 30px;
-	border: 1px solid var(--line-soft);
-	background:
-		linear-gradient(180deg, rgba(22, 17, 19, 0.92), rgba(16, 13, 15, 0.94)),
-		radial-gradient(circle at top left, rgba(199, 101, 66, 0.12), transparent 22%);
-	box-shadow: var(--shadow-lg);
-}
-
-.readiness-head {
-	display: flex;
-	align-items: flex-end;
-	justify-content: space-between;
-	gap: 12px;
-	margin-bottom: 18px;
-}
-
-.readiness-head h3 {
-	font-size: clamp(1.4rem, 2vw, 1.8rem);
-}
-
-.readiness-progress-wrap {
-	margin-bottom: 12px;
-}
-
-.readiness-progress-label {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	margin-bottom: 8px;
-	font-weight: 700;
-}
-
-.readiness-progress-track {
-	height: 12px;
-	border-radius: 999px;
-	overflow: hidden;
-	background: rgba(255, 255, 255, 0.08);
-}
-
-.readiness-progress-fill {
-	height: 100%;
-	transition: width 220ms var(--ease-out);
-}
-
-.readiness-progress-fill.readiness-ready,
-.readiness-ready {
-	background: linear-gradient(90deg, rgba(122, 149, 116, 0.85), rgba(93, 122, 89, 0.95));
-}
-
-.readiness-progress-fill.readiness-almost,
-.readiness-almost {
-	background: linear-gradient(90deg, rgba(237, 178, 110, 0.85), rgba(217, 148, 70, 0.96));
-}
-
-.readiness-progress-fill.readiness-blocked,
-.readiness-blocked {
-	background: linear-gradient(90deg, rgba(199, 101, 66, 0.88), rgba(145, 60, 37, 0.96));
-}
-
-.readiness-status {
-	display: inline-flex;
-	align-items: center;
-	padding: 4px 10px;
-	border-radius: 999px;
-	font-size: 0.72rem;
-	font-weight: 800;
-	letter-spacing: 0.08em;
-	color: var(--text-100);
-}
-
-.readiness-list {
-	margin: 14px 0 0;
-	padding: 0;
-	list-style: none;
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 12px;
-}
-
-.readiness-list li {
-	display: grid;
-	grid-template-columns: auto 1fr;
-	gap: 12px;
-	align-items: start;
-	padding: 14px;
-	border-radius: 18px;
-	border: 1px solid var(--line-soft);
-	background: rgba(255, 255, 255, 0.03);
-}
-
-.readiness-list li.ok {
-	border-color: rgba(122, 149, 116, 0.45);
-}
-
-.readiness-list li.notok {
-	border-color: rgba(199, 101, 66, 0.35);
-}
-
-.readiness-mark {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 58px;
-	padding: 5px 8px;
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.08);
-	font-size: 0.68rem;
-	font-weight: 800;
-	letter-spacing: 0.08em;
-}
-
-.readiness-item-title {
-	font-weight: 700;
-	color: var(--text-100);
-}
-
-.readiness-item-detail {
-	margin-top: 4px;
-	font-size: 0.86rem;
-	color: var(--text-300);
-}
 
 .scene-loading {
 	min-height: 68vh;
@@ -641,7 +518,7 @@ p {
 	align-items: flex-end;
 	justify-content: space-between;
 	gap: 18px;
-	padding: 18px 20px 0;
+	padding: 8px 20px 0;
 }
 
 .story-route-title {
@@ -1149,7 +1026,6 @@ p {
 @media (max-width: 980px) {
 	.shell-bar,
 	.story-route-head,
-	.readiness-head,
 	.choices-head,
 	.hero-progress-head {
 		align-items: flex-start;
@@ -1166,10 +1042,6 @@ p {
 
 	.story-body {
 		width: min(840px, calc(100% - 1rem));
-	}
-
-	.readiness-list {
-		grid-template-columns: 1fr;
 	}
 }
 
@@ -1195,7 +1067,6 @@ p {
 
 	.home-copy,
 	.home-notes,
-	.readiness-card,
 	.story-body,
 	.ending-card,
 	.ending-empty,
@@ -1222,7 +1093,7 @@ p {
 	}
 
 	.story-body {
-		margin-top: -42px;
+		margin-top: -22px;
 	}
 
 	.scene-text {
