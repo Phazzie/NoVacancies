@@ -14,8 +14,12 @@ test.describe('Transition Bridge Selection', () => {
 		const bridge = detectThreadTransitions(previous, current);
 
 		expect(bridge.keys).toEqual(expect.arrayContaining(['oswaldoConflict', 'dexTriangulation']));
-		expect(bridge.lines.length).toBeGreaterThan(0);
-		expect(bridge.lines.join(' ')).toContain('open war');
+		expect(bridge.moments.length).toBeGreaterThan(0);
+		expect(bridge.moments.map((moment) => moment.key)).toEqual(
+			expect.arrayContaining(['oswaldoConflict', 'dexTriangulation'])
+		);
+		expect(bridge.moments[0]?.before).toContain('resentment waits underneath');
+		expect(bridge.moments[0]?.after).toContain('collide and wait');
 	});
 
 	test('returns empty bridge when there are no thread changes', () => {
@@ -24,7 +28,6 @@ test.describe('Transition Bridge Selection', () => {
 
 		const bridge = detectThreadTransitions(previous, current);
 		expect(bridge.keys).toEqual([]);
-		expect(bridge.lines).toEqual([]);
+		expect(bridge.moments).toEqual([]);
 	});
 });
-

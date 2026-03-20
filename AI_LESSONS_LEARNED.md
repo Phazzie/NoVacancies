@@ -159,7 +159,7 @@
 ## 27. Split Narrative CI Into Deterministic Gates and Subjective Scoring
 
 **Insight:** Narrative quality has both objective failure modes (broken prompt wiring, missing context fields, banned phrasing) and subjective quality signals (voice strength, emotional resonance, novelty).
-**Lesson:** Keep Tier 1 blocking checks deterministic and fixture-backed (`npm run test:narrative`), then layer subjective rubric scoring (Tier 2) as non-blocking CI artifacts so creative evaluation informs iteration without destabilizing release gates.
+**Lesson:** Keep Tier 1 blocking checks deterministic (`npm run test:narrative`) and describe their scope honestly, whether they are fixture-backed or source/contract-based. Then layer subjective rubric scoring (Tier 2) as non-blocking CI artifacts so creative evaluation informs iteration without destabilizing release gates.
 
 ## 28. Never Import `$lib/server/*` From Client Runtime Modules
 
@@ -216,37 +216,77 @@
 **Insight:** If ending guidance only describes structure (loop/shift/exit/rare) but not emotional polarity, the model can drift toward unearned hopeful resolution.
 **Lesson:** State ending polarity directly in prompt instructions (for this project: bad-to-uneasy only, no clean wins) and reinforce it inside each ending steering branch.
 
-## 39. Bold UI Needs Redundant Affordances
+## 39. Cartridge Selection Should Fail Fast, Not Silently Fallback
+
+**Insight:** A default cartridge fallback hides misconfiguration and can make a deploy appear healthy while serving the wrong narrative content.
+**Lesson:** Keep defaulting only for unset configuration, but throw an explicit runtime error for unknown cartridge IDs so engine/content mismatches fail loudly and early.
+
+## 40. A Cartridge Seam Is Not Done Until Selection Is Observable
+
+**Insight:** Even with typed cartridge wiring, operators still guess which story is active unless runtime metadata is exposed.
+**Lesson:** Include active cartridge identity in operational endpoints and back it with a smoke test that runs default/explicit/invalid selection paths.
+
+## 41. Bold UI Needs Redundant Affordances
 
 **Insight:** Experimental presentation can raise engagement, but if core actions are not redundantly signaled users slow down or misclick.
 **Lesson:** Keep one unconventional interaction layer (visual style/layout) while reinforcing core actions with conventional cues (clear button hierarchy, explicit state labels, keyboard/focus affordances).
 
-## 40. Narrative Context Logic Must Have One Owner
+## 42. Narrative Context Logic Must Have One Owner
 
 **Insight:** Keeping duplicate context maps/builders across server prompt files and runtime files creates silent drift even when tests are green.
 **Lesson:** Keep `buildNarrativeContext` + translation/transition maps in one canonical module and import from there everywhere else; enforce this with anti-duplication tests.
 
-## 41. Plan Files Can Drift as Hard as Code
+## 43. Plan Files Can Drift as Hard as Code
 
 **Insight:** Even when runtime code is cleaned up, stale active plan docs with legacy paths (`js/*`) cause execution confusion and false "remaining work" signals.
 **Lesson:** Archive outdated plans immediately, keep one active cleanup tracker, and point `README.md` docs map at the active files so implementation focus stays aligned with current architecture.
 
-## 42. Always-On Flags Become Debt If Left in Contracts
+## 44. Always-On Flags Become Debt If Left in Contracts
 
 **Insight:** Keeping feature flags that are permanently forced on (`narrativeContextV2`, `transitionBridges`) adds fake states, extra storage plumbing, and misleading test assertions without delivering operational control.
 **Lesson:** Once rollout is complete, delete the flag fields and associated APIs end-to-end (contracts, runtime, storage, tests) so there is one truthful execution path.
 
-## 43. If You Remove Taste Heuristics, Put the Taste Contract in Prompt + Recovery
+## 45. If You Remove Taste Heuristics, Put the Taste Contract in Prompt + Recovery
 
 **Insight:** Deleting regex taste filters improves reliability, but voice can still drift if recovery prompts are less strict than primary prompts.
 **Lesson:** Keep voice constraints in both the system prompt and the recovery prompt (same banned-phrase policy, same rewrite rule), then verify with deterministic quality-floor tests.
 
-## 44. Wrap Production Console Logs in Environment Checks
+## 46. Wrap Production Console Logs in Environment Checks
 
 **Insight:** Console warnings in production can clutter the user's devtools and sometimes leak minor architectural details.
 **Lesson:** Wrap client-side console warnings and logs in `if (dev)` checks (from `$app/environment`). For actual errors that need persistence for troubleshooting, use the project's internal debug logging service (`appendDebugError`) so they appear on the `/debug` dashboard instead of the public console.
 
-## 45. Archive Orphaned Root Shells Before Judging a SvelteKit UI
+## 47. Archive Orphaned Root Shells Before Judging a SvelteKit UI
 
 **Insight:** Stale root `index.html` / `style.css` files from an older static app can hijack local Vite output and make the active SvelteKit routes look broken, stale, or inexplicably off-brand.
 **Lesson:** When a SvelteKit UI looks wrong in local dev, verify that the root shell is still canonical. Archive or remove orphaned static entry files first so screenshots, browser checks, and CSS debugging reflect the actual route app you are redesigning.
+
+## 48. Dynamic Transition Bridges Scale Better Than Canned Transition Tables
+
+**Insight:** Static transition-bridge maps only cover the handful of state jumps someone predicted ahead of time, which means edge cases silently lose continuity emphasis.
+**Lesson:** Store structured before/after prose from the active story's voice maps, then let the prompt formatter build one bridge instruction from those authored lines. This keeps continuity voice-authored while removing the need to pre-write every possible jump.
+
+## 49. AI-First Builder Flows Still Need Deterministic Fallbacks
+
+**Insight:** A builder that depends entirely on live model access turns authoring into a dead end the moment keys are missing, quotas hit, or the provider blips.
+**Lesson:** Start creation with an AI draft, but always keep a deterministic fallback draft and fallback editorial rubric so the author can keep moving even when Grok is unavailable.
+
+## 50. Move Voice Assets Before You Generalize Engine Logic
+
+**Insight:** Story abstraction gets dangerous when engine code changes first and the authored prose moves later, because quality regressions hide inside "temporary" placeholder strings.
+**Lesson:** Extract the authored voice maps, prompt assets, and behavioral seeds into the story cartridge first, then refactor engine seams to read from that cartridge. This keeps the quality reference intact while the abstraction work moves around it.
+
+## 51. Runtime Story Selection Must Drive Visible Shell Copy Too
+
+**Insight:** If the runtime switches cartridges but the shell and home page stay hardcoded to the original story, the app looks broken even when the engine is technically correct.
+**Lesson:** When story selection becomes configurable, route the visible shell/home branding through the same story definition metadata as prompts, readiness, and runtime defaults.
+
+## 52. Builder Fallbacks Should Use Neutral Scaffolds, Not Production Story Defaults
+
+**Insight:** A builder can look story-agnostic in the happy path while still leaking production-story copy whenever AI generation fails or the user starts from an empty draft.
+**Lesson:** Seed builder defaults and deterministic fallbacks from a neutral starter scaffold, then use the flagship story only as a quality reference for AI guidance.
+
+## 53. Structural Narrative Gates Should Be Described Honestly
+
+**Insight:** A source/contract regression suite can be genuinely valuable, but calling it a fixture-scored narrative quality floor overstates what it protects and creates false confidence in reviews.
+**Lesson:** Describe Tier 1 narrative gates by what they actually enforce today. If the suite is structural, say that plainly and treat richer prose-quality scoring as separate follow-up work.

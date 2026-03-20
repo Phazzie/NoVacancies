@@ -28,10 +28,10 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         env: {
             AI_AUTH_BYPASS: process.env.AI_AUTH_BYPASS || '0',
-            AI_OUTAGE_MODE: process.env.AI_OUTAGE_MODE || (enableLiveGrok ? 'hard_fail' : 'mock_fallback'),
-            AI_PROVIDER: process.env.AI_PROVIDER || (enableLiveGrok ? 'grok' : 'mock'),
+            AI_OUTAGE_MODE: process.env.AI_OUTAGE_MODE || 'hard_fail',
+            AI_PROVIDER: process.env.AI_PROVIDER || 'grok',
             ENABLE_GROK_IMAGES: process.env.ENABLE_GROK_IMAGES || '0',
-            ENABLE_GROK_TEXT: process.env.ENABLE_GROK_TEXT || (enableLiveGrok ? '1' : '0'),
+            ENABLE_GROK_TEXT: process.env.ENABLE_GROK_TEXT || '1',
             ENABLE_PROVIDER_PROBE: process.env.ENABLE_PROVIDER_PROBE || '0',
             E2E_HOST: host,
             E2E_PORT: String(port),

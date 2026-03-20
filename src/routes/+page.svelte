@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { gameStore } from '$lib/game';
+	import { getSafeActiveStoryCartridge } from '$lib/stories';
 
 	interface ReadinessCheck {
 		id: string;
@@ -21,6 +22,21 @@
 
 	let readiness: ReadinessPayload | null = null;
 	let readinessError = '';
+	const activeStory = getSafeActiveStoryCartridge();
+	const homeStoryTitle = activeStory?.title ?? 'Story Configuration Blocked';
+	const presentation = activeStory?.presentation ?? {
+		homeKicker: 'Interactive fiction / configuration blocked',
+		homeSubtitle: 'Check Story Selection',
+		homeTagline:
+			'The app could not resolve the selected story cartridge. Use the readiness panel to inspect configuration.',
+		homeSupportCopy:
+			'Until a valid story is selected, runtime and visible branding cannot stay in sync.',
+		storyBriefItems: [
+			'Readiness can show which story id is configured and whether it loaded.',
+			'Builder and play routes stay available for troubleshooting.',
+			'Fix the selected story id before using this as a demo surface.'
+		]
+	};
 
 	onMount(() => {
 		void loadReadiness();
@@ -52,20 +68,19 @@
 <div class="home-page">
 	<section class="home-hero">
 		<div class="home-copy">
-			<p class="home-kicker">Interactive fiction / motel noir / live AI run</p>
-			<h1 class="home-title">No Vacancies</h1>
-			<h2 class="home-subtitle">Carry What Matters</h2>
+			<p class="home-kicker">{presentation.homeKicker}</p>
+			<h1 class="home-title">{homeStoryTitle}</h1>
+			<h2 class="home-subtitle">{presentation.homeSubtitle}</h2>
 			<p class="home-tagline">
-				A story about invisible labor, pressure, and the moment the room stops mistaking
-				endurance for love.
+				{presentation.homeTagline}
 			</p>
 			<p class="home-support-copy">
-				Sydney is 44, holding together a daily-rate motel life with five burner phones, too
-				many obligations, and no clean exit. Each scene pushes the load-bearing math harder.
+				{presentation.homeSupportCopy}
 			</p>
 
 			<div class="home-actions">
 				<button class="btn btn-primary" on:click={beginStory}>Begin Story</button>
+				<a class="btn btn-secondary" href="/builder">Open Builder</a>
 				<a class="btn btn-secondary" href="/settings">Open Settings</a>
 			</div>
 		</div>
@@ -74,9 +89,9 @@
 			<section class="story-brief">
 				<p class="card-kicker">How it plays</p>
 				<ul class="story-brief-list">
-					<li>AI-written scenes with structural guardrails and bounded recovery.</li>
-					<li>Three choices per turn, with quick keys for faster live demos.</li>
-					<li>Debug and settings stay close when a run needs operator intervention.</li>
+					{#each presentation.storyBriefItems as item}
+						<li>{item}</li>
+					{/each}
 				</ul>
 			</section>
 		</div>
