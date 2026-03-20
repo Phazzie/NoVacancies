@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased] - 2026-03-20
+
+### Changed
+
+- **Builder Neutrality Hardening:** Switched the builder's initial and fallback draft scaffold to the neutral `starter-kit` story so authoring no longer seeds Sydney/motel-specific copy when AI generation is unavailable (`src/routes/builder/+page.svelte`, `src/lib/server/ai/builder.ts`, `src/lib/builder/store.ts`).
+- **Active Story Branding Wiring:** Moved shared shell and home-route presentation onto story-level metadata so `PUBLIC_STORY_ID` now changes visible branding as well as runtime behavior/readiness metadata (`src/lib/stories/types.ts`, `src/lib/stories/no-vacancies/index.ts`, `src/lib/stories/starter-kit/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`).
+- **Builder Discoverability Test Coverage:** Fixed the primary-nav Builder link target and added coverage for nav discoverability, neutral builder fallback, and starter-kit home branding in runtime smoke tests (`src/routes/+layout.svelte`, `tests/e2e/demo-reliability.spec.js`, `tests/storyEngineRuntimeSelection.js`, `tests/unit/builderHelpers.spec.ts`).
+- **Readiness + Smoke Test Hardening:** Preserved critical readiness gating during live probe enrichment, reduced public probe-detail leakage, and made the runtime selection smoke test reuse the current npm entrypoint instead of assuming `npm` is on `PATH` (`src/routes/api/demo/readiness/+server.ts`, `tests/storyEngineRuntimeSelection.js`).
+- **Narrative Gate Documentation Clarified:** Updated docs to describe `npm run test:narrative` as a structural source/contract regression suite rather than a full fixture-scored prose-quality floor (`README.md`).
+
 ## [Unreleased] - 2026-03-19
 
 ### Changed

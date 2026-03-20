@@ -1,4 +1,5 @@
 import { noVacanciesCartridge } from '$lib/stories/no-vacancies';
+import { starterKitCartridge } from '$lib/stories/starter-kit';
 import type { BuilderFieldFeedback, BuilderStoryDraft } from '$lib/stories/types';
 import { loadAiConfig } from '$lib/server/ai/config';
 
@@ -63,10 +64,12 @@ function deriveSettingFromPremise(premise: string): string {
 }
 
 function createFallbackDraft(premise: string): BuilderStoryDraft {
-	const referenceDraft = noVacanciesCartridge.builder.createEmptyDraft();
-	const normalizedPremise = premise.trim() || referenceDraft.premise;
-	const title = deriveTitleFromPremise(normalizedPremise);
-	const setting = deriveSettingFromPremise(normalizedPremise);
+	const referenceDraft = starterKitCartridge.builder.createEmptyDraft();
+	const normalizedPremise = premise.trim();
+	const title = normalizedPremise ? deriveTitleFromPremise(normalizedPremise) : referenceDraft.title;
+	const setting = normalizedPremise
+		? deriveSettingFromPremise(normalizedPremise)
+		: referenceDraft.setting;
 
 	// The fallback keeps authoring moving even when Grok is unavailable; it is scaffolding, not quality parity.
 	return {

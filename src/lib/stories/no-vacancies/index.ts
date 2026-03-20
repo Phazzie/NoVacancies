@@ -220,6 +220,22 @@ export const noVacanciesCartridge: StoryDefinition = {
 		],
 		createEmptyDraft
 	},
+	presentation: {
+		metaDescription:
+			'A motel-noir interactive narrative about invisible labor, pressure, and what finally changes.',
+		shellKicker: 'Daily-rate motel / live narrative build',
+		homeKicker: 'Interactive fiction / motel noir / live AI run',
+		homeSubtitle: 'Carry What Matters',
+		homeTagline:
+			'A story about invisible labor, pressure, and the moment the room stops mistaking endurance for love.',
+		homeSupportCopy:
+			'Sydney is 44, holding together a daily-rate motel life with five burner phones, too many obligations, and no clean exit. Each scene pushes the load-bearing math harder.',
+		storyBriefItems: [
+			'AI-written scenes with structural guardrails and bounded recovery.',
+			'Three choices per turn, with quick keys for faster live demos.',
+			'Debug and settings stay close when a run needs operator intervention.'
+		]
+	},
 	ui: {
 		imagePaths,
 		pregeneratedImagePool

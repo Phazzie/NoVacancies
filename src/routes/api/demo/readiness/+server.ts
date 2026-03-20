@@ -30,6 +30,12 @@ interface ReadinessPayload {
 	updatedAt: string;
 }
 
+interface ProbeResult {
+	authValid: boolean;
+	modelAvailable: boolean;
+	latencyMs: number;
+}
+
 function summarize(payload: ReadinessPayload): string {
 	const missing = payload.checks.filter((check) => !check.ok).map((check) => check.label);
 	if (payload.status === 'ready') return 'Ready to demo AI mode.';
@@ -54,6 +60,49 @@ function buildConfigFailurePayload(errorMessage: string): ReadinessPayload {
 			}
 		]
 	};
+}
+
+function computeStatus(score: number, criticalReady: boolean): ReadinessPayload['status'] {
+	// Probe enrichment can add confidence, but it must never upgrade a build that failed a critical gate.
+	if (!criticalReady) return 'blocked';
+	return score >= 90 ? 'ready' : 'almost';
+}
+
+function deriveReadinessStatus(
+	score: number,
+	checks: ReadinessCheck[]
+): ReadinessPayload['status'] {
+	const criticalReady =
+		Boolean(checks.find((c) => c.id === 'ai_provider')?.ok) &&
+		Boolean(checks.find((c) => c.id === 'text_generation')?.ok) &&
+		Boolean(checks.find((c) => c.id === 'api_key_status')?.ok) &&
+		Boolean(checks.find((c) => c.id === 'outage_policy')?.ok) &&
+		Boolean(checks.find((c) => c.id === 'security_mode')?.ok);
+	return computeStatus(score, criticalReady);
+}
+
+function applyProbeEnrichment(
+	payload: ReadinessPayload,
+	probe: ProbeResult | null | undefined
+): ReadinessPayload {
+	if (!probe) {
+		return payload;
+	}
+
+	const enriched = structuredClone(payload);
+	const probeOk = Boolean(probe.authValid && probe.modelAvailable);
+	const existing = enriched.checks.find((check) => check.id === 'connectivity_probe');
+	if (existing) {
+		existing.ok = probeOk;
+		existing.details = probeOk
+			? `Probe succeeded (${probe.latencyMs}ms)`
+			: 'Probe failed (provider check failed)';
+	}
+
+	enriched.score = enriched.checks.reduce((sum, check) => sum + (check.ok ? check.weight : 0), 0);
+	enriched.status = deriveReadinessStatus(enriched.score, enriched.checks);
+	enriched.summary = summarize(enriched);
+	return enriched;
 }
 
 function buildPayload(): ReadinessPayload {
@@ -122,23 +171,10 @@ function buildPayload(): ReadinessPayload {
 	}
 
 	const score = checks.reduce((sum, check) => sum + (check.ok ? check.weight : 0), 0);
-	const criticalReady =
-		checks.find((c) => c.id === 'ai_provider')?.ok &&
-		checks.find((c) => c.id === 'text_generation')?.ok &&
-		checks.find((c) => c.id === 'api_key_status')?.ok &&
-		checks.find((c) => c.id === 'outage_policy')?.ok &&
-		checks.find((c) => c.id === 'security_mode')?.ok;
-
-	const status: ReadinessPayload['status'] = criticalReady
-		? score >= 90
-			? 'ready'
-			: 'almost'
-		: 'blocked';
-
 	const activeStory = getActiveStoryCartridge();
 	const payload: ReadinessPayload = {
 		score,
-		status,
+		status: deriveReadinessStatus(score, checks),
 		summary: '',
 		checks,
 		activeStory: { id: activeStory.id, title: activeStory.title },
@@ -150,29 +186,14 @@ function buildPayload(): ReadinessPayload {
 
 export const GET: RequestHandler = async (event) => {
 	try {
-		const payload = buildPayload();
+		let payload = buildPayload();
 
 		// Optional live probe enrichment for extra confidence without exposing secrets.
 		if (payload.checks.find((check) => check.id === 'connectivity_probe')?.ok) {
 			const config = loadAiConfig();
 			const providers = createProviderRegistry(config);
 			const probe = await providers.grok.probe?.();
-			if (probe) {
-				const probeOk = Boolean(probe.authValid && probe.modelAvailable);
-				const existing = payload.checks.find((check) => check.id === 'connectivity_probe');
-				if (existing) {
-					existing.ok = probeOk;
-					existing.details = probeOk
-						? `Probe succeeded (${probe.latencyMs}ms)`
-						: `Probe failed (Auth=${probe.authValid}, Model=${probe.modelAvailable})`;
-				}
-				payload.score = payload.checks.reduce(
-					(sum, check) => sum + (check.ok ? check.weight : 0),
-					0
-				);
-				payload.status = payload.score >= 90 ? 'ready' : payload.score >= 70 ? 'almost' : 'blocked';
-				payload.summary = summarize(payload);
-			}
+			payload = applyProbeEnrichment(payload, probe);
 		}
 
 		return json(payload);

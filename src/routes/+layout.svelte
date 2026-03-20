@@ -3,6 +3,15 @@
 	import { page } from '$app/stores';
 	import '../app.css';
 	import { registerPwaServiceWorker } from '$lib/client/pwa';
+	import { getSafeActiveStoryCartridge } from '$lib/stories';
+
+	const activeStory = getSafeActiveStoryCartridge();
+	const shellStoryTitle = activeStory?.title ?? 'Story Configuration Blocked';
+	const shellPresentation = activeStory?.presentation ?? {
+		metaDescription:
+			'The selected story cartridge could not be loaded. Check the demo readiness panel for configuration details.',
+		shellKicker: 'Story engine / configuration blocked'
+	};
 
 	onMount(() => {
 		registerPwaServiceWorker();
@@ -10,10 +19,10 @@
 </script>
 
 <svelte:head>
-	<title>No Vacancies</title>
+	<title>{shellStoryTitle}</title>
 	<meta
 		name="description"
-		content="A motel-noir interactive narrative about invisible labor, pressure, and what finally changes."
+		content={shellPresentation.metaDescription}
 	/>
 </svelte:head>
 
@@ -21,8 +30,8 @@
 	<a class="skip-link" href="#page-content">Skip to content</a>
 	<header class="shell-bar">
 		<a class="brand-lockup" href="/">
-			<span class="brand-kicker">Daily-rate motel / live narrative build</span>
-			<span class="brand-name">No Vacancies</span>
+			<span class="brand-kicker">{shellPresentation.shellKicker}</span>
+			<span class="brand-name">{shellStoryTitle}</span>
 		</a>
 		<nav class="route-nav" aria-label="Primary navigation">
 			<a
@@ -42,7 +51,7 @@
 				<span>Play</span>
 			</a>
 			<a
-				href="/settings"
+				href="/builder"
 				class:active={$page.url.pathname === '/builder'}
 				aria-current={$page.url.pathname === '/builder' ? 'page' : undefined}
 			>

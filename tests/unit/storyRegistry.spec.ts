@@ -6,6 +6,10 @@ import {
 } from '../../src/lib/stories';
 
 test.describe('Story registry', () => {
+	test.afterEach(() => {
+		delete process.env.PUBLIC_STORY_ID;
+	});
+
 	test('registers No Vacancies and starter kit cartridges', () => {
 		const cartridges = listStoryCartridges();
 		expect(cartridges.map((story) => story.id)).toEqual(
@@ -15,6 +19,11 @@ test.describe('Story registry', () => {
 
 	test('defaults the active story to No Vacancies', () => {
 		expect(getActiveStoryCartridge().id).toBe('no-vacancies');
+	});
+
+	test('reads an explicit PUBLIC_STORY_ID selection', () => {
+		process.env.PUBLIC_STORY_ID = 'starter-kit';
+		expect(getActiveStoryCartridge().id).toBe('starter-kit');
 	});
 
 	test('keeps starter kit free of No Vacancies prose leakage', () => {

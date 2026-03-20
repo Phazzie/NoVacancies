@@ -117,6 +117,13 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await expect(page.getByRole('heading', { level: 3, name: 'Demo Readiness' })).toBeVisible();
 		await expect(page.locator('.readiness-card')).toBeVisible();
 
+		await page
+			.getByRole('navigation', { name: 'Primary navigation' })
+			.getByRole('link', { name: /Builder/i })
+			.click();
+		await expectPathname(page, '/builder');
+		await expect(page.getByRole('heading', { level: 1, name: 'Builder' })).toBeVisible();
+
 		await page.goto('/settings');
 		await expectPathname(page, '/settings');
 		await expect(page.getByRole('heading', { level: 2, name: 'Settings' })).toBeVisible();
@@ -134,10 +141,6 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await page.goto('/debug');
 		await expectPathname(page, '/debug');
 		await expect(page.getByRole('heading', { level: 2, name: 'Debug' })).toBeVisible();
-
-		await page.goto('/builder');
-		await expectPathname(page, '/builder');
-		await expect(page.getByRole('heading', { level: 1, name: 'Builder' })).toBeVisible();
 
 		await page.goto('/ending');
 		await expectPathname(page, '/ending');
@@ -172,7 +175,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		test.setTimeout(90000);
 		await page.goto('/builder');
 		await expect(page.getByRole('heading', { level: 1, name: 'Builder' })).toBeVisible();
-		await page.locator('.builder-panel textarea').first().fill(
+		await page.getByLabel('Story premise').fill(
 			'A night janitor at a frozen warehouse keeps covering for her brother until the cold starts sounding personal.'
 		);
 		await page.getByRole('button', { name: /Generate Draft/i }).click();

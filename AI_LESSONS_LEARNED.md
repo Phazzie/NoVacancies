@@ -159,7 +159,7 @@
 ## 27. Split Narrative CI Into Deterministic Gates and Subjective Scoring
 
 **Insight:** Narrative quality has both objective failure modes (broken prompt wiring, missing context fields, banned phrasing) and subjective quality signals (voice strength, emotional resonance, novelty).
-**Lesson:** Keep Tier 1 blocking checks deterministic and fixture-backed (`npm run test:narrative`), then layer subjective rubric scoring (Tier 2) as non-blocking CI artifacts so creative evaluation informs iteration without destabilizing release gates.
+**Lesson:** Keep Tier 1 blocking checks deterministic (`npm run test:narrative`) and describe their scope honestly, whether they are fixture-backed or source/contract-based. Then layer subjective rubric scoring (Tier 2) as non-blocking CI artifacts so creative evaluation informs iteration without destabilizing release gates.
 
 ## 28. Never Import `$lib/server/*` From Client Runtime Modules
 
@@ -275,3 +275,18 @@
 
 **Insight:** Story abstraction gets dangerous when engine code changes first and the authored prose moves later, because quality regressions hide inside "temporary" placeholder strings.
 **Lesson:** Extract the authored voice maps, prompt assets, and behavioral seeds into the story cartridge first, then refactor engine seams to read from that cartridge. This keeps the quality reference intact while the abstraction work moves around it.
+
+## 51. Runtime Story Selection Must Drive Visible Shell Copy Too
+
+**Insight:** If the runtime switches cartridges but the shell and home page stay hardcoded to the original story, the app looks broken even when the engine is technically correct.
+**Lesson:** When story selection becomes configurable, route the visible shell/home branding through the same story definition metadata as prompts, readiness, and runtime defaults.
+
+## 52. Builder Fallbacks Should Use Neutral Scaffolds, Not Production Story Defaults
+
+**Insight:** A builder can look story-agnostic in the happy path while still leaking production-story copy whenever AI generation fails or the user starts from an empty draft.
+**Lesson:** Seed builder defaults and deterministic fallbacks from a neutral starter scaffold, then use the flagship story only as a quality reference for AI guidance.
+
+## 53. Structural Narrative Gates Should Be Described Honestly
+
+**Insight:** A source/contract regression suite can be genuinely valuable, but calling it a fixture-scored narrative quality floor overstates what it protects and creates false confidence in reviews.
+**Lesson:** Describe Tier 1 narrative gates by what they actually enforce today. If the suite is structural, say that plainly and treat richer prose-quality scoring as separate follow-up work.

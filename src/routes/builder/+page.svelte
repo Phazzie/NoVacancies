@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { noVacanciesCartridge } from '$lib/stories/no-vacancies';
+	import { getSafeActiveStoryCartridge } from '$lib/stories';
+	import { starterKitCartridge } from '$lib/stories/starter-kit';
 	import { loadBuilderDraft, saveBuilderDraft } from '$lib/builder/store';
 	import type { BuilderFieldFeedback, BuilderStoryDraft } from '$lib/stories/types';
 
 	type FeedbackState = Record<string, { source: 'ai' | 'fallback'; feedback: BuilderFieldFeedback }>;
 
-	const fallbackDraft = noVacanciesCartridge.builder.createEmptyDraft();
+	const activeStory = getSafeActiveStoryCartridge();
+	const draftScope = activeStory?.id ?? 'unknown-story';
+	const fallbackDraft = starterKitCartridge.builder.createEmptyDraft();
 
 	let premise = '';
 	let draft: BuilderStoryDraft = fallbackDraft;
@@ -16,11 +19,11 @@
 	let lastDraftSource: 'ai' | 'fallback' | null = null;
 
 	onMount(() => {
-		draft = loadBuilderDraft(fallbackDraft);
+		draft = loadBuilderDraft(draftScope, fallbackDraft);
 		premise = draft.premise;
 	});
 
-	$: saveBuilderDraft(draft);
+	$: saveBuilderDraft(draftScope, draft);
 
 	async function generateDraft(): Promise<void> {
 		generateState = 'loading';
@@ -149,12 +152,16 @@
 				{generateState === 'loading' ? 'Generating...' : 'Generate Draft'}
 			</button>
 		</div>
-		<textarea
-			class="builder-textarea"
-			rows="4"
-			bind:value={premise}
-			placeholder="A woman runs the graveyard shift at a roadside laundromat while her brother turns every favor into an invoice."
-		></textarea>
+		<label class="builder-field">
+			<span class="sr-only">Story premise</span>
+			<textarea
+				class="builder-textarea"
+				rows="4"
+				bind:value={premise}
+				aria-label="Story premise"
+				placeholder="A woman runs the graveyard shift at a roadside laundromat while her brother turns every favor into an invoice."
+			></textarea>
+		</label>
 	</section>
 
 	<section class="builder-grid">

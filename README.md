@@ -28,6 +28,7 @@ Builder UX:
 - `/builder` starts from a plain-language premise, generates a first draft via `/api/builder/generate-draft`, and then lets you edit the resulting story definition in-place.
 - Prose-bearing fields can be reviewed with `/api/builder/evaluate-prose`, which is AI-first but falls back to a deterministic behavioral/concreteness rubric if Grok is unavailable.
 - Current builder drafts persist locally in the browser so authors can leave and return without losing the working draft.
+- The builder's empty/default scaffold is intentionally story-neutral (`starter-kit`-based), so authoring does not start from Sydney/motel copy when AI generation is unavailable.
 
 ## Run
 
@@ -71,6 +72,7 @@ The app runtime now supports a story-definition seam so story content can be iso
 - Active story wiring defaults to `src/lib/stories/no-vacancies/index.ts` and can be selected via `PUBLIC_STORY_ID`.
 - `src/lib/stories/starter-kit/index.ts` exists as a second cartridge so the abstraction is validated against a non-No-Vacancies story.
 - Prompt assets, context translation, transition-bridge generation, lesson access, and image resolution now read from the active story definition instead of hardcoded No Vacancies constants in shared engine files.
+- Shared shell/home branding also reads from the active story definition, so visible presentation stays aligned with runtime cartridge selection.
 
 To add a new story cartridge:
 1. Create `src/lib/stories/<story-id>/index.ts` implementing `StoryDefinition`.
@@ -104,7 +106,7 @@ npm run test:e2e
 
 Notes:
 - `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, and invalid-id fail-fast behavior).
-- `npm run test:narrative` runs deterministic Tier 1 narrative quality gates (prompt wiring, context coverage, continuity dimensions, sanity contract, and fixture-based adversarial checks).
+- `npm run test:narrative` runs deterministic Tier 1 source/contract gates for prompt wiring, context coverage, continuity dimensions, and builder/story-registry integration. It is a structural regression suite, not a full fixture-scored prose evaluation pass.
 - `npm run test:e2e` runs Playwright against the SvelteKit app, including the builder flow and route-shell checks.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
 

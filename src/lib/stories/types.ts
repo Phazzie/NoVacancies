@@ -10,6 +10,16 @@ export interface StoryThemeOverrides {
 	backgroundClassName?: string;
 }
 
+export interface StoryPresentationDef {
+	metaDescription: string;
+	shellKicker: string;
+	homeKicker: string;
+	homeSubtitle: string;
+	homeTagline: string;
+	homeSupportCopy: string;
+	storyBriefItems: string[];
+}
+
 export interface StoryCharacterDef {
 	id: string;
 	name: string;
@@ -106,6 +116,7 @@ export interface StoryDefinition {
 	characters: StoryCharacterDef[];
 	voice: StoryVoiceDef;
 	builder: StoryBuilderDefinition;
+	presentation: StoryPresentationDef;
 	ui: {
 		imagePaths: Record<string, string>;
 		pregeneratedImagePool: string[];

@@ -34,9 +34,19 @@ export function resolveImagePath(
 	sceneId?: string | null
 ): string {
 	const { imagePaths } = getStoryImageConfig();
-	const seed = (sceneId || imageKey || ImageKeys.HOTEL_ROOM).trim();
+	const normalizedKey = typeof imageKey === 'string' ? imageKey.trim() : '';
+	// Scene-authored image keys are the strongest signal; the pregenerated pool is only a fallback.
+	if (normalizedKey && imagePaths[normalizedKey]) {
+		return imagePaths[normalizedKey];
+	}
+
+	const seed = (sceneId || normalizedKey || ImageKeys.HOTEL_ROOM).trim();
 	const pooled = pickFromPool(seed);
 	if (pooled) return pooled;
-	if (!imageKey) return imagePaths[ImageKeys.HOTEL_ROOM] ?? fallbackImagePaths[ImageKeys.HOTEL_ROOM];
-	return imagePaths[imageKey] ?? imagePaths[ImageKeys.HOTEL_ROOM] ?? fallbackImagePaths[ImageKeys.HOTEL_ROOM];
+
+	if (normalizedKey) {
+		return imagePaths[ImageKeys.HOTEL_ROOM] ?? fallbackImagePaths[ImageKeys.HOTEL_ROOM];
+	}
+
+	return imagePaths[ImageKeys.HOTEL_ROOM] ?? fallbackImagePaths[ImageKeys.HOTEL_ROOM];
 }

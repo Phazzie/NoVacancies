@@ -90,7 +90,7 @@ export const starterKitCartridge: StoryDefinition = {
 	id: 'starter-kit',
 	title: 'Starter Kit Story',
 	summary:
-		'Reference cartridge proving the engine can swap stories without leaking No Vacancies prose into prompts, images, or readiness surfaces.',
+		'Reference cartridge proving the engine can swap stories without leaking flagship-story prose into prompts, images, or readiness surfaces.',
 	initialSceneId: SceneIds.OPENING,
 	createInitialStoryThreads: () => createStoryThreads(),
 	prompts: {
@@ -115,7 +115,7 @@ export const starterKitCartridge: StoryDefinition = {
 			id: 'lead',
 			name: 'Lead',
 			role: 'protagonist',
-			description: 'Placeholder character demonstrating that story metadata can swap without inheriting No Vacancies detail.'
+			description: 'Placeholder character demonstrating that story metadata can swap without inheriting another story’s detail.'
 		}
 	],
 	voice: {
@@ -133,6 +133,22 @@ export const starterKitCartridge: StoryDefinition = {
 			'Would a reader feel the situation before being told what it means?'
 		],
 		createEmptyDraft
+	},
+	presentation: {
+		metaDescription:
+			'A neutral starter cartridge proving the story engine, shell, and builder can swap stories without inheriting another story’s visible copy.',
+		shellKicker: 'Story engine / starter cartridge',
+		homeKicker: 'Interactive fiction / story engine / starter scaffold',
+		homeSubtitle: 'Swap The Story, Keep The Engine',
+		homeTagline:
+			'A reference story proving the app can change cartridges without leaking another story’s branding into the visible shell.',
+		homeSupportCopy:
+			'This cartridge is intentionally generic. It exists to validate story swapping, neutral scaffolding, and authoring flow before a fully authored second story lands.',
+		storyBriefItems: [
+			'Reference story metadata should replace the active shell branding cleanly.',
+			'Builder defaults should stay generic even when live AI is unavailable.',
+			'Operational surfaces should still show the active cartridge clearly.'
+		]
 	},
 	ui: {
 		imagePaths: {

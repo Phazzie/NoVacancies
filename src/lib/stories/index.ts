@@ -44,6 +44,11 @@ export function getActiveStoryCartridge(): StoryDefinition {
 	return cartridge;
 }
 
+export function getSafeActiveStoryCartridge(): StoryDefinition | null {
+	const configuredId = getConfiguredStoryId();
+	return getStoryCartridge(configuredId);
+}
+
 export function getStoryDefinition(storyId: string): StoryDefinition | null {
 	return getStoryCartridge(storyId);
 }
