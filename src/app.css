@@ -127,16 +127,16 @@ p {
 }
 
 .app-shell {
-	padding: 18px 16px 36px;
+	padding: 12px 14px 22px;
 }
 
 .shell-bar {
 	position: sticky;
-	top: 14px;
+	top: 10px;
 	z-index: 20;
 	max-width: 1160px;
-	margin: 0 auto 22px;
-	padding: 20px 22px;
+	margin: 0 auto 14px;
+	padding: 12px 18px;
 	display: flex;
 	align-items: flex-end;
 	justify-content: space-between;
@@ -185,7 +185,7 @@ p {
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	padding: 10px 14px;
+	padding: 7px 12px;
 	border: 1px solid var(--line-soft);
 	border-radius: 999px;
 	background: rgba(255, 255, 255, 0.03);
@@ -302,21 +302,21 @@ p {
 
 .home-page {
 	display: grid;
-	gap: 22px;
+	gap: 16px;
 }
 
 .home-hero {
 	display: grid;
 	grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.78fr);
-	gap: 20px;
+	gap: 14px;
 	align-items: stretch;
 }
 
 .home-copy {
 	position: relative;
 	overflow: hidden;
-	padding: 34px 36px;
-	border-radius: 30px;
+	padding: 24px 28px;
+	border-radius: 24px;
 	border: 1px solid var(--line-paper);
 	background:
 		linear-gradient(180deg, rgba(246, 239, 229, 0.98), rgba(232, 220, 205, 0.94)),
@@ -351,7 +351,7 @@ p {
 .home-title {
 	position: relative;
 	z-index: 1;
-	font-size: clamp(3.4rem, 7vw, 5.8rem);
+	font-size: clamp(2.6rem, 5.5vw, 4.4rem);
 	font-style: italic;
 	letter-spacing: -0.03em;
 	color: var(--ink-950);
@@ -658,7 +658,7 @@ p {
 
 .scene-hero {
 	position: relative;
-	min-height: 420px;
+	min-height: 260px;
 	overflow: hidden;
 	border-radius: 34px;
 	border: 1px solid var(--line-soft);
@@ -669,8 +669,9 @@ p {
 .scene-hero-image {
 	display: block;
 	width: 100%;
-	height: clamp(360px, 54vh, 620px);
+	height: clamp(240px, 38vh, 420px);
 	object-fit: cover;
+	object-position: center 22%;
 	filter: saturate(0.88) contrast(1.05);
 }
 
@@ -723,8 +724,8 @@ p {
 	right: 18px;
 	bottom: 18px;
 	z-index: 2;
-	padding: 14px 14px 12px;
-	border-radius: 20px;
+	padding: 10px 12px 8px;
+	border-radius: 16px;
 	border: 1px solid rgba(255, 255, 255, 0.15);
 	background: rgba(10, 8, 9, 0.48);
 	backdrop-filter: blur(12px);
@@ -773,9 +774,9 @@ p {
 .story-body {
 	position: relative;
 	width: min(760px, calc(100% - 2rem));
-	margin: -58px auto 0;
-	padding: 30px 30px 34px;
-	border-radius: 30px;
+	margin: -44px auto 0;
+	padding: 20px 22px 24px;
+	border-radius: 22px;
 	border: 1px solid var(--line-paper);
 	background:
 		linear-gradient(180deg, rgba(246, 239, 229, 0.98), rgba(233, 222, 207, 0.95)),
@@ -800,18 +801,18 @@ p {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
-	margin-bottom: 18px;
+	margin-bottom: 10px;
 	padding-left: 16px;
 }
 
 .story-meta-chip {
 	display: inline-flex;
 	align-items: center;
-	padding: 6px 10px;
+	padding: 4px 8px;
 	border-radius: 999px;
 	border: 1px solid rgba(27, 20, 17, 0.1);
 	background: rgba(27, 20, 17, 0.04);
-	font-size: 0.74rem;
+	font-size: 0.7rem;
 	font-weight: 800;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
@@ -819,11 +820,11 @@ p {
 }
 
 .scene-text {
-	padding-left: 18px;
+	padding-left: 14px;
 	white-space: pre-wrap;
 	font-family: var(--font-display);
 	font-size: clamp(1.18rem, 1.9vw, 1.48rem);
-	line-height: 1.95;
+	line-height: 1.7;
 	letter-spacing: 0.004em;
 	color: var(--ink-800);
 }
@@ -871,8 +872,8 @@ p {
 }
 
 .choices-panel {
-	margin-top: 28px;
-	padding: 24px 0 0 18px;
+	margin-top: 18px;
+	padding: 14px 0 0 18px;
 	border-top: 1px solid rgba(27, 20, 17, 0.1);
 }
 
@@ -894,7 +895,7 @@ p {
 
 .choices-list {
 	display: grid;
-	gap: 10px;
+	gap: 8px;
 }
 
 .choice-btn {
@@ -903,7 +904,7 @@ p {
 	align-items: center;
 	gap: 12px;
 	width: 100%;
-	padding: 14px 16px;
+	padding: 10px 14px;
 	border: 1px solid rgba(27, 20, 17, 0.12);
 	background: rgba(255, 250, 244, 0.82);
 	color: var(--ink-950);
