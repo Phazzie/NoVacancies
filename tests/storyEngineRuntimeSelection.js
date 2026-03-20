@@ -9,9 +9,13 @@ function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForReadiness(url, timeoutMs = 180000) {
+async function waitForReadiness(url, getAbortError, timeoutMs = 180000) {
 	const started = Date.now();
 	while (Date.now() - started < timeoutMs) {
+		const abortError = getAbortError();
+		if (abortError) {
+			throw abortError;
+		}
 		try {
 			const response = await fetch(url);
 			if (response.ok) {
@@ -55,6 +59,32 @@ async function findFreePort(startPort) {
 	throw new Error(`Unable to find a free port starting from ${startPort}`);
 }
 
+async function findDistinctFreePorts(startPort, count) {
+	const ports = [];
+	let cursor = startPort;
+	while (ports.length < count) {
+		const port = await findFreePort(cursor);
+		ports.push(port);
+		cursor = port + 1;
+	}
+	return ports;
+}
+
+function resolveNpmCommand() {
+	const npmExec = typeof process.env.npm_execpath === 'string' ? process.env.npm_execpath : '';
+	if (npmExec) {
+		return {
+			command: process.execPath,
+			argsPrefix: [npmExec]
+		};
+	}
+
+	return {
+		command: process.platform === 'win32' ? 'npm.cmd' : 'npm',
+		argsPrefix: []
+	};
+}
+
 async function runScenario({
 	label,
 	port,
@@ -80,15 +110,18 @@ async function runScenario({
 	};
 	console.log(`[smoke] starting ${label} on port ${port}`);
 
-	const npmExec = typeof process.env.npm_execpath === 'string' ? process.env.npm_execpath : '';
-	const command = npmExec
-		? process.execPath
-		: process.platform === 'win32'
-			? 'npm.cmd'
-			: 'npm';
-	const args = npmExec
-		? [npmExec, 'run', 'dev', '--', '--host', HOST, '--port', String(port)]
-		: ['run', 'dev', '--', '--host', HOST, '--port', String(port)];
+	const { command, argsPrefix } = resolveNpmCommand();
+	const args = [
+		...argsPrefix,
+		'run',
+		'dev',
+		'--',
+		'--host',
+		HOST,
+		'--port',
+		String(port),
+		'--strictPort'
+	];
 
 	const child = spawn(command, args, {
 		env,
@@ -115,15 +148,19 @@ async function runScenario({
 
 	try {
 		const url = `http://${HOST}:${port}/api/demo/readiness`;
-		await waitForReadiness(url).catch((error) => {
+		const getAbortError = () => {
 			if (spawnError) {
-				throw new Error(`${label}: failed to start dev server (${spawnError.message})`);
+				return new Error(`${label}: failed to start dev server (${spawnError.message})`);
 			}
 			if (exitDetails) {
-				throw new Error(
+				return new Error(
 					`${label}: dev server exited before readiness (code=${exitDetails.code}, signal=${exitDetails.signal})${formatCapturedOutput(stdout, stderr)}`
 				);
 			}
+			return null;
+		};
+
+		await waitForReadiness(url, getAbortError).catch((error) => {
 			throw new Error(
 				`${label}: ${error instanceof Error ? error.message : String(error)}${formatCapturedOutput(stdout, stderr)}`
 			);
@@ -175,7 +212,7 @@ async function runScenario({
 		try {
 			process.kill(-child.pid, 'SIGTERM');
 		} catch {}
-		await wait(250);
+		await wait(1000);
 		try {
 			process.kill(-child.pid, 'SIGKILL');
 		} catch {}
@@ -187,10 +224,13 @@ async function runScenario({
 }
 
 async function main() {
-	const basePort = await findFreePort(4173);
+	const [defaultPort, starterPort, disabledTextPort, invalidStoryPort] = await findDistinctFreePorts(
+		4173,
+		4
+	);
 	await runScenario({
 		label: 'default story',
-		port: basePort,
+		port: defaultPort,
 		storyId: undefined,
 		expectStoryId: 'no-vacancies',
 		expectBlocked: false,
@@ -198,7 +238,7 @@ async function main() {
 	});
 	await runScenario({
 		label: 'starter-kit story',
-		port: basePort + 1,
+		port: starterPort,
 		storyId: 'starter-kit',
 		expectStoryId: 'starter-kit',
 		expectBlocked: false,
@@ -206,7 +246,7 @@ async function main() {
 	});
 	await runScenario({
 		label: 'disabled text generation blocks readiness',
-		port: basePort + 2,
+		port: disabledTextPort,
 		storyId: undefined,
 		expectStoryId: '',
 		expectBlocked: true,
@@ -218,7 +258,7 @@ async function main() {
 	});
 	await runScenario({
 		label: 'invalid story id',
-		port: basePort + 3,
+		port: invalidStoryPort,
 		storyId: 'unknown-story',
 		expectStoryId: '',
 		expectBlocked: true,
