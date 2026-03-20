@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased] - 2026-03-19
+
+### Changed
+
+- **UI-First Motel-Noir Redesign:** Rebuilt the shared shell and route presentation around a darker motel-noir visual system so `/`, `/play`, `/ending`, `/settings`, and `/debug` read as one authored product instead of a mixed utility dashboard (`src/app.css`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `src/routes/settings/+page.svelte`, `src/routes/debug/+page.svelte`, `src/routes/ending/+page.svelte`).
+- **Play Route Narrative Focus:** Reworked `/play` into a prose-first command deck with stronger scene framing, clearer utility controls, improved blocked/error handling, and direct operator exits to settings/debug when Grok is unavailable (`src/routes/play/+page.svelte`, `src/app.css`).
+- **Runtime Shell Branding Polish:** Aligned browser metadata and PWA shell details with the redesign by updating theme colors, description copy, and favicon/icon wiring (`src/app.html`, `static/manifest.json`).
+- **Ending Copy Cleanup:** Removed the temporary label from the ending-page debug shortcut so the operator action matches the rest of the app (`src/routes/ending/+page.svelte`, `tests/e2e/demo-reliability.spec.js`).
+- **Legacy Static Shell Archival:** Moved stale root `index.html` and `style.css` into `docs/archive/2026-03-19_legacy_static_shell/` so SvelteKit route rendering remains the canonical dev/runtime shell during local Vite execution.
+
+## [Unreleased] - 2026-02-22
+
+### Security
+
+- **Hardening:** Sanitized `/api/demo/readiness` output to prevent leakage of internal configuration details (e.g., specific provider usage, auth bypass status).
+
+
 ## [Unreleased] - 2026-02-07
 
 ### Changed
@@ -27,6 +44,7 @@
 - **UI Visual System Refresh:** Reworked app shell and global styling to a stronger motel-noir visual direction (new masthead, typography, atmospheric layered background, refined controls/cards, improved mobile behavior) without changing runtime flow (`src/routes/+layout.svelte`, `src/app.css`).
 - **Play Command Deck Redesign:** Rebuilt `/play` into a bolder, higher-clarity command-deck layout with scene overlay status, arc progress meter, improved narrative readability card, and indexed choice controls with keyboard shortcuts (`1/2/3`) while preserving existing runtime behavior and Grok-only flow (`src/routes/play/+page.svelte`, `src/app.css`).
 - **Stitch UI Prompt Blueprint:** Added a reusable Stitch prompt doc for `/play` targeting clean-modern UI with restrained visual flair and explicit accessibility/interaction requirements (`docs/STITCH_PLAY_PROMPT_CLEAN_MODERN_FLAIR_2026-02-13.md`).
+- **CSP Hardening & Centralization:** Moved Content Security Policy from a meta tag in `src/app.html` to centralized HTTP headers in `src/hooks.server.ts`, added `default-src 'self'`, and ensured coverage for scripts, styles, images, and connections while maintaining SvelteKit hydration compatibility.
 - **Narrative Drift Cleanup Plan:** Added a decision-complete execution plan documenting remaining dedupe work, sanity policy alignment, anti-drift test hardening, and phased rollback strategy (`docs/NARRATIVE_DRIFT_CLEANUP_EXECUTION_PLAN_2026-02-13.md`).
 - **Ending Tone Constraint:** Reframed ending examples and ending-steering guidance to disallow clean-win resolution; all ending trajectories are now explicitly bad-to-uneasy (`src/lib/server/ai/narrative.ts`).
 - **Server Provider Registry Cleanup:** Removed the unused server-side mock provider adapter path (`src/lib/server/ai/providers/mock.ts`), narrowed provider registry/probe flow to Grok-only, and tightened provider type unions accordingly.
@@ -100,6 +118,7 @@
 - **Play Layout Tuning:** Updated `/play` layout to reduce oversized image dominance (desktop split layout + bounded image height/aspect) so story text and choices remain visible without excessive scrolling.
 - **Lesson Catalog Sharing:** Moved lesson catalog to shared runtime module (`src/lib/narrative/lessonsCatalog.ts`) so both server prompt generation and client lesson rendering use the same canonical lesson data.
 - **Cache Bust for Stale UI:** Bumped service worker cache key to `sydney-story-v4-sveltekit` so old cached shells (including stale key-entry UI) are invalidated on refresh.
+- **PWA Logging Health:** Wrapped production console warnings in `dev` check and moved PWA registration failures to a persistent debug log (`src/lib/client/pwa.ts`).
 
 ## [Unreleased] - 2026-02-05
 
@@ -148,4 +167,3 @@
 - **Ending UX:** Endings no longer auto-jump to recap mid-typewriter. Players now click `View Recap` after ending text completes.
 - **Lesson Timing:** Lesson insight popup now appears only after scene text has finished typing.
 - **Regression Coverage:** Added renderer + e2e checks for delayed lesson display and recap transition/copy/download flow.
-

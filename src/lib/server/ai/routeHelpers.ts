@@ -4,6 +4,7 @@ import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry, selectImageProvider, selectTextProvider } from '$lib/server/ai/providers';
 import { AiProviderError, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
 import { emitAiServerTelemetry, sanitizeForErrorMessage } from '$lib/server/ai/telemetry';
+import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
 
 export interface NextRoutePayload {
 	currentSceneId?: string;
@@ -31,23 +32,6 @@ export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
 	};
 }
 
-function assertImagePromptGuardrails(prompt: string): void {
-	const lower = prompt.toLowerCase();
-	if (!lower.trim()) {
-		throw new AiProviderError('image prompt is required', {
-			code: 'invalid_response',
-			retryable: false,
-			status: 400
-		});
-	}
-	if (/oswaldo/.test(lower) && /(face|bare skin|shirtless|nude|naked|skin exposed)/.test(lower)) {
-		throw new AiProviderError('image prompt violates Oswaldo guardrail', {
-			code: 'guardrail',
-			retryable: false,
-			status: 422
-		});
-	}
-}
 
 export async function resolveTextScene(input: GenerateSceneInput, mode: 'opening' | 'next') {
 	const config = loadAiConfig();

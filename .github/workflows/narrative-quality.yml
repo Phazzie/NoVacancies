@@ -47,10 +47,12 @@ jobs:
   narrative-eval:
     name: Claude Narrative Evaluation (Tier 2)
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     needs: quality-gate
     continue-on-error: true
     permissions:
       contents: read
+      id-token: write
       pull-requests: write
       issues: write
     steps:

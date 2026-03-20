@@ -49,47 +49,85 @@
 	}
 </script>
 
-<h2>Carry What Matters</h2>
-<p class="lede">A story about invisible labor, pressure, and what finally changes.</p>
+<div class="home-page">
+	<section class="home-hero">
+		<div class="home-copy">
+			<p class="home-kicker">Interactive fiction / motel noir / live AI run</p>
+			<h1 class="home-title">No Vacancies</h1>
+			<h2 class="home-subtitle">Carry What Matters</h2>
+			<p class="home-tagline">
+				A story about invisible labor, pressure, and the moment the room stops mistaking
+				endurance for love.
+			</p>
+			<p class="home-support-copy">
+				Sydney is 44, holding together a daily-rate motel life with five burner phones, too
+				many obligations, and no clean exit. Each scene pushes the load-bearing math harder.
+			</p>
 
-<div class="home-actions">
-	<button class="btn btn-primary" on:click={beginStory}>Begin Story</button>
-	<a class="btn btn-secondary" href="/settings">Open Settings</a>
-</div>
-
-<section class="readiness-card" aria-live="polite">
-	<div class="readiness-head">
-		<h3>Demo Readiness</h3>
-		<button class="btn btn-secondary btn-sm" on:click={loadReadiness}>Refresh</button>
-	</div>
-
-	{#if readinessError}
-		<p class="error-banner">{readinessError}</p>
-	{:else if !readiness}
-		<p class="hint">Loading readiness checks...</p>
-	{:else}
-		<div class="readiness-progress-wrap">
-			<div class="readiness-progress-label">
-				<span>{readiness.score}%</span>
-				<span class="readiness-status readiness-{readiness.status}">
-					{readiness.status.toUpperCase()}
-				</span>
-			</div>
-			<div class="readiness-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={readiness.score}>
-				<div class="readiness-progress-fill readiness-{readiness.status}" style={`width: ${readiness.score}%`}></div>
+			<div class="home-actions">
+				<button class="btn btn-primary" on:click={beginStory}>Begin Story</button>
+				<a class="btn btn-secondary" href="/settings">Open Settings</a>
 			</div>
 		</div>
-		<p class="hint">{readiness.summary}</p>
-		<ul class="readiness-list">
-			{#each readiness.checks as check}
-				<li class:ok={check.ok} class:notok={!check.ok}>
-					<span class="readiness-mark">{check.ok ? 'PASS' : 'WAIT'}</span>
-					<div>
-						<div class="readiness-item-title">{check.label}</div>
-						<div class="readiness-item-detail">{check.details}</div>
-					</div>
-				</li>
-			{/each}
-		</ul>
-	{/if}
-</section>
+
+		<div class="home-notes">
+			<section class="story-brief">
+				<p class="card-kicker">How it plays</p>
+				<ul class="story-brief-list">
+					<li>AI-written scenes with structural guardrails and bounded recovery.</li>
+					<li>Three choices per turn, with quick keys for faster live demos.</li>
+					<li>Debug and settings stay close when a run needs operator intervention.</li>
+				</ul>
+			</section>
+		</div>
+	</section>
+
+	<section class="readiness-card" aria-live="polite">
+		<div class="readiness-head">
+			<div>
+				<p class="card-kicker">Operator panel</p>
+				<h3>Demo Readiness</h3>
+			</div>
+			<button class="btn btn-secondary btn-sm" on:click={loadReadiness}>Refresh</button>
+		</div>
+
+		{#if readinessError}
+			<p class="error-banner">{readinessError}</p>
+		{:else if !readiness}
+			<p class="hint">Loading readiness checks...</p>
+		{:else}
+			<div class="readiness-progress-wrap">
+				<div class="readiness-progress-label">
+					<span>{readiness.score}%</span>
+					<span class="readiness-status readiness-{readiness.status}">
+						{readiness.status.toUpperCase()}
+					</span>
+				</div>
+				<div
+					class="readiness-progress-track"
+					role="progressbar"
+					aria-valuemin="0"
+					aria-valuemax="100"
+					aria-valuenow={readiness.score}
+				>
+					<div
+						class="readiness-progress-fill readiness-{readiness.status}"
+						style={`width: ${readiness.score}%`}
+					></div>
+				</div>
+			</div>
+			<p class="hint">{readiness.summary}</p>
+			<ul class="readiness-list">
+				{#each readiness.checks as check}
+					<li class:ok={check.ok} class:notok={!check.ok}>
+						<span class="readiness-mark">{check.ok ? 'PASS' : 'WAIT'}</span>
+						<div>
+							<div class="readiness-item-title">{check.label}</div>
+							<div class="readiness-item-detail">{check.details}</div>
+						</div>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</section>
+</div>

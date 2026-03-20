@@ -1,11 +1,11 @@
 {
 	"name": "No Vacancies",
 	"short_name": "No Vacancies",
-	"description": "A choose-your-own-adventure story about invisible labor and load-bearing in relationships",
+	"description": "A motel-noir interactive narrative about invisible labor, pressure, and what finally changes.",
 	"start_url": "/",
 	"display": "standalone",
-	"background_color": "#0d0d0d",
-	"theme_color": "#ff6b6b",
+	"background_color": "#090707",
+	"theme_color": "#120f10",
 	"orientation": "portrait",
 	"icons": [
 		{

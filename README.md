@@ -9,14 +9,20 @@ No Vacancies is an interactive narrative game about invisible labor and relation
 - Story runtime: Grok-only text runtime with hard-fail outage policy
 - PWA assets: `static/manifest.json`, `static/service-worker.js`
 
+UI direction:
+- The app now uses a shared motel-noir shell across `/`, `/play`, `/ending`, `/settings`, and `/debug`.
+- Home is story-forward first, with demo-readiness information kept as an operator panel instead of the emotional centerpiece.
+- Debug/settings remain operational surfaces, but they inherit the same visual system so the app reads as one product.
+
 Demo readiness UX:
 - Home route (`/`) now includes a "Demo Readiness" progress dashboard backed by `/api/demo/readiness`.
 - Score/checks are runtime-derived (provider mode, key presence, outage mode, probe state) so you can quickly gauge demo readiness.
 - Debug route (`/debug`) shows persisted runtime/client/API error events to speed up playthrough troubleshooting.
 
 Play UX:
-- `/play` uses a command-deck layout with clearer scene hierarchy, arc progress meter, and keyboard choice shortcuts (`1`, `2`, `3`) for faster turn selection.
+- `/play` uses a prose-first command-deck layout with atmospheric scene framing, arc progress, and keyboard choice shortcuts (`1`, `2`, `3`) for faster turn selection.
 - `/play` also exposes quick utility controls (restart current run, jump to `/debug`) plus scene/arc/mood chips so operators can triage runs faster during demos.
+- When Grok is misconfigured, `/play` now shows an explicit blocked state with direct paths to `/settings` and `/debug` instead of leaving operators in an ambiguous loading view.
 
 ## Run
 
@@ -78,6 +84,7 @@ Notes:
 - Manifest: `/manifest.json`
 - Service worker: `/service-worker.js`
 - Icons served from `/icons/*`
+- Browser shell metadata and theme color are aligned with the motel-noir redesign in `src/app.html` + `static/manifest.json`
 
 ## Docs Map
 
@@ -85,5 +92,7 @@ Notes:
 - Grok follow-up plan: `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md`
 - Narrative drift cleanup plan: `docs/NARRATIVE_DRIFT_CLEANUP_EXECUTION_PLAN_2026-02-13.md`
 - Narrative drift remaining work: `docs/NARRATIVE_DRIFT_REMAINING_WORK_2026-02-13.md`
+- UI ship exec plan: `docs/UI_SHIP_EXEC_PLAN_2026-03-19.md`
 - Archived legacy local narrative plan: `docs/archive/2026-02-13_local_narrative_upgrade_plan.md`
+- Archived legacy static shell: `docs/archive/2026-03-19_legacy_static_shell/`
 - Gemini decommission plan: `docs/GEMINI_DECOMMISSION_EXECUTION_PLAN.md`

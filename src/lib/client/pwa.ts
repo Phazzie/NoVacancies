@@ -1,4 +1,5 @@
-import { browser } from '$app/environment';
+import { browser, dev } from '$app/environment';
+import { appendDebugError } from '$lib/debug/errorLog';
 
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
@@ -18,7 +19,9 @@ export async function registerPwaServiceWorker(): Promise<ServiceWorkerRegistrat
 	}
 
 	if (!isSecureOrigin()) {
-		console.warn('[PWA] Service worker skipped on insecure origin');
+		if (dev) {
+			console.warn('[PWA] Service worker skipped on insecure origin');
+		}
 		return null;
 	}
 
@@ -28,7 +31,14 @@ export async function registerPwaServiceWorker(): Promise<ServiceWorkerRegistrat
 		});
 		return registration;
 	} catch (error) {
-		console.warn('[PWA] Service worker registration failed:', error);
+		appendDebugError({
+			scope: 'pwa',
+			message: 'Service worker registration failed',
+			details: { error: error instanceof Error ? error.message : String(error) }
+		});
+		if (dev) {
+			console.warn('[PWA] Service worker registration failed:', error);
+		}
 		return null;
 	}
 }
