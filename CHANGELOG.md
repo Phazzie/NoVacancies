@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **CI Noise Reduction:** Added workflow concurrency cancellation, split the blocking GitHub Actions gate into explicit legacy-guard and runtime-smoke steps, and limited Tier 2 Claude evaluation plus the live provider canary to `main` pushes/manual runs so PR checks stay deterministic (`.github/workflows/narrative-quality.yml`, `README.md`).
 - **Builder Neutrality Hardening:** Switched the builder's initial and fallback draft scaffold to the neutral `starter-kit` story so authoring no longer seeds Sydney/motel-specific copy when AI generation is unavailable (`src/routes/builder/+page.svelte`, `src/lib/server/ai/builder.ts`, `src/lib/builder/store.ts`).
 - **Active Story Branding Wiring:** Moved shared shell and home-route presentation onto story-level metadata so `PUBLIC_STORY_ID` now changes visible branding as well as runtime behavior/readiness metadata (`src/lib/stories/types.ts`, `src/lib/stories/no-vacancies/index.ts`, `src/lib/stories/starter-kit/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`).
 - **Builder Discoverability Test Coverage:** Fixed the primary-nav Builder link target and added coverage for nav discoverability, neutral builder fallback, and starter-kit home branding in runtime smoke tests (`src/routes/+layout.svelte`, `tests/e2e/demo-reliability.spec.js`, `tests/storyEngineRuntimeSelection.js`, `tests/unit/builderHelpers.spec.ts`).
@@ -29,7 +30,6 @@
 ### Security
 
 - **Hardening:** Sanitized `/api/demo/readiness` output to prevent leakage of internal configuration details (e.g., specific provider usage, auth bypass status).
-
 
 ## [Unreleased] - 2026-02-07
 

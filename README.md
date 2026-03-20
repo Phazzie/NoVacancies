@@ -10,21 +10,25 @@ No Vacancies is an interactive narrative game about invisible labor and relation
 - PWA assets: `static/manifest.json`, `static/service-worker.js`
 
 UI direction:
+
 - The app now uses a shared motel-noir shell across `/`, `/play`, `/ending`, `/settings`, and `/debug`.
 - Home is story-forward first, with demo-readiness information kept as an operator panel instead of the emotional centerpiece.
 - Debug/settings remain operational surfaces, but they inherit the same visual system so the app reads as one product.
 
 Demo readiness UX:
+
 - Home route (`/`) now includes a "Demo Readiness" progress dashboard backed by `/api/demo/readiness`.
 - Score/checks are runtime-derived (provider mode, key presence, outage mode, probe state, active story id/title) so you can quickly gauge demo readiness.
 - Debug route (`/debug`) shows persisted runtime/client/API error events to speed up playthrough troubleshooting.
 
 Play UX:
+
 - `/play` uses a prose-first command-deck layout with atmospheric scene framing, arc progress, and keyboard choice shortcuts (`1`, `2`, `3`) for faster turn selection.
 - `/play` also exposes quick utility controls (restart current run, jump to `/debug`) plus scene/arc/mood chips so operators can triage runs faster during demos.
 - When Grok is misconfigured, `/play` now shows an explicit blocked state with direct paths to `/settings` and `/debug` instead of leaving operators in an ambiguous loading view.
 
 Builder UX:
+
 - `/builder` starts from a plain-language premise, generates a first draft via `/api/builder/generate-draft`, and then lets you edit the resulting story definition in-place.
 - Prose-bearing fields can be reviewed with `/api/builder/evaluate-prose`, which is AI-first but falls back to a deterministic behavioral/concreteness rubric if Grok is unavailable.
 - Current builder drafts persist locally in the browser so authors can leave and return without losing the working draft.
@@ -48,6 +52,7 @@ cp .env.example .env.local
 ```
 
 Server/runtime variables used by the SvelteKit AI provider layer:
+
 - `AI_PROVIDER`: `grok` only (`mock` is disabled).
 - `AI_OUTAGE_MODE`: `hard_fail` (required in preview/production).
 - `XAI_API_KEY`: required in Grok-only mode.
@@ -58,10 +63,10 @@ Server/runtime variables used by the SvelteKit AI provider layer:
 - `PUBLIC_STORY_ID`: optional active story cartridge id (defaults to `no-vacancies`; unknown ids fail fast at runtime).
 
 Default mode policy:
+
 - Text defaults to Grok (`AI Generated` mode in settings).
 - Images default to pre-generated/static unless `ENABLE_GROK_IMAGES=1`.
 - If Grok is unavailable or misconfigured, requests fail fast (no mock fallback path).
-
 
 ## Story Engine + Builder
 
@@ -75,12 +80,14 @@ The app runtime now supports a story-definition seam so story content can be iso
 - Shared shell/home branding also reads from the active story definition, so visible presentation stays aligned with runtime cartridge selection.
 
 To add a new story cartridge:
+
 1. Create `src/lib/stories/<story-id>/index.ts` implementing `StoryDefinition`.
 2. Register it in `src/lib/stories/index.ts`.
 3. Provide prompts, context translators, lesson data, initial state defaults, and UI image mappings in the cartridge.
 4. Validate it with the story-registry and runtime-selection smoke tests.
 
 Builder surfaces:
+
 - Route: `/builder`
 - Draft generation API: `/api/builder/generate-draft`
 - Prose evaluation API: `/api/builder/evaluate-prose`
@@ -105,10 +112,13 @@ npm run test:e2e
 ```
 
 Notes:
+
 - `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, and invalid-id fail-fast behavior).
 - `npm run test:narrative` runs deterministic Tier 1 source/contract gates for prompt wiring, context coverage, continuity dimensions, and builder/story-registry integration. It is a structural regression suite, not a full fixture-scored prose evaluation pass.
 - `npm run test:e2e` runs Playwright against the SvelteKit app, including the builder flow and route-shell checks.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
+- GitHub PRs run only the blocking Tier 1 workflow gate. Tier 2 Claude evaluation and the live provider canary run on `main` pushes or manual workflow dispatch so PR feedback stays deterministic and lower-noise.
+- GitHub Actions now cancel superseded in-progress runs for the same PR/branch, which reduces duplicate check spam while iterating quickly.
 
 ## PWA
 
