@@ -74,6 +74,12 @@
 				<span class="route-index">05</span>
 				<span>Ending</span>
 			</a>
+			{#if $page.url.pathname === '/debug'}
+				<a href="/debug" class:active={true} aria-current="page">
+					<span class="route-index">06</span>
+					<span>Debug</span>
+				</a>
+			{/if}
 		</nav>
 	</header>
 

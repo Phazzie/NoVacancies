@@ -928,6 +928,93 @@ padding: 8px 12px;
 	gap: 10px;
 }
 
+.operator-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	align-items: center;
+	font-size: 0.9rem;
+	color: var(--text-100);
+}
+
+.operator-status {
+	display: grid;
+	gap: 10px;
+}
+
+.operator-summary strong {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 8px;
+	border-radius: 999px;
+	background: rgba(237, 178, 110, 0.12);
+	color: var(--amber-300);
+	font-size: 0.72rem;
+	letter-spacing: 0.08em;
+}
+
+.operator-issues {
+	margin: 0;
+	padding-left: 18px;
+	display: grid;
+	gap: 6px;
+	color: var(--text-300);
+	font-size: 0.9rem;
+}
+
+.operator-checks {
+	display: grid;
+	gap: 10px;
+	padding-top: 4px;
+}
+
+.operator-checks summary {
+	cursor: pointer;
+	font-size: 0.82rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-200);
+}
+
+.operator-check-list {
+	margin: 8px 0 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 8px;
+}
+
+.operator-check-list li {
+	display: grid;
+	gap: 3px;
+	padding: 10px 12px;
+	border-radius: 14px;
+	border: 1px solid var(--line-soft);
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.operator-check-list strong {
+	font-size: 0.68rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--amber-300);
+}
+
+.operator-check-list li.operator-check-ok strong {
+	color: var(--ok-ink);
+}
+
+.operator-check-list span {
+	color: var(--text-100);
+	font-weight: 700;
+}
+
+.operator-check-list small {
+	color: var(--text-300);
+	font-size: 0.82rem;
+}
+
 .settings-section h3 {
 	font-size: 1.25rem;
 }
