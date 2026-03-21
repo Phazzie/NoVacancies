@@ -1429,3 +1429,45 @@ p {
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ── Desktop side-by-side play layout ──────────────────────────────────────
+   Activates at ≥1024px: image col ≥324px (portrait readable), text col
+   ≥648px (≥48ch). Below 1024px the stacked layout applies unchanged.
+   Pixel math at 1280px (story-stage = 1160px, gap = 20px):
+     1fr 2fr → image 380px, text 760px, reading area 682px ≈ 57.6ch ✓
+   Breakpoint: 1024px gives image col 324px (meets 320px face-visibility min).
+──────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 1024px) {
+	/* Two columns: image 1fr (~380px at 1280px), text 2fr (~760px) */
+	.story-stage {
+		grid-template-columns: 1fr 2fr;
+		gap: 12px 20px;      /* row 12px (header ↔ content), column 20px (image | text) */
+		align-items: start;  /* items size to content; required for sticky to work */
+	}
+
+	/* Header spans both columns */
+	.story-route-head {
+		grid-column: 1 / -1;
+	}
+
+	/* Image column: sticky so it stays visible while player scrolls through text.
+	   top = 14px (nav sticky-top) + ~64px (nav height) + 14px (clearance) = 92px */
+	.scene-hero {
+		position: sticky;
+		top: 92px;
+	}
+
+	/* Image fills viewport height minus nav — not the fixed clamp fraction.
+	   112px = 14 (nav top) + 64 (nav height) + 20 (nav margin-bottom) + 14 (clearance) */
+	.scene-hero-image {
+		height: calc(100vh - 112px);
+		min-height: 420px;
+		max-height: 720px;
+	}
+
+	/* Story body fills the 2fr column; remove the stacked-layout overlap margin */
+	.story-body {
+		width: auto;
+		margin: 0;
+	}
+}
