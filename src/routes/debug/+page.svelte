@@ -76,7 +76,7 @@
 					<li class="debug-log-item">
 						<div class="debug-log-head">
 							<span class="debug-scope">{entry.scope}</span>
-							<time>{new Date(entry.timestamp).toLocaleString()}</time>
+							<time>{hydrated ? new Date(entry.timestamp).toLocaleString() : entry.timestamp}</time>
 						</div>
 						<p class="debug-message">{entry.message}</p>
 						{#if entry.details}
