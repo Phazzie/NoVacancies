@@ -74,14 +74,12 @@
 				<span class="route-index">05</span>
 				<span>Ending</span>
 			</a>
-			<a
-				href="/debug"
-				class:active={$page.url.pathname === '/debug'}
-				aria-current={$page.url.pathname === '/debug' ? 'page' : undefined}
-			>
-				<span class="route-index">06</span>
-				<span>Debug</span>
-			</a>
+			{#if $page.url.pathname === '/debug'}
+				<a href="/debug" class:active={true} aria-current="page">
+					<span class="route-index">06</span>
+					<span>Debug</span>
+				</a>
+			{/if}
 		</nav>
 	</header>
 
