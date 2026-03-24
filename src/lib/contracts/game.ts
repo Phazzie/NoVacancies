@@ -188,8 +188,8 @@ export function mergeThreadUpdates(
 
 	for (const key of Object.keys(updates) as Array<keyof StoryThreads>) {
 		if (key === 'boundariesSet') {
-			if (Array.isArray(updates.boundariesSet) && updates.boundariesSet.length > 0) {
-				merged.boundariesSet = [...merged.boundariesSet, ...updates.boundariesSet];
+			if (Array.isArray(updates.boundariesSet)) {
+				merged.boundariesSet = [...updates.boundariesSet];
 			}
 			continue;
 		}
