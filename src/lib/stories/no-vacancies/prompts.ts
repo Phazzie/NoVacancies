@@ -325,7 +325,7 @@ export function getRecoveryPrompt(invalidOutput: string): string {
 	return `Your previous response was not valid JSON.
 
 Previous output:
-${invalidOutput.substring(0, 500)}...
+${invalidOutput.substring(0, 1500)}...
 
 Please respond ONLY with valid JSON in this exact format:
 Do not use markdown code fences.
