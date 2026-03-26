@@ -70,7 +70,7 @@
 	function safeParseNonNegativeInt(value: string | null): number {
 		if (value === null) return 0;
 		const parsed = parseInt(value, 10);
-		if (!Number.isFinite(parsed) || isNaN(parsed)) return 0;
+		if (!Number.isFinite(parsed)) return 0;
 		return Math.max(0, parsed);
 	}
 
@@ -160,8 +160,8 @@
 				/>
 			</div>
 		{/if}
-		{#if shareFailed && !shareUrlVisible}
-			<p class="share-status-error">Could not access clipboard.</p>
+		{#if shareFailed}
+			<p class="share-status-error">Could not access clipboard. Copy the link below:</p>
 		{/if}
 	{/if}
 </section>
