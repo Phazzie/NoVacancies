@@ -318,7 +318,8 @@ export class GrokAiProvider implements AiProvider {
 				tokenUsage: first.usage ?? null
 			});
 			return { scene: parsed, usage: first.usage };
-		} catch {
+		} catch (e) {
+			emitAiServerTelemetry('parse_fail', { level: 1, sample: first.text.slice(0, 300), error: String(e) });
 			// Continue to parse level 2 recovery path.
 		}
 
@@ -337,7 +338,8 @@ export class GrokAiProvider implements AiProvider {
 				tokenUsage: recovery.usage ?? first.usage ?? null
 			});
 			return { scene: parsed, usage: recovery.usage ?? first.usage };
-		} catch {
+		} catch (e) {
+			emitAiServerTelemetry('parse_fail', { level: 2, sample: recovery.text.slice(0, 300), error: String(e) });
 			// fall through to typed failure
 		}
 

@@ -107,10 +107,12 @@ export function createApiStoryService(config: ApiStoryServiceConfig = {}): Story
 			return ensureSceneShape(payload.scene, '/story/opening');
 		},
 		async getNextScene(currentSceneId, choiceId, gameState, narrativeContext = null, options = {}) {
+			// sceneLog intentionally omitted — server uses narrativeContext + selected top-level state only
+			const { sceneLog: _sceneLog, ...gameStateForTransmission } = gameState;
 			const payload = await postJson<{ scene: unknown }>(fetchImpl, endpoint('/story/next'), {
 				currentSceneId,
 				choiceId,
-				gameState,
+				gameState: gameStateForTransmission,
 				narrativeContext,
 				options
 			});

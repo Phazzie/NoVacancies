@@ -224,6 +224,7 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 		}
 
 		processing = true;
+		const historyLengthSnapshot = gameState.history.length;
 		gameState.history.push({
 			sceneId: gameState.currentSceneId,
 			choiceId,
@@ -231,6 +232,7 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 			timestamp: now()
 		});
 
+		let sceneApplied = false;
 		try {
 			const narrativeContext = buildNarrativeContext(gameState, { lastChoiceText: choiceText });
 			const nextScene = await storyService.getNextScene(
@@ -246,8 +248,12 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 				throw new Error('Story service returned invalid scene payload');
 			}
 			applyScene(nextScene);
+			sceneApplied = true;
 			return buildTurnResult(nextScene);
 		} finally {
+			if (!sceneApplied) {
+				gameState.history.length = historyLengthSnapshot;
+			}
 			processing = false;
 		}
 	};
