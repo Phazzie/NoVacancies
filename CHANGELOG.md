@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] - 2026-03-20
+## [1.0.0] - 2026-03-26
 
 ### Changed
 
@@ -10,10 +10,6 @@
 - **Builder Discoverability Test Coverage:** Fixed the primary-nav Builder link target and added coverage for nav discoverability, neutral builder fallback, and starter-kit home branding in runtime smoke tests (`src/routes/+layout.svelte`, `tests/e2e/demo-reliability.spec.js`, `tests/storyEngineRuntimeSelection.js`, `tests/unit/builderHelpers.spec.ts`).
 - **Readiness + Smoke Test Hardening:** Preserved critical readiness gating during live probe enrichment, reduced public probe-detail leakage, and made the runtime selection smoke test reuse the current npm entrypoint instead of assuming `npm` is on `PATH` (`src/routes/api/demo/readiness/+server.ts`, `tests/storyEngineRuntimeSelection.js`).
 - **Narrative Gate Documentation Clarified:** Updated docs to describe `npm run test:narrative` as a structural source/contract regression suite rather than a full fixture-scored prose-quality floor (`README.md`).
-
-## [Unreleased] - 2026-03-19
-
-### Changed
 
 - **UI-First Motel-Noir Redesign:** Rebuilt the shared shell and route presentation around a darker motel-noir visual system so `/`, `/play`, `/ending`, `/settings`, and `/debug` read as one authored product instead of a mixed utility dashboard (`src/app.css`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`, `src/routes/settings/+page.svelte`, `src/routes/debug/+page.svelte`, `src/routes/ending/+page.svelte`).
 - **Play Route Narrative Focus:** Reworked `/play` into a prose-first command deck with stronger scene framing, clearer utility controls, improved blocked/error handling, and direct operator exits to settings/debug when Grok is unavailable (`src/routes/play/+page.svelte`, `src/app.css`).
@@ -25,15 +21,7 @@
 - **Builder APIs + Authoring Route:** Added AI-first draft generation and prose evaluation endpoints plus a functional `/builder` route that starts from premise -> draft generation -> editable story fields with on-blur feedback (`src/lib/server/ai/builder.ts`, `src/routes/api/builder/**`, `src/routes/builder/+page.svelte`, `src/lib/builder/store.ts`).
 - **Story Abstraction Validation Expansion:** Added story-registry, narrative-context abstraction, builder-helper, runtime selection, and builder e2e coverage; `npm test` now includes cartridge selection smoke checks and Playwright covers the new builder route (`tests/storyEngineRuntimeSelection.js`, `tests/unit/storyRegistry.spec.ts`, `tests/unit/narrativeContextAbstraction.spec.ts`, `tests/unit/builderHelpers.spec.ts`, `tests/e2e/demo-reliability.spec.js`, `package.json`).
 
-## [Unreleased] - 2026-02-22
-
-### Security
-
 - **Hardening:** Sanitized `/api/demo/readiness` output to prevent leakage of internal configuration details (e.g., specific provider usage, auth bypass status).
-
-## [Unreleased] - 2026-02-07
-
-### Changed
 
 - **Prompt Voice-Safety Reinforcement:** Added explicit forbidden-phrasing guidance to the main system prompt and recovery prompt path so didactic/therapy-summary drift is redirected to behavior+motive+consequence framing (`src/lib/server/ai/narrative.ts`).
 - **Narrative Prompt Encoding Cleanup:** Replaced mojibake-affected prompt markers/punctuation with ASCII-safe wording in active narrative prompt assets (`src/lib/server/ai/narrative.ts`, `docs/NARRATIVE_DRIFT_REMAINING_WORK_2026-02-13.md`).
@@ -134,10 +122,6 @@
 - **Cache Bust for Stale UI:** Bumped service worker cache key to `sydney-story-v4-sveltekit` so old cached shells (including stale key-entry UI) are invalidated on refresh.
 - **PWA Logging Health:** Wrapped production console warnings in `dev` check and moved PWA registration failures to a persistent debug log (`src/lib/client/pwa.ts`).
 
-## [Unreleased] - 2026-02-05
-
-### Changed
-
 - **Narrative Context:** Added app-owned `NarrativeContext` building with hard budget enforcement, older-scene compression, boundary/lesson/thread narrative translations, and context-mode prompt path.
 - **Context Policy Update:** Increased default context budget to `12000` chars and changed truncation policy to preserve the last two full scenes plus lesson/boundary/thread narrative lines; only older compressed summaries are now trimmed.
 - **Prompt Hardening:** Added Trina behavior examples to `SYSTEM_PROMPT`, introduced generalized thread-state narrative lines, boundary-specific translation mapping, and 17-line lesson-history mapping.
@@ -157,10 +141,6 @@
 - **Prompt Depth:** Expanded lesson payload in `SYSTEM_PROMPT` formatting to include per-lesson emotional stakes, common triggers, and unconventional angle (in addition to title/quote/insight).
 - **Continuity Language:** Replaced stale `laptop` continuity anchor with `phone/phones/popsocket` anchors in provider quality checks.
 - **Voice Anchors:** Added two high-signal narrative lines to `SYSTEM_PROMPT` as explicit voice-ceiling examples so model tone targets stay sharp across generations.
-
-## [Unreleased] - 2026-02-03
-
-### Changed
 
 - **Character Overhaul:** Renamed "Marcus" to "Oswaldo" throughout the codebase, prompts, and assets. Oswaldo is now defined as more actively toxic (gaslighting, weaponized incompetence) rather than just lazy.
 - **Narrative Logic:** Shifted core motivation metaphor from "Trapped by Empathy" to "Sunk Cost/Double Down". Sydney stays because calling it quits means admitting she was wrong.
