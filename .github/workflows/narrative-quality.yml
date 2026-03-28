@@ -72,6 +72,8 @@ jobs:
 
             - name: E2E — demo reliability
               run: npx playwright test tests/e2e/demo-reliability.spec.js --reporter=list
+              env:
+                  E2E_SERVER_COMMAND: npm run serve
 
             - name: Upload Tier 1 artifacts
               if: always()
