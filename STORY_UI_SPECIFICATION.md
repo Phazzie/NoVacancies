@@ -33,10 +33,9 @@
    - Show visual arc progress meter
    - Label current arc stage: "Opening Pressure", "Rising Pressure", "Consequence", "Endgame"
    - Calculate arc stage from scene count (0-3: Opening, 4-7: Rising, 8-11: Consequence, 12+: Endgame)
-   - Show pressure indicator pill with mood context
 
 5. **Display Mood Indicator**
-   - When `mood` field present on scene: display mood chip (neutral, tense, hopeful, dark, triumphant)
+   - When `mood` field present on scene: display optional mood context (neutral, tense, hopeful, dark, triumphant)
    - Show as optional visual indicator
 
 6. **Display Meta Information**
@@ -53,7 +52,7 @@
 8. **Handle Processing State**
    - Disable choice buttons while API request is in-flight
    - Show loading indicator during scene generation
-   - Display choice text that explains next pressure point to create anticipation
+   - Display anticipatory loading copy tied to the next scene transition
 
 9. **Handle Error/Blocked State**
    - When Grok API is unavailable/misconfigured: display explicit blocked state
@@ -102,10 +101,6 @@
 
 - **Keyboard Hotkeys:** 1/2/3 for rapid choice selection
 - **Restart Run:** Action to reset current game and start over (returns to opening scene)
-- **Scene Chips:** Display scene ID and sequence number for operator triage
-- **Arc Chips:** Display arc stage and pressure indicator
-- **Mood Chips:** Optional mood visualization tied to scene mood field
-- **Debug Shortcut:** Quick access button to `/debug` for error troubleshooting during live play
 - **Arc Progress Meter:** Visual indicator showing narrative position within current arc stage
 - **Prose-First Layout:** Scene image and text in visual hierarchy that prioritizes narrative readability on mobile (no oversized image dominance)
 - **Lesson Toggle:** Settings option to hide/show lesson insights (`showLessons` boolean)
