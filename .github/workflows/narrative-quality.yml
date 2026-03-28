@@ -18,7 +18,7 @@ jobs:
     quality-gate:
         name: Blocking Quality Gate (Tier 1)
         runs-on: ubuntu-latest
-        timeout-minutes: 20
+        timeout-minutes: 30
         steps:
             - uses: actions/checkout@v4
 
@@ -44,6 +44,25 @@ jobs:
 
             - name: Narrative quality — Tier 1 blocking gates
               run: npm run test:narrative
+
+            - name: Install Playwright browsers
+              run: npx playwright install --with-deps chromium
+
+            - name: Unit tests
+              run: npx playwright test --config=playwright-unit.config.js
+
+            - name: Build
+              run: npm run build
+
+            - name: E2E — demo reliability
+              run: npx playwright test tests/e2e/demo-reliability.spec.js --reporter=list
+              env:
+                  AI_PROVIDER: grok
+                  ENABLE_GROK_TEXT: '1'
+                  ENABLE_GROK_IMAGES: '0'
+                  AI_OUTAGE_MODE: hard_fail
+                  AI_AUTH_BYPASS: '0'
+                  ENABLE_PROVIDER_PROBE: '0'
 
             - name: Upload Tier 1 artifacts
               if: always()
