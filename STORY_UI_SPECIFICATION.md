@@ -58,10 +58,11 @@
 9. **Handle Error/Blocked State**
    - When Grok API is unavailable/misconfigured: display explicit blocked state
    - Show user-friendly error mapping (missing API key, auth failure, rate limit, timeout, provider down)
-   - Provide direct navigation to `/settings` (to configure API key)
+   - For missing/misconfigured API key, explain that configuration is server-side (`XAI_API_KEY`) and requires operator/redeploy action
+   - Keep `/settings` focused on runtime toggles/readiness and `/debug` for diagnostics
    - Provide direct navigation to `/debug` (to see detailed error log)
    - Do NOT show ambiguous loading spinner
-   - Do NOT fall back to mock playthrough
+   - If fallback is introduced, it must preserve playability and never force an invalid/abrupt ending path
 
 10. **Apply Motel-Noir Design System**
     - Use dark atmospheric aesthetic (not bright or utility-forward)
@@ -88,7 +89,7 @@
 
 1. Use external font dependencies
 2. Introduce Content Security Policy vulnerabilities
-3. Implement mock fallback or static story mode
+3. Expose user-facing toggles between AI runtime and fallback/static modes
 4. Show "Loading..." spinner when Grok is misconfigured
 5. Toggle between "AI Mode" and "Mock Mode" or "Static Story"
 6. Allow user API key entry in browser
@@ -227,9 +228,9 @@
 
 ### Error Handling
 
-- **Hard-Fail Outage Policy:** When Grok is unavailable, fail explicitly; do NOT fall back to mock mode
+- **Outage Policy:** Preserve playability when feasible via bounded fallback behavior; if startup is fully blocked, fail explicitly with actionable operator messaging
 - **User-Friendly Error Mapping:**
-  - Missing/invalid API key → "Configure your API key in Settings"
+  - Missing/invalid API key → "AI is not configured yet. Add `XAI_API_KEY` to the server environment, then redeploy."
   - Auth failure → "Authentication failed; verify your key"
   - Rate limit → "Rate limited; try again later"
   - Timeout → "Request timed out; check your connection"
@@ -247,12 +248,12 @@
 
 ### Constraints & Anti-Patterns
 
-- **No Mock Mode:** Grok-only runtime; no mock fallback, no "Static Story" toggle
+- **No User-Exposed Mode Toggle:** Do not expose AI-vs-fallback/static mode switching in the public UI
 - **No External Fonts:** System fonts only; no CDN/web font dependencies
 - **No CSP Violations:** Content Security Policy must pass; no unsafe inline scripts
 - **No Template Artifacts:** No leftover "default app" styling, no unused SvelteKit placeholders
 - **No Unused Fields:** Builder does NOT persist arbitrary story metadata beyond the defined `BuilderStoryDraft` shape
-- **No Synthetic Content:** No auto-generated "filler" scenes or AI fallback narratives beyond hard-fail error states
+- **Fallback Guardrails:** Any fallback path must be schema-valid, bounded, and preserve run continuity
 - **No Client Key Entry:** Users do NOT enter API key in browser; credentials stay server-side only
 
 ---
@@ -349,12 +350,12 @@ BuilderFieldFeedback {
 
 - **POST `/api/story/opening`** → Returns initial `Scene` with story threads initialized
 - **POST `/api/story/next`** → Accepts `{choiceId, narrativeContext}` → Returns next `Scene`
-- **GET `/api/image/:imageKey`** → Resolves image key to file path or generates image
+- **POST `/api/image`** → Accepts `{prompt}` → Returns `{image}` payload from image resolver
 
 ### Story Builder Endpoints
 
-- **POST `/api/builder/generate-draft`** → Accepts `{premise}` → Returns `BuilderStoryDraft`
-- **POST `/api/builder/evaluate-prose`** → Accepts `{field, value}` → Returns `BuilderFieldFeedback`
+- **POST `/api/builder/generate-draft`** → Accepts `{premise}` → Returns `{draft: BuilderStoryDraft, source: 'ai' | 'fallback'}`
+- **POST `/api/builder/evaluate-prose`** → Accepts `{prose}` → Returns `{feedback: BuilderFieldFeedback, source: 'ai' | 'fallback'}`
 
 ### Utility Endpoints
 
@@ -371,7 +372,7 @@ BuilderFieldFeedback {
 4. Ensure `/`, `/play`, `/ending`, `/settings`, and `/debug` feel like one authored product.
 5. Blocked `/play` state must be explicit and actionable (no ambiguous spinners).
 6. All validation commands must pass (`npm run check`, `npm run lint`, `npm test`, `npm run test:narrative`, `npm run test:e2e`).
-7. Hard-fail outage policy: fail explicitly when Grok unavailable; no mock fallback.
+7. Outage handling must align with repo invariant: preserve playability via bounded fallback where possible; otherwise fail explicitly with actionable operator messaging.
 8. Builder fallback must use neutral story scaffold, not Sydney/motel copy.
 
 ---
