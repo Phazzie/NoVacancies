@@ -1,7 +1,6 @@
-import { validateEndingType, validateScene, type Scene, type StoryThreads } from '$lib/contracts';
+import { validateScene, type Scene } from '$lib/contracts';
 import type { AiConfig } from '$lib/server/ai/config';
-import { getActiveStoryCartridge } from '$lib/stories';
-import { evaluateStorySanity } from '$lib/server/ai/sanity';
+import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
 import {
 	AiProviderError,
 	type AiProvider,
@@ -11,8 +10,12 @@ import {
 	type ProviderProbeResult,
 	isRetryableStatus
 } from '$lib/server/ai/provider.interface';
+import { evaluateStorySanity } from '$lib/server/ai/sanity';
 import { emitAiServerTelemetry } from '$lib/server/ai/telemetry';
-import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
+import { normalizeSceneCandidate } from '$lib/server/ai/providers/grok/sceneNormalizer';
+import { parseSceneCandidate, type SceneCandidate } from '$lib/server/ai/providers/grok/sceneParser';
+import { executeRequestWithTimeoutAndRetry } from '$lib/server/ai/providers/grok/transport';
+import { getActiveStoryCartridge } from '$lib/stories';
 
 const XAI_CHAT_URL = 'https://api.x.ai/v1/chat/completions';
 const XAI_IMAGE_URL = 'https://api.x.ai/v1/images/generations';
@@ -26,162 +29,12 @@ interface ChatResponse {
 	usage?: Record<string, unknown>;
 }
 
-interface SceneCandidate {
-	sceneId?: unknown;
-	sceneText?: unknown;
-	choices?: Array<{ id?: unknown; text?: unknown; outcome?: unknown }>;
-	lessonId?: unknown;
-	imageKey?: unknown;
-	imagePrompt?: unknown;
-	isEnding?: unknown;
-	endingType?: unknown;
-	mood?: unknown;
-	storyThreadUpdates?: Partial<StoryThreads> | null;
-}
-
 interface ChatCallResult {
 	text: string;
 	usage?: Record<string, unknown>;
 	retryCount: number;
 	latencyMs: number;
 }
-
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function extractJsonObject(text: string): string {
-	const trimmed = text.trim();
-	if (!trimmed) throw new Error('Empty provider response');
-
-	const candidates: string[] = [];
-	const seen = new Set<string>();
-
-	const pushCandidate = (value: string) => {
-		const candidate = value.trim();
-		if (!candidate || seen.has(candidate)) return;
-		seen.add(candidate);
-		candidates.push(candidate);
-	};
-
-	const fencedRegex = /```(?:json)?\s*([\s\S]*?)\s*```/gi;
-	let fencedMatch: RegExpExecArray | null = null;
-	while ((fencedMatch = fencedRegex.exec(trimmed)) !== null) {
-		if (fencedMatch[1]) pushCandidate(fencedMatch[1]);
-	}
-
-	if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-		pushCandidate(trimmed);
-	}
-
-	// Scan for balanced JSON object slices while respecting quoted strings.
-	const maxObjectsToScan = 10;
-	let objectsFound = 0;
-	for (let start = 0; start < trimmed.length && objectsFound < maxObjectsToScan; start += 1) {
-		if (trimmed[start] !== '{') continue;
-
-		let depth = 0;
-		let inString = false;
-		let escaped = false;
-
-		for (let i = start; i < trimmed.length; i += 1) {
-			const ch = trimmed[i];
-			if (inString) {
-				if (escaped) {
-					escaped = false;
-				} else if (ch === '\\') {
-					escaped = true;
-				} else if (ch === '"') {
-					inString = false;
-				}
-				continue;
-			}
-
-			if (ch === '"') {
-				inString = true;
-				continue;
-			}
-			if (ch === '{') depth += 1;
-			if (ch === '}') {
-				depth -= 1;
-				if (depth === 0) {
-					pushCandidate(trimmed.slice(start, i + 1));
-					objectsFound += 1;
-					start = i;
-					break;
-				}
-			}
-		}
-	}
-
-	for (const candidate of candidates) {
-		try {
-			const parsed = JSON.parse(candidate);
-			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-				return candidate;
-			}
-		} catch {
-			// try next candidate
-		}
-	}
-
-	throw new Error('No parseable JSON object found in provider response');
-}
-
-function normalizeChoiceId(text: string, index: number): string {
-	const normalized = text
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '_')
-		.replace(/^_+|_+$/g, '')
-		.slice(0, 64);
-	return normalized || `choice_${index + 1}`;
-}
-
-function normalizeScene(candidate: SceneCandidate, fallbackSceneId: string): Scene {
-	const choices = Array.isArray(candidate.choices)
-		? candidate.choices
-				.map((choice, index) => {
-					const text = typeof choice?.text === 'string' ? choice.text.trim() : '';
-					if (!text) return null;
-					const id =
-						typeof choice.id === 'string' && /^[a-z0-9_-]{1,80}$/i.test(choice.id)
-							? choice.id
-							: normalizeChoiceId(text, index);
-					return {
-						id,
-						text,
-						outcome: typeof choice.outcome === 'string' ? choice.outcome : undefined
-					};
-				})
-				.filter((value): value is NonNullable<typeof value> => value !== null)
-		: [];
-
-	const isEnding = Boolean(candidate.isEnding);
-	const endingType = isEnding ? validateEndingType(candidate.endingType) : null;
-
-	const scene: Scene = {
-		sceneId: typeof candidate.sceneId === 'string' ? candidate.sceneId || fallbackSceneId : fallbackSceneId,
-		sceneText: typeof candidate.sceneText === 'string' ? candidate.sceneText.trim() : '',
-		choices,
-		lessonId: typeof candidate.lessonId === 'number' ? candidate.lessonId : null,
-		imageKey: typeof candidate.imageKey === 'string' ? candidate.imageKey : 'hotel_room',
-		imagePrompt: typeof candidate.imagePrompt === 'string' ? candidate.imagePrompt : undefined,
-		isEnding,
-		endingType,
-		mood:
-			typeof candidate.mood === 'string' &&
-			['neutral', 'tense', 'hopeful', 'dark', 'triumphant'].includes(candidate.mood)
-				? (candidate.mood as Scene['mood'])
-				: undefined,
-		storyThreadUpdates:
-			candidate.storyThreadUpdates && typeof candidate.storyThreadUpdates === 'object'
-				? candidate.storyThreadUpdates
-				: null
-	};
-
-	return scene;
-}
-
 
 function getCartridgePrompts() {
 	const prompts = getActiveStoryCartridge().prompts;
@@ -219,33 +72,29 @@ export class GrokAiProvider implements AiProvider {
 	}
 
 	private async callChatRaw(prompt: string): Promise<ChatCallResult> {
-		let attempt = 0;
-		const maxAttempts = this.config.maxRetries + 1;
-		let lastError: unknown = null;
-
-		while (attempt < maxAttempts) {
-			const started = Date.now();
-			const controller = new AbortController();
-			const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
-			try {
-				const response = await this.fetchImpl(XAI_CHAT_URL, {
-					method: 'POST',
-					headers: {
-						'content-type': 'application/json',
-						authorization: `Bearer ${this.config.xaiApiKey}`
-					},
-					body: JSON.stringify({
-						model: this.config.grokTextModel,
-						messages: [
-							{ role: 'system', content: getCartridgePrompts().SYSTEM_PROMPT },
-							{ role: 'user', content: prompt }
-						],
-						max_tokens: this.config.maxOutputTokens,
-						temperature: 0.8
-					}),
-					signal: controller.signal
-				});
-
+		const request = await executeRequestWithTimeoutAndRetry<{ text: string; usage?: Record<string, unknown> }>({
+			fetchImpl: this.fetchImpl,
+			url: XAI_CHAT_URL,
+			requestInit: {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					authorization: `Bearer ${this.config.xaiApiKey}`
+				},
+				body: JSON.stringify({
+					model: this.config.grokTextModel,
+					messages: [
+						{ role: 'system', content: getCartridgePrompts().SYSTEM_PROMPT },
+						{ role: 'user', content: prompt }
+					],
+					max_tokens: this.config.maxOutputTokens,
+					temperature: 0.8
+				})
+			},
+			timeoutMs: this.config.requestTimeoutMs,
+			maxRetries: this.config.maxRetries,
+			retryBackoffMs: this.config.retryBackoffMs,
+			execute: async (response) => {
 				if (!response.ok) {
 					const status = response.status;
 					throw new AiProviderError(`xAI chat request failed (${status})`, {
@@ -268,46 +117,25 @@ export class GrokAiProvider implements AiProvider {
 						retryable: false
 					});
 				}
+				return { text, usage: payload.usage };
+			},
+			timeoutError: () => new AiProviderError('xAI request timed out', { code: 'timeout', retryable: true }),
+			fallbackError: () => new AiProviderError('xAI request failed', { code: 'unknown', retryable: false })
+		});
 
-				return {
-					text,
-					usage: payload.usage,
-					retryCount: attempt,
-					latencyMs: Date.now() - started
-				};
-			} catch (error) {
-				lastError = error;
-				const retryable =
-					error instanceof AiProviderError
-						? error.retryable
-						: error instanceof Error && error.name === 'AbortError';
-				if (!retryable || attempt >= maxAttempts - 1) break;
-				const backoff = this.config.retryBackoffMs[Math.min(attempt, this.config.retryBackoffMs.length - 1)];
-				await sleep(backoff);
-			} finally {
-				clearTimeout(timeout);
-			}
-			attempt += 1;
-		}
-
-		if (lastError instanceof AiProviderError) throw lastError;
-		if (lastError instanceof Error && lastError.name === 'AbortError') {
-			throw new AiProviderError('xAI request timed out', { code: 'timeout', retryable: true });
-		}
-		throw new AiProviderError('xAI request failed', { code: 'unknown', retryable: false });
-	}
-
-	private parseSceneCandidate(text: string): SceneCandidate {
-		const json = extractJsonObject(text);
-		return JSON.parse(json) as SceneCandidate;
+		return {
+			text: request.result.text,
+			usage: request.result.usage,
+			retryCount: request.retryCount,
+			latencyMs: request.latencyMs
+		};
 	}
 
 	private async callChat(prompt: string): Promise<{ scene: SceneCandidate; usage?: Record<string, unknown> }> {
 		const first = await this.callChatRaw(prompt);
 
-		// Parse level 1: standard extraction + parse.
 		try {
-			const parsed = this.parseSceneCandidate(first.text);
+			const parsed = parseSceneCandidate(first.text);
 			emitAiServerTelemetry('provider_chat', {
 				requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
 				provider: this.name,
@@ -318,16 +146,14 @@ export class GrokAiProvider implements AiProvider {
 				tokenUsage: first.usage ?? null
 			});
 			return { scene: parsed, usage: first.usage };
-		} catch (e) {
-			emitAiServerTelemetry('parse_fail', { level: 1, sample: first.text.slice(0, 300), error: String(e) });
-			// Continue to parse level 2 recovery path.
+		} catch (error) {
+			emitAiServerTelemetry('parse_fail', { level: 1, sample: first.text.slice(0, 300), error: String(error) });
 		}
 
-		// Parse level 2: recovery prompt, then parse again.
 		const recoveryPrompt = getCartridgePrompts().getRecoveryPrompt(first.text);
 		const recovery = await this.callChatRaw(recoveryPrompt);
 		try {
-			const parsed = this.parseSceneCandidate(recovery.text);
+			const parsed = parseSceneCandidate(recovery.text);
 			emitAiServerTelemetry('provider_chat', {
 				requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
 				provider: this.name,
@@ -338,12 +164,10 @@ export class GrokAiProvider implements AiProvider {
 				tokenUsage: recovery.usage ?? first.usage ?? null
 			});
 			return { scene: parsed, usage: recovery.usage ?? first.usage };
-		} catch (e) {
-			emitAiServerTelemetry('parse_fail', { level: 2, sample: recovery.text.slice(0, 300), error: String(e) });
-			// fall through to typed failure
+		} catch (error) {
+			emitAiServerTelemetry('parse_fail', { level: 2, sample: recovery.text.slice(0, 300), error: String(error) });
 		}
 
-		// All parse attempts failed: throw typed failure (no synthetic fallback scene).
 		throw new AiProviderError('Unable to parse scene from provider response', {
 			code: 'invalid_response',
 			retryable: false
@@ -360,7 +184,7 @@ export class GrokAiProvider implements AiProvider {
 			const { scene } = await this.callChat(prompt);
 			const fallbackSceneId =
 				mode === 'opening' ? 'opening' : `scene_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-			const normalized = normalizeScene(scene, fallbackSceneId);
+			const normalized = normalizeSceneCandidate(scene, fallbackSceneId);
 
 			if (!validateScene(normalized)) {
 				throw new AiProviderError('xAI scene failed contract validation', {
@@ -371,15 +195,11 @@ export class GrokAiProvider implements AiProvider {
 
 			const sanity = evaluateStorySanity(normalized);
 			lastSanityIssues = sanity.issues;
-			if (sanity.ok) {
-				return normalized;
-			}
+			if (sanity.ok) return normalized;
 
 			const canRetryForDrift =
 				sanity.blockingIssues.length === 0 && sanity.retryableIssues.length > 0 && attempt < maxSanityAttempts - 1;
-			if (!canRetryForDrift) {
-				break;
-			}
+			if (!canRetryForDrift) break;
 			attempt += 1;
 		}
 
@@ -407,27 +227,24 @@ export class GrokAiProvider implements AiProvider {
 
 		assertImagePromptGuardrails(input.prompt);
 
-		let attempt = 0;
-		const maxAttempts = this.config.maxRetries + 1;
-		let lastError: unknown = null;
-
-		while (attempt < maxAttempts) {
-			const controller = new AbortController();
-			const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
-			try {
-				const response = await this.fetchImpl(XAI_IMAGE_URL, {
-					method: 'POST',
-					headers: {
-						'content-type': 'application/json',
-						authorization: `Bearer ${this.config.xaiApiKey}`
-					},
-					body: JSON.stringify({
-						model: this.config.grokImageModel,
-						prompt: input.prompt
-					}),
-					signal: controller.signal
-				});
-
+		const request = await executeRequestWithTimeoutAndRetry<GeneratedImage>({
+			fetchImpl: this.fetchImpl,
+			url: XAI_IMAGE_URL,
+			requestInit: {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					authorization: `Bearer ${this.config.xaiApiKey}`
+				},
+				body: JSON.stringify({
+					model: this.config.grokImageModel,
+					prompt: input.prompt
+				})
+			},
+			timeoutMs: this.config.requestTimeoutMs,
+			maxRetries: this.config.maxRetries,
+			retryBackoffMs: this.config.retryBackoffMs,
+			execute: async (response) => {
 				if (!response.ok) {
 					const status = response.status;
 					throw new AiProviderError(`xAI image request failed (${status})`, {
@@ -457,33 +274,21 @@ export class GrokAiProvider implements AiProvider {
 					url: typeof image.url === 'string' ? image.url : undefined,
 					b64: typeof image.b64_json === 'string' ? image.b64_json : undefined
 				};
-			} catch (error) {
-				lastError = error;
-				const retryable =
-					error instanceof AiProviderError
-						? error.retryable
-						: error instanceof Error && error.name === 'AbortError';
-				if (!retryable || attempt >= maxAttempts - 1) break;
-				const backoff = this.config.retryBackoffMs[Math.min(attempt, this.config.retryBackoffMs.length - 1)];
-				await sleep(backoff);
-			} finally {
-				clearTimeout(timeout);
-			}
-			attempt += 1;
-		}
-
-		if (lastError instanceof AiProviderError) throw lastError;
-		if (lastError instanceof Error && lastError.name === 'AbortError') {
-			throw new AiProviderError('xAI image request timed out', {
-				code: 'timeout',
-				retryable: true,
-				status: 504
-			});
-		}
-		throw new AiProviderError('xAI image request failed', {
-			code: 'unknown',
-			retryable: false
+			},
+			timeoutError: () =>
+				new AiProviderError('xAI image request timed out', {
+					code: 'timeout',
+					retryable: true,
+					status: 504
+				}),
+			fallbackError: () =>
+				new AiProviderError('xAI image request failed', {
+					code: 'unknown',
+					retryable: false
+				})
 		});
+
+		return request.result;
 	}
 
 	async probe(): Promise<ProviderProbeResult> {
