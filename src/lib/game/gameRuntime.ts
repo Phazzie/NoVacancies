@@ -2,7 +2,6 @@ import {
 	cloneGameState,
 	cloneScene,
 	validateScene,
-	type EndingType,
 	type GameSettings,
 	type GameState,
 	type Scene
@@ -17,19 +16,12 @@ import {
 import {
 	buildEndingPayload as createEndingPayload,
 	cloneSettings,
-	normalizeEndingList,
-	type EndingPayload
+	normalizeEndingList
 } from './runtime/endingPolicy';
 import { createTurnProcessor, type RuntimeRefs } from './runtime/turnProcessor';
+import type { EndingPayload, GameTurnResult } from './runtime/contracts';
 
-export type { EndingPayload };
-
-export interface GameTurnResult {
-	scene: Scene;
-	gameState: GameState;
-	isEnding: boolean;
-	ending: EndingPayload | null;
-}
+export type { EndingPayload, GameTurnResult };
 
 export interface GameRuntimeOptions {
 	storyService?: StoryService;

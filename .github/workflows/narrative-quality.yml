@@ -42,6 +42,9 @@ jobs:
             - name: Runtime story-selection smoke checks
               run: node tests/storyEngineRuntimeSelection.js
 
+            - name: Unit tests (runtime modules)
+              run: npx playwright test --config playwright.unit.config.ts
+
             - name: Narrative quality — Tier 1 blocking gates
               run: npm run test:narrative
 

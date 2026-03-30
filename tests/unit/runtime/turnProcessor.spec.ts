@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { cloneGameState, type GameState, type Scene } from '../../../src/lib/contracts/game';
 import { createTurnProcessor, type RuntimeRefs } from '../../../src/lib/game/runtime/turnProcessor';
-import type { EndingPayload } from '../../../src/lib/game/runtime/endingPolicy';
+import type { EndingPayload } from '../../../src/lib/game/runtime/contracts';
 
 function makeScene(overrides: Partial<Scene> = {}): Scene {
 	return {
@@ -40,12 +40,17 @@ function createProcessorHarness(overrides: {
 		}
 	};
 
-	const buildTurnResult = (scene: Scene) => ({
-		scene,
-		gameState: cloneGameState(refs.gameState as GameState),
-		isEnding: scene.isEnding,
-		ending: refs.lastEnding
-	});
+	const buildTurnResult = (scene: Scene) => {
+		if (!refs.gameState) {
+			throw new Error('Test setup error: gameState is not initialized');
+		}
+		return {
+			scene,
+			gameState: cloneGameState(refs.gameState),
+			isEnding: scene.isEnding,
+			ending: refs.lastEnding
+		};
+	};
 
 	const buildEndingPayload = (scene: Scene): EndingPayload => ({
 		endingType: scene.endingType ?? 'loop',

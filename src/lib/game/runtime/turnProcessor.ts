@@ -1,7 +1,7 @@
 import { cloneScene, createGameState, isValidChoiceId, validateScene, type GameState, type Scene } from '$lib/contracts';
 import { buildNarrativeContext } from '$lib/game/narrativeContext';
 import { applyOpeningScene, applySceneTransition } from '$lib/game/runtime/stateTransitions';
-import type { EndingPayload } from '$lib/game/runtime/endingPolicy';
+import type { EndingPayload } from '$lib/game/runtime/contracts';
 import type { StoryService } from '$lib/services';
 import type { StoryCartridge } from '$lib/stories/types';
 

@@ -1,16 +1,8 @@
 import type { EndingType, GameSettings, GameState, Scene } from '$lib/contracts';
 import type { SettingsStorage } from '$lib/services';
+import type { EndingPayload } from '$lib/game/runtime/contracts';
 
-export interface EndingPayload {
-	endingType: EndingType;
-	sceneId: string;
-	stats: {
-		sceneCount: number;
-		lessonsCount: number;
-		durationMs: number;
-	};
-	unlockedEndings: EndingType[];
-}
+export type { EndingPayload };
 
 export function cloneSettings(settings: GameSettings): GameSettings {
 	return {
@@ -20,8 +12,13 @@ export function cloneSettings(settings: GameSettings): GameSettings {
 }
 
 export function normalizeEndingList(endings: EndingType[]): EndingType[] {
-	const deduped = new Set(endings.filter((ending) => typeof ending === 'string' && ending.trim().length > 0));
-	return [...deduped];
+	const deduped = new Set(
+		endings
+			.filter((ending): ending is string => typeof ending === 'string')
+			.map((ending) => ending.trim())
+			.filter((ending) => ending.length > 0)
+	);
+	return [...deduped] as EndingType[];
 }
 
 export function buildEndingPayload(params: {

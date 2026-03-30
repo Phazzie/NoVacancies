@@ -25,7 +25,7 @@ export function applyOpeningScene(gameState: GameState, openingScene: Scene): vo
 		}
 	];
 
-	if (openingScene.lessonId) {
+	if (openingScene.lessonId != null) {
 		gameState.lessonsEncountered.push(openingScene.lessonId);
 	}
 
@@ -53,7 +53,7 @@ export function applySceneTransition(gameState: GameState, scene: Scene): void {
 		isEnding: scene.isEnding
 	});
 
-	if (scene.lessonId && !gameState.lessonsEncountered.includes(scene.lessonId)) {
+	if (scene.lessonId != null && !gameState.lessonsEncountered.includes(scene.lessonId)) {
 		gameState.lessonsEncountered.push(scene.lessonId);
 	}
 }
