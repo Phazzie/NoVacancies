@@ -1,4 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
+import { createRateLimitStore } from '$lib/server/rateLimit/factory';
 
 const BASELINE_SECURITY_HEADERS: Record<string, string> = {
 	'X-Content-Type-Options': 'nosniff',
@@ -28,18 +29,14 @@ const AI_ROUTE_PREFIXES = [
 // (e.g. Vercel KV / Upstash Redis) using the same interface below.
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const ipCounters = new Map<string, { count: number; resetAt: number }>();
+const rateLimitStore = createRateLimitStore();
 
 function isAllowed(ip: string): boolean {
-	const now = Date.now();
-	const entry = ipCounters.get(ip);
-	if (!entry || now >= entry.resetAt) {
-		ipCounters.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-		return true;
-	}
-	if (entry.count >= RATE_LIMIT_MAX) return false;
-	entry.count += 1;
-	return true;
+	const { count } = rateLimitStore.increment(ip, {
+		now: Date.now(),
+		windowMs: RATE_LIMIT_WINDOW_MS
+	});
+	return count <= RATE_LIMIT_MAX;
 }
 
 function applySecurityHeaders(response: Response, isHttps: boolean): void {
