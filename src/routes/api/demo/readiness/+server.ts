@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { loadAiConfig } from '$lib/server/ai/config';
-import { createProviderRegistry } from '$lib/server/ai/providers';
+import { createProviderRegistry, selectProbeProvider } from '$lib/server/ai/providers';
 import { getActiveStoryCartridge } from '$lib/stories';
 
 type CheckId =
@@ -192,7 +192,8 @@ export const GET: RequestHandler = async (event) => {
 		if (payload.checks.find((check) => check.id === 'connectivity_probe')?.ok) {
 			const config = loadAiConfig();
 			const providers = createProviderRegistry(config);
-			const probe = await providers.grok.probe?.();
+			const probeProvider = selectProbeProvider(config, providers);
+			const probe = await probeProvider.probe();
 			payload = applyProbeEnrichment(payload, probe);
 		}
 

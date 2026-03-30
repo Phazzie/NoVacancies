@@ -34,12 +34,34 @@ export interface GeneratedImage {
 	b64?: string;
 }
 
-export interface AiProvider {
+export interface TextSceneProvider {
 	readonly name: AiProviderName;
 	getOpeningScene(input: GenerateSceneInput): Promise<Scene>;
 	getNextScene(input: GenerateSceneInput): Promise<Scene>;
-	generateImage?(input: GenerateImageInput): Promise<GeneratedImage>;
-	probe?(): Promise<ProviderProbeResult>;
+}
+
+export interface ImageProvider {
+	generateImage(input: GenerateImageInput): Promise<GeneratedImage>;
+}
+
+export interface ProbeProvider {
+	probe(): Promise<ProviderProbeResult>;
+}
+
+/**
+ * @deprecated Temporary alias during provider-contract migration. Prefer TextSceneProvider.
+ */
+export type SceneProvider = TextSceneProvider;
+/**
+ * @deprecated Temporary alias during provider-contract migration. Prefer ImageProvider.
+ */
+export type ImageGenerationProvider = ImageProvider;
+/**
+ * @deprecated Temporary alias during provider-contract migration. Prefer ProbeProvider.
+ */
+export type HealthProbeProvider = ProbeProvider;
+
+export interface AiProvider extends TextSceneProvider, Partial<ImageProvider>, Partial<ProbeProvider> {
 	isAvailable?(): boolean;
 }
 
@@ -60,4 +82,3 @@ export class AiProviderError extends Error {
 export function isRetryableStatus(status: number): boolean {
 	return status === 408 || status === 429 || status >= 500;
 }
-

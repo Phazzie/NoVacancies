@@ -79,7 +79,7 @@ export async function resolveImagePayload(prompt: string) {
 	const provider = selectImageProvider(config, registry);
 
 	try {
-		return await provider.generateImage?.({ prompt });
+		return await provider.generateImage({ prompt });
 	} catch (error) {
 		throw error;
 	}
