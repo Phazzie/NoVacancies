@@ -3,11 +3,11 @@
 	import { page } from '$app/stores';
 	import '../app.css';
 	import { registerPwaServiceWorker } from '$lib/client/pwa';
-	import { getSafeActiveStoryCartridge } from '$lib/stories';
+	import { getSafeActiveStoryCartridge, selectStoryPresentation } from '$lib/stories';
 
 	const activeStory = getSafeActiveStoryCartridge();
 	const shellStoryTitle = activeStory?.title ?? 'Story Configuration Blocked';
-	const shellPresentation = activeStory?.presentation ?? {
+	const shellPresentation = selectStoryPresentation(activeStory) ?? {
 		metaDescription:
 			'The selected story cartridge could not be loaded. Check the demo readiness panel for configuration details.',
 		shellKicker: 'Story engine / configuration blocked'

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { gameStore } from '$lib/game';
-	import { getSafeActiveStoryCartridge } from '$lib/stories';
+	import { getSafeActiveStoryCartridge, selectStoryPresentation } from '$lib/stories';
 
 	const activeStory = getSafeActiveStoryCartridge();
 	const homeStoryTitle = activeStory?.title ?? 'Story Configuration Blocked';
-	const presentation = activeStory?.presentation ?? {
+	const presentation = selectStoryPresentation(activeStory) ?? {
 		homeKicker: 'Interactive fiction / configuration blocked',
 		homeSubtitle: 'Check Story Selection',
 		homeTagline:

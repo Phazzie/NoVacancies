@@ -1,40 +1,43 @@
 import { ImageKeys, type NarrativeContext } from '$lib/contracts';
-import { getActiveStoryCartridge } from '$lib/stories';
+import { getActiveStoryCartridge, selectStoryPrompts } from '$lib/stories';
 
 export {
-	NARRATIVE_CONTEXT_CHAR_BUDGET,
-	buildNarrativeContext,
-	detectThreadTransitions,
-	translateBoundaries,
-	translateLessonHistory,
-	translateThreadStateNarrative
+    NARRATIVE_CONTEXT_CHAR_BUDGET,
+    buildNarrativeContext,
+    detectThreadTransitions,
+    translateBoundaries,
+    translateLessonHistory,
+    translateThreadStateNarrative
 } from '$lib/game/narrativeContext';
-export { formatLessonsForPrompt, formatNarrativeContextSection } from '$lib/narrative/promptFormatting';
+export {
+    formatLessonsForPrompt,
+    formatNarrativeContextSection
+} from '$lib/narrative/promptFormatting';
 
 export const VALID_IMAGE_KEYS: string[] = Object.values(ImageKeys);
-export const SYSTEM_PROMPT = getActiveStoryCartridge().prompts.systemPrompt;
+export const SYSTEM_PROMPT = selectStoryPrompts(getActiveStoryCartridge()).systemPrompt;
 
 export function getOpeningPrompt(): string {
-	return getActiveStoryCartridge().prompts.getOpeningPrompt();
+    return selectStoryPrompts(getActiveStoryCartridge()).getOpeningPrompt();
 }
 
 export function getContinuePromptFromContext(
-	narrativeContext: NarrativeContext,
-	suggestedEnding: string | null = null
+    narrativeContext: NarrativeContext,
+    suggestedEnding: string | null = null
 ): string {
-	return getActiveStoryCartridge().prompts.getContinuePromptFromContext(
-		narrativeContext,
-		suggestedEnding
-	);
+    return selectStoryPrompts(getActiveStoryCartridge()).getContinuePromptFromContext(
+        narrativeContext,
+        suggestedEnding
+    );
 }
 
 export function getRecoveryPrompt(invalidOutput: string): string {
-	return getActiveStoryCartridge().prompts.getRecoveryPrompt(invalidOutput);
+    return selectStoryPrompts(getActiveStoryCartridge()).getRecoveryPrompt(invalidOutput);
 }
 
 export function validateImageKey(imageKey: string): string {
-	if (VALID_IMAGE_KEYS.includes(imageKey)) {
-		return imageKey;
-	}
-	return ImageKeys.HOTEL_ROOM;
+    if (VALID_IMAGE_KEYS.includes(imageKey)) {
+        return imageKey;
+    }
+    return ImageKeys.HOTEL_ROOM;
 }
