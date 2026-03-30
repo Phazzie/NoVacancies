@@ -29,7 +29,8 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 			expect(Array.isArray(openingBody.scene?.choices)).toBeTruthy();
 		} else {
 			expect(openingResponse.ok()).toBeFalsy();
-			expect(String(openingBody.error || '')).toMatch(/xai_api_key|required|grok-only/i);
+			expect(String(openingBody.error || '')).toMatch(/configured|api key|grok-only/i);
+			expect(String(openingBody.code || '')).toMatch(/xai_api_key|config_missing|unknown/i);
 		}
 	});
 
@@ -92,6 +93,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		expect(blocked.status()).toBe(422);
 		const body = await blocked.json();
 		expect(String(body.error || '')).toMatch(/guardrail/i);
+		expect(String(body.code || '')).toBe('guardrail');
 	});
 
 	test('story opening remains playable for AI-mode request payload shape', async ({ request }) => {
@@ -106,7 +108,8 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 			expect(body.scene.choices.length).toBeGreaterThan(0);
 		} else {
 			expect(response.ok()).toBeFalsy();
-			expect(String(body.error || '')).toMatch(/configured|xai_api_key|grok-only/i);
+			expect(String(body.error || '')).toMatch(/configured|api key|grok-only/i);
+			expect(String(body.code || '')).toMatch(/xai_api_key|config_missing|unknown/i);
 		}
 	});
 

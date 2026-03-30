@@ -7,6 +7,7 @@ import {
 	selectImageProvider,
 	selectTextProvider
 } from '$lib/server/ai/providers';
+import type { AiErrorCode } from '$lib/server/ai/provider.interface';
 import { type GenerateSceneInput } from '$lib/server/ai/provider.interface';
 import { emitAiServerTelemetry, sanitizeForErrorMessage } from '$lib/server/ai/telemetry';
 import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
@@ -106,13 +107,27 @@ function mapErrorStatus(error: unknown, fallbackStatus = 500): number {
 	}
 }
 
+function mapErrorCode(error: unknown): AiErrorCode | 'config_missing' | 'xai_api_key' | 'unknown' {
+	const typed = error as { code?: unknown; message?: unknown };
+	if (typeof typed.code === 'string' && typed.code.trim()) {
+		return typed.code as AiErrorCode;
+	}
+	const rawMessage = typeof typed.message === 'string' ? typed.message : '';
+	const normalized = rawMessage.toLowerCase();
+	if (normalized.includes('xai_api_key')) return 'xai_api_key';
+	if (normalized.includes('required in grok-only mode')) return 'config_missing';
+	return 'unknown';
+}
+
 export function asRouteError(event: RequestEvent, error: unknown, status = 500) {
 	const message = sanitizeForErrorMessage(error);
 	const resolvedStatus = mapErrorStatus(error, status);
+	const code = mapErrorCode(error);
 	emitAiServerTelemetry('route_error', {
 		route: event.url.pathname,
 		error: message,
+		code,
 		status: resolvedStatus
 	});
-	return json({ error: message }, { status: resolvedStatus });
+	return json({ error: message, code, status: resolvedStatus }, { status: resolvedStatus });
 }

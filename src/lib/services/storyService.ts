@@ -25,6 +25,24 @@ export interface ApiStoryServiceConfig {
 	fetchImpl?: typeof fetch;
 }
 
+export interface ApiRouteErrorPayload {
+	error?: unknown;
+	code?: unknown;
+	status?: unknown;
+}
+
+export class ApiRouteError extends Error {
+	readonly code?: string;
+	readonly status?: number;
+
+	constructor(message: string, options: { code?: string; status?: number } = {}) {
+		super(message);
+		this.name = 'ApiRouteError';
+		this.code = options.code;
+		this.status = options.status;
+	}
+}
+
 function ensureSceneShape(candidate: unknown, endpoint: string): Scene {
 	if (!candidate || typeof candidate !== 'object') {
 		throw new Error(`${endpoint} returned invalid payload`);
@@ -72,20 +90,22 @@ async function postJson<TResponse>(
 	}
 
 	if (!response.ok) {
+		const routeError = (body ?? null) as ApiRouteErrorPayload | null;
 		const message =
-			typeof (body as { error?: unknown } | null)?.error === 'string'
-				? ((body as { error: string }).error ?? 'request failed')
-				: `request failed (${response.status})`;
+			typeof routeError?.error === 'string' ? routeError.error : `request failed (${response.status})`;
+		const code = typeof routeError?.code === 'string' ? routeError.code : undefined;
+		const status = typeof routeError?.status === 'number' ? routeError.status : response.status;
 		appendDebugError({
 			scope: 'api.http',
 			message,
 			details: {
 				url,
 				status: response.status,
-				statusText: response.statusText
+				statusText: response.statusText,
+				code: code ?? null
 			}
 		});
-		throw new Error(message);
+		throw new ApiRouteError(message, { code, status });
 	}
 
 	return body as TResponse;

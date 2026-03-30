@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1] - 2026-03-30
+
+### Changed
+
+- **AI Error Mapping Reliability:** Added a typed AI route error mapper and switched runtime/store handling to structured `{ code, status, message }` payloads so user-facing error copy is less brittle than string matching. Route helpers now preserve `code` in API error responses, API story service rethrows typed route errors, and unit/e2e coverage now asserts representative message output + code propagation (`src/lib/errors/aiErrorMapping.ts`, `src/lib/game/store.ts`, `src/lib/server/ai/routeHelpers.ts`, `src/lib/services/storyService.ts`, `tests/unit/errors/aiErrorMapping.spec.ts`, `tests/e2e/demo-reliability.spec.js`).
+
 ## [1.0.0] - 2026-03-26
 
 ### Changed
