@@ -31,12 +31,13 @@
 
 4. **Display Arc Progress**
    - Show visual arc progress meter
-   - Label current arc stage: "Opening Pressure", "Rising Pressure", "Consequence", "Endgame"
-   - Calculate arc stage from scene count (0-3: Opening, 4-7: Rising, 8-11: Consequence, 12+: Endgame)
+   - Label current arc stage: "Opening Pressure", "Rising Pressure", "Consequence Phase", "Endgame Drift" (matches `getArcLabel` in `+page.svelte`)
+   - Calculate arc stage from scene count (0-3: Opening Pressure, 4-7: Rising Pressure, 8-11: Consequence Phase, 12+: Endgame Drift)
+   - Display pressure pill alongside arc label, derived from `sceneCount` via `getPressureLabel` (0-3: "Tense", 4-7: "Heating Up", 8-11: "Unstable", 12+: "No Clean Exit")
 
 5. **Display Mood Indicator**
-   - When `mood` field present on scene: display optional mood context (neutral, tense, hopeful, dark, triumphant)
-   - Show as optional visual indicator
+   - When `mood` field present on scene: display mood as a separate badge/chip (neutral, tense, hopeful, dark, triumphant)
+   - Mood is scene-level metadata from the AI response, independent of the sceneCount-based pressure pill
 
 6. **Display Meta Information**
    - Show current scene number (from history length)
@@ -44,10 +45,10 @@
    - Display mode indicator (always "AI Mode" - no mock mode toggle)
 
 7. **Handle Ending State**
-   - When `isEnding: true` received: display ending scene text
-   - Show `endingType` (custom 1-3 word poetic ending or canonical type: loop, shift, exit, rare)
+   - When `isEnding: true` received from a choice response: auto-transition to `/ending` route via `goto('/ending')`
+   - When the rendered scene has zero choices (ending already displayed): show a "View Ending" link to `/ending`
+   - Display ending scene text and `endingType` (custom 1-3 word poetic ending or canonical type: loop, shift, exit, rare)
    - Render "Play Again" button linking back to `/`
-   - On ending reach: transition to `/ending` route
 
 8. **Handle Processing State**
    - Disable choice buttons while API request is in-flight
@@ -57,9 +58,9 @@
 9. **Handle Error/Blocked State**
    - When Grok API is unavailable/misconfigured: display explicit blocked state
    - Show user-friendly error mapping (missing API key, auth failure, rate limit, timeout, provider down)
-   - For missing/misconfigured API key, explain that configuration is server-side (`XAI_API_KEY`) and requires operator/redeploy action
-   - Keep `/settings` focused on runtime toggles/readiness and `/debug` for diagnostics
-   - Provide direct navigation to `/debug` (to see detailed error log)
+   - For missing/misconfigured API key, explain that configuration is server-side (`XAI_API_KEY`) and requires operator/redeploy action; users do NOT enter API keys in the browser
+   - Keep `/settings` focused on runtime toggles/readiness and `/debug` for diagnostics (Settings has no API key control)
+   - Provide direct navigation to both `/settings` (readiness checks) and `/debug` (error log)
    - Do NOT show ambiguous loading spinner
    - If fallback is introduced, it must preserve playability and never force an invalid/abrupt ending path
 
@@ -78,7 +79,7 @@
 12. **Update Story State**
     - Process choice selection and request next scene from `/api/story/next`
     - Pass `NarrativeContext` (thread state, recent prose, lesson history, etc.)
-    - Merge returned `storyThreadUpdates` into `gameState.storyThreads`
+    - Merge `scene.storyThreadUpdates` (from the returned `Scene` object) into `gameState.storyThreads`
     - Detect thread state transitions and apply transition bridge prose
     - Update `gameState.sceneLog` with new scene record
     - Track `lessonsEncountered` array
@@ -94,8 +95,7 @@
 6. Allow user API key entry in browser
 7. Leave template artifacts or stale "default app" styling
 8. Display generic narrative context (prose must be story-specific)
-9. Auto-advance to `/ending` mid-typewriter (require explicit "View Recap" click)
-10. Restore unused route behaviors from legacy static shell
+9. Restore unused route behaviors from legacy static shell
 
 ### Required Features
 
@@ -118,9 +118,9 @@
    - Show input label/placeholder explaining purpose
 
 2. **Generate Draft**
-   - On premise submission: call `/api/builder/generate-draft` with premise text
-   - Wait for AI-generated `BuilderStoryDraft` object
-   - If Grok unavailable: fall back to neutral `starter-kit` empty scaffold (not Sydney/motel copy)
+   - On premise submission: call `/api/builder/generate-draft` with `{premise}` body
+   - Receive wrapped response `{draft: BuilderStoryDraft, source: 'ai' | 'fallback'}`
+   - If `source` is `'fallback'` (Grok unavailable): draft contains neutral `starter-kit` empty scaffold (not Sydney/motel copy)
    - Populate all editable fields from returned draft:
      - `title`
      - `setting`
@@ -152,12 +152,13 @@
    - Validate mechanic key is non-empty and URL-safe
 
 6. **Provide Real-Time Prose Feedback**
-   - Call `/api/builder/evaluate-prose` on blur for fields: aestheticStatement, voiceCeilingLines[], character descriptions, mechanic lines
+   - Call `/api/builder/evaluate-prose` with `{prose}` body on blur for fields: aestheticStatement, voiceCeilingLines[], character descriptions, mechanic lines
+   - Receive wrapped response `{feedback: BuilderFieldFeedback, source: 'ai' | 'fallback'}`
    - Display feedback card below edited field showing:
      - Score (1-10 numeric value)
      - Flags array (list of issues detected)
      - Suggestion (AI-generated improvement or fallback rubric guidance)
-   - If Grok unavailable: use deterministic behavioral/concreteness rubric
+   - If `source` is `'fallback'` (Grok unavailable): feedback uses deterministic behavioral/concreteness rubric
    - Do NOT block save on low scores (feedback is advisory)
 
 7. **Persist Draft Locally**
@@ -223,7 +224,9 @@
 
 ### Error Handling
 
-- **Outage Policy:** Preserve playability when feasible via bounded fallback behavior; if startup is fully blocked, fail explicitly with actionable operator messaging
+- **Outage Policy (per-surface):**
+  - *Player (`/play`):* Hard-fail with explicit blocked state and actionable operator messaging when AI is unavailable; if a mock fallback is later introduced, it must preserve playability per `AGENTS.md` invariant ("AI->mock fallback must preserve playability")
+  - *Builder (`/builder`):* Allow fallback to neutral `starter-kit` scaffold for draft generation and deterministic rubric for prose evaluation; never dead-end the authoring flow on a transient provider failure
 - **User-Friendly Error Mapping:**
   - Missing/invalid API key → "AI is not configured yet. Add `XAI_API_KEY` to the server environment, then redeploy."
   - Auth failure → "Authentication failed; verify your key"
@@ -258,19 +261,20 @@
 ### Story Player State
 
 ```typescript
-GameState {
+interface GameState {
   currentSceneId: string;
   history: ChoiceHistoryEntry[];
   lessonsEncountered: number[];
   storyThreads: StoryThreads; // 9-dimensional thread state
   sceneLog: SceneLogEntry[];
   pendingTransitionBridge: TransitionBridge | null;
-  apiKey: string | null;
   sceneCount: number;
   startTime: number;
+  // Note: API keys are server-side only (XAI_API_KEY env var).
+  // The client GameState does not handle key entry or storage.
 }
 
-Scene {
+interface Scene {
   sceneId: string;
   sceneText: string;
   choices: Choice[]; // exactly 3
@@ -283,14 +287,14 @@ Scene {
   storyThreadUpdates?: Partial<StoryThreads> | null;
 }
 
-Choice {
+interface Choice {
   id: string;
   text: string;
   outcome?: string;
   nextSceneId?: string;
 }
 
-StoryThreads {
+interface StoryThreads {
   oswaldoConflict: number;
   trinaTension: number;
   moneyResolved: boolean;
@@ -306,7 +310,7 @@ StoryThreads {
 ### Story Builder State
 
 ```typescript
-BuilderStoryDraft {
+interface BuilderStoryDraft {
   title: string;
   premise: string;
   setting: string;
@@ -318,19 +322,19 @@ BuilderStoryDraft {
   systemPrompt: string;
 }
 
-BuilderStoryCharacterDraft {
+interface BuilderStoryCharacterDraft {
   name: string;
   role: string;
   description: string;
 }
 
-BuilderStoryMechanicDraft {
+interface BuilderStoryMechanicDraft {
   key: string;
   label: string;
   voiceMap: Array<{ value: string; line: string }>;
 }
 
-BuilderFieldFeedback {
+interface BuilderFieldFeedback {
   score: number; // 1-10
   flags: string[]; // array of detected issues
   suggestion: string; // improvement guidance
@@ -367,7 +371,7 @@ BuilderFieldFeedback {
 4. Ensure `/`, `/play`, `/ending`, `/settings`, and `/debug` feel like one authored product.
 5. Blocked `/play` state must be explicit and actionable (no ambiguous spinners).
 6. All validation commands must pass (`npm run check`, `npm run lint`, `npm test`, `npm run test:narrative`, `npm run test:e2e`).
-7. Outage handling must align with repo invariant: preserve playability via bounded fallback where possible; otherwise fail explicitly with actionable operator messaging.
+7. Outage handling must align with `AGENTS.md` invariant: Player hard-fails explicitly with actionable operator messaging (any future mock fallback must preserve playability); Builder allows bounded fallback scaffolds.
 8. Builder fallback must use neutral story scaffold, not Sydney/motel copy.
 
 ---
