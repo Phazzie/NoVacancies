@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 
-export const BASELINE_SECURITY_HEADERS: Record<string, string> = {
+const BASELINE_SECURITY_HEADERS: Readonly<Record<string, string>> = Object.freeze({
 	'X-Content-Type-Options': 'nosniff',
 	'X-Frame-Options': 'DENY',
 	'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -8,7 +8,7 @@ export const BASELINE_SECURITY_HEADERS: Record<string, string> = {
 	'Cross-Origin-Opener-Policy': 'same-origin',
 	'Content-Security-Policy':
 		"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
-};
+});
 
 const HSTS_VALUE = 'max-age=15552000; includeSubDomains';
 
