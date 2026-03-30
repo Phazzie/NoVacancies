@@ -3,7 +3,7 @@ import { AiProviderError } from '$lib/server/ai/provider.interface';
 import { GrokAiProvider } from '$lib/server/ai/providers/grok';
 import type { AiProvider, ImageProvider, ProbeProvider, TextSceneProvider } from '$lib/server/ai/provider.interface';
 
-type GrokProvider = AiProvider & TextSceneProvider & ImageProvider & ProbeProvider;
+type GrokProvider = AiProvider & ImageProvider & ProbeProvider;
 
 export interface ProviderRegistry {
 	grok: GrokProvider;

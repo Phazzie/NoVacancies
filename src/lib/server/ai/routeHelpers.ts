@@ -52,23 +52,19 @@ export async function resolveTextScene(input: GenerateSceneInput, mode: 'opening
 	const registry = createProviderRegistry(config);
 	const provider = selectTextProvider(config, registry);
 
-	try {
-		const scene =
-			mode === 'opening'
-				? await provider.getOpeningScene(input)
-				: await provider.getNextScene(input);
-		emitAiServerTelemetry('story_scene', {
-			provider: provider.name,
-			mode,
-			requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-			retryCount: 0,
-			parseAttempts: 1,
-			route: mode
-		});
-		return scene;
-	} catch (error) {
-		throw error;
-	}
+	const scene =
+		mode === 'opening'
+			? await provider.getOpeningScene(input)
+			: await provider.getNextScene(input);
+	emitAiServerTelemetry('story_scene', {
+		provider: provider.name,
+		mode,
+		requestId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+		retryCount: 0,
+		parseAttempts: 1,
+		route: mode
+	});
+	return scene;
 }
 
 export async function resolveImagePayload(prompt: string) {
@@ -78,11 +74,7 @@ export async function resolveImagePayload(prompt: string) {
 	const registry = createProviderRegistry(config);
 	const provider = selectImageProvider(config, registry);
 
-	try {
-		return await provider.generateImage({ prompt });
-	} catch (error) {
-		throw error;
-	}
+	return provider.generateImage({ prompt });
 }
 
 function mapErrorStatus(error: unknown, fallbackStatus = 500): number {

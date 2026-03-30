@@ -189,12 +189,26 @@ export const GET: RequestHandler = async (event) => {
 		let payload = buildPayload();
 
 		// Optional live probe enrichment for extra confidence without exposing secrets.
+		// Errors here must NOT replace the already-built readiness checklist —
+		// only the connectivity_probe check should be downgraded on failure.
 		if (payload.checks.find((check) => check.id === 'connectivity_probe')?.ok) {
-			const config = loadAiConfig();
-			const providers = createProviderRegistry(config);
-			const probeProvider = selectProbeProvider(config, providers);
-			const probe = await probeProvider.probe();
-			payload = applyProbeEnrichment(payload, probe);
+			try {
+				const config = loadAiConfig();
+				const providers = createProviderRegistry(config);
+				const probeProvider = selectProbeProvider(config, providers);
+				const probe = await probeProvider.probe();
+				payload = applyProbeEnrichment(payload, probe);
+			} catch (probeError) {
+				const probeCheck = payload.checks.find((c) => c.id === 'connectivity_probe');
+				if (probeCheck) {
+					probeCheck.ok = false;
+					probeCheck.details =
+						probeError instanceof Error ? probeError.message : 'Probe provider unavailable';
+				}
+				payload.score = payload.checks.reduce((sum, c) => sum + (c.ok ? c.weight : 0), 0);
+				payload.status = deriveReadinessStatus(payload.score, payload.checks);
+				payload.summary = summarize(payload);
+			}
 		}
 
 		return json(payload);

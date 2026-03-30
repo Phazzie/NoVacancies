@@ -26,11 +26,9 @@ function makeConfig(overrides: Partial<AiConfig> = {}): AiConfig {
 	};
 }
 
-type HasGenerateImage<T> = T extends { generateImage: (...args: unknown[]) => unknown } ? true : false;
-type HasProbe<T> = T extends { probe: (...args: unknown[]) => unknown } ? true : false;
-type HasGetOpeningScene<T> = T extends { getOpeningScene: (...args: unknown[]) => unknown }
-	? true
-	: false;
+type HasGenerateImage<T> = 'generateImage' extends keyof T ? true : false;
+type HasProbe<T> = 'probe' extends keyof T ? true : false;
+type HasGetOpeningScene<T> = 'getOpeningScene' extends keyof T ? true : false;
 
 test.describe('provider selection contract narrowing', () => {
 	test('text selection returns text-only contract', () => {
@@ -38,11 +36,14 @@ test.describe('provider selection contract narrowing', () => {
 		const registry = createProviderRegistry(config);
 		const provider = selectTextProvider(config, registry);
 
+		// Compile-time type assertions — these fail to compile if the contract widens
 		const textHasGenerateImage: HasGenerateImage<typeof provider> = false;
 		const textHasProbe: HasProbe<typeof provider> = false;
 
-		expect(textHasGenerateImage).toBe(false);
-		expect(textHasProbe).toBe(false);
+		// Silence unused-variable warnings; the real check is above at compile time
+		void textHasGenerateImage;
+		void textHasProbe;
+
 		expect(typeof provider.getOpeningScene).toBe('function');
 		expect(typeof provider.getNextScene).toBe('function');
 	});
@@ -55,8 +56,9 @@ test.describe('provider selection contract narrowing', () => {
 		const imageHasGetOpening: HasGetOpeningScene<typeof provider> = false;
 		const imageHasProbe: HasProbe<typeof provider> = false;
 
-		expect(imageHasGetOpening).toBe(false);
-		expect(imageHasProbe).toBe(false);
+		void imageHasGetOpening;
+		void imageHasProbe;
+
 		expect(typeof provider.generateImage).toBe('function');
 	});
 
@@ -68,8 +70,9 @@ test.describe('provider selection contract narrowing', () => {
 		const probeHasGenerateImage: HasGenerateImage<typeof provider> = false;
 		const probeHasGetOpening: HasGetOpeningScene<typeof provider> = false;
 
-		expect(probeHasGenerateImage).toBe(false);
-		expect(probeHasGetOpening).toBe(false);
+		void probeHasGenerateImage;
+		void probeHasGetOpening;
+
 		expect(typeof provider.probe).toBe('function');
 	});
 });
