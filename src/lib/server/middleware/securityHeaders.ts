@@ -14,7 +14,7 @@ const HSTS_VALUE = 'max-age=15552000; includeSubDomains';
 
 function isHttpsRequest(event: Parameters<Handle>[0]['event']): boolean {
 	const forwardedProto = event.request.headers.get('x-forwarded-proto');
-	return event.url.protocol === 'https:' || forwardedProto === 'https';
+	return event.url.protocol === 'https:' || forwardedProto?.toLowerCase() === 'https';
 }
 
 export function applySecurityHeaders(response: Response, isHttps: boolean): void {
