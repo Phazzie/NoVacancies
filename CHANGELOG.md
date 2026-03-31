@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Shared JSON Extraction Path:** Added a reusable server-side JSON object extractor with configurable strict/lenient parsing and migrated both Grok provider parsing plus builder parsing to this shared utility so extraction behavior stays aligned across code paths (`src/lib/server/ai/json/extractJsonObject.ts`, `src/lib/server/ai/providers/grok.ts`, `src/lib/server/ai/builder.ts`, `tests/unit/json/extractJsonObject.spec.ts`).
 - **CI Noise Reduction:** Added workflow concurrency cancellation, split the blocking GitHub Actions gate into explicit legacy-guard and runtime-smoke steps, and limited Tier 2 Claude evaluation plus the live provider canary to `main` pushes/manual runs so PR checks stay deterministic (`.github/workflows/narrative-quality.yml`, `README.md`).
 - **Builder Neutrality Hardening:** Switched the builder's initial and fallback draft scaffold to the neutral `starter-kit` story so authoring no longer seeds Sydney/motel-specific copy when AI generation is unavailable (`src/routes/builder/+page.svelte`, `src/lib/server/ai/builder.ts`, `src/lib/builder/store.ts`).
 - **Active Story Branding Wiring:** Moved shared shell and home-route presentation onto story-level metadata so `PUBLIC_STORY_ID` now changes visible branding as well as runtime behavior/readiness metadata (`src/lib/stories/types.ts`, `src/lib/stories/no-vacancies/index.ts`, `src/lib/stories/starter-kit/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`).
