@@ -243,7 +243,7 @@ Story content is isolated from engine code via the `StoryDefinition` interface (
 The server holds no game state. Each request includes the full `GameState` + `NarrativeContext` from the client. State is persisted in localStorage. This enables horizontal scaling with no session affinity.
 
 ### Narrative Context Budget
-Hard 12,000-character budget per generation call. Deterministic truncation order: older summaries first → older recent prose → (rarely) line clipping. Truncation metadata is emitted for observability. Never trim high-signal context (last 2 full scenes, lesson history, thread/boundary lines) to chase the cap.
+Target ~12,000-character context budget per generation call (not a strict hard cap). Deterministic truncation order: drop older summaries first → then older recent prose → then, if still over budget, trim recent scene prose (including the last 2 scenes) in small fixed-size steps down to a minimum length, and only as a last resort perform line clipping. Truncation metadata is emitted for observability. High-signal context (lesson history, thread/boundary lines, and the most recent scenes) is deprioritized for trimming and only reduced after lower-priority context has been exhausted; estimates may still slightly exceed the target if nothing else is safely trimmable.
 
 ### Structural Validators Only
 `sanity.ts` enforces only deterministic constraints: word count, choice count, JSON schema, duplicate choices. No taste-based regex checks (no apology-loop counters, no therapy-speak detectors). Narrative taste enforcement lives in the system prompt and Tier 2 scoring.
