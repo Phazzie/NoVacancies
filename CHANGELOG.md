@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1] - 2026-03-30
+
+### Changed
+
+- **Rate Limiter Store Abstraction:** Moved hook-level in-memory IP counters behind a new `RateLimitStore` interface with a `memory` implementation and factory selection seam (`src/lib/server/rateLimit/types.ts`, `src/lib/server/rateLimit/memoryStore.ts`, `src/lib/server/rateLimit/factory.ts`, `src/hooks.server.ts`).
+- **Rate Limit Regression Coverage:** Added focused unit tests for per-key accounting and exact window reset boundary semantics so local/dev behavior remains 20 requests per minute while enabling future Redis/KV drop-in implementations (`tests/unit/rateLimit/memoryStore.spec.ts`, `tests/unit/rateLimit/windowReset.spec.ts`).
+
 ## [1.0.0] - 2026-03-26
 
 ### Changed

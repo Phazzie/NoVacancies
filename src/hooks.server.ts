@@ -1,4 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
+import { createRateLimitStore, RATE_LIMIT_DEFAULTS } from '$lib/server/rateLimit/factory';
 
 const BASELINE_SECURITY_HEADERS: Record<string, string> = {
 	'X-Content-Type-Options': 'nosniff',
@@ -19,28 +20,7 @@ const AI_ROUTE_PREFIXES = [
 	'/api/builder/evaluate-prose'
 ];
 
-// In-memory rate limiter: 20 AI requests per IP per minute.
-//
-// This works well for a single-server or low-concurrency deployment.
-// On Vercel serverless each cold-start gets a fresh Map, so the limit is
-// per-instance rather than globally enforced. For higher-traffic or
-// multi-instance production use, replace with a distributed store
-// (e.g. Vercel KV / Upstash Redis) using the same interface below.
-const RATE_LIMIT_MAX = 20;
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const ipCounters = new Map<string, { count: number; resetAt: number }>();
-
-function isAllowed(ip: string): boolean {
-	const now = Date.now();
-	const entry = ipCounters.get(ip);
-	if (!entry || now >= entry.resetAt) {
-		ipCounters.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-		return true;
-	}
-	if (entry.count >= RATE_LIMIT_MAX) return false;
-	entry.count += 1;
-	return true;
-}
+const rateLimitStore = createRateLimitStore(RATE_LIMIT_DEFAULTS);
 
 function applySecurityHeaders(response: Response, isHttps: boolean): void {
 	for (const [name, value] of Object.entries(BASELINE_SECURITY_HEADERS)) {
@@ -61,14 +41,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Rate-limit AI endpoints before handing off to the route handler.
 	if (AI_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix))) {
 		const ip = event.getClientAddress();
-		if (!isAllowed(ip)) {
+		const decision = rateLimitStore.consume(ip);
+		if (!decision.allowed) {
 			const body = JSON.stringify({
 				error: 'rate_limit',
 				message: 'Too many requests. Please wait a moment before continuing.'
 			});
 			const response = new Response(body, {
 				status: 429,
-				headers: { 'Content-Type': 'application/json', 'Retry-After': '60' }
+				headers: {
+					'Content-Type': 'application/json',
+					'Retry-After': String(decision.retryAfterSeconds)
+				}
 			});
 			applySecurityHeaders(response, isHttps);
 			return response;
