@@ -7,7 +7,7 @@ import {
 	selectImageProvider,
 	selectTextProvider
 } from '$lib/server/ai/providers';
-import { type GenerateSceneInput } from '$lib/server/ai/provider.interface';
+import type { GenerateSceneInput, ImageProvider, TextSceneProvider } from '$lib/server/ai/provider.interface';
 import { emitAiServerTelemetry, sanitizeForErrorMessage } from '$lib/server/ai/telemetry';
 import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
 
@@ -50,7 +50,7 @@ export function buildNextInput(payload: NextRoutePayload): GenerateSceneInput {
 export async function resolveTextScene(input: GenerateSceneInput, mode: 'opening' | 'next') {
 	const config = loadAiConfig();
 	const registry = createProviderRegistry(config);
-	const provider = selectTextProvider(config, registry);
+	const provider: TextSceneProvider = selectTextProvider(config, registry);
 
 	try {
 		const scene =
@@ -76,10 +76,10 @@ export async function resolveImagePayload(prompt: string) {
 
 	const config = loadAiConfig();
 	const registry = createProviderRegistry(config);
-	const provider = selectImageProvider(config, registry);
+	const provider: ImageProvider = selectImageProvider(config, registry);
 
 	try {
-		return await provider.generateImage?.({ prompt });
+		return await provider.generateImage({ prompt });
 	} catch (error) {
 		throw error;
 	}
