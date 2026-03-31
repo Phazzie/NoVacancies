@@ -3,9 +3,16 @@
 	import { getSafeActiveStoryCartridge } from '$lib/stories';
 	import { starterKitCartridge } from '$lib/stories/starter-kit';
 	import { loadBuilderDraft, saveBuilderDraft } from '$lib/builder/store';
-	import type { BuilderFieldFeedback, BuilderStoryDraft } from '$lib/stories/types';
+	import type {
+		BuilderDraftEvaluation,
+		BuilderDraftFinding,
+		BuilderDraftFindingSeverity,
+		BuilderFieldFeedback,
+		BuilderStoryDraft
+	} from '$lib/stories/types';
 
 	type FeedbackState = Record<string, { source: 'ai' | 'fallback'; feedback: BuilderFieldFeedback }>;
+	type DraftQaState = { source: 'ai' | 'fallback'; evaluation: BuilderDraftEvaluation } | null;
 
 	const activeStory = getSafeActiveStoryCartridge();
 	const draftScope = activeStory?.id ?? 'unknown-story';
@@ -14,8 +21,10 @@
 	let premise = '';
 	let draft: BuilderStoryDraft = fallbackDraft;
 	let feedback: FeedbackState = {};
+	let draftQa: DraftQaState = null;
 	let statusMessage = 'Start with a premise. The builder will draft structure before you edit.';
 	let generateState: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
+	let draftQaState: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
 	let lastDraftSource: 'ai' | 'fallback' | null = null;
 	let builderReady = false;
 
@@ -26,6 +35,9 @@
 	});
 
 	$: saveBuilderDraft(draftScope, draft);
+
+	$: readinessLabel = draftQa?.evaluation.readiness ?? 'not-run';
+	$: groupedFindings = groupFindings(draftQa?.evaluation.findings ?? []);
 
 	async function generateDraft(): Promise<void> {
 		generateState = 'loading';
@@ -42,6 +54,8 @@
 			}
 			draft = payload.draft;
 			lastDraftSource = payload.source;
+			draftQa = null;
+			draftQaState = 'idle';
 			statusMessage =
 				payload.source === 'ai'
 					? 'Draft generated with Grok. Edit freely.'
@@ -51,6 +65,31 @@
 			generateState = 'error';
 			statusMessage =
 				error instanceof Error ? error.message : 'Could not generate a draft story definition.';
+		}
+	}
+
+	async function runDraftQa(): Promise<void> {
+		draftQaState = 'loading';
+		try {
+			const response = await fetch('/api/builder/evaluate-draft', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ draft })
+			});
+			const payload = (await response.json()) as {
+				evaluation?: BuilderDraftEvaluation;
+				source?: 'ai' | 'fallback';
+			};
+			if (!response.ok || !payload.evaluation || !payload.source) {
+				throw new Error('Draft QA failed');
+			}
+			draftQa = {
+				evaluation: payload.evaluation,
+				source: payload.source
+			};
+			draftQaState = 'ready';
+		} catch {
+			draftQaState = 'error';
 		}
 	}
 
@@ -123,6 +162,18 @@
 	function mechanicFeedbackKey(mechanicIndex: number, lineIndex: number): string {
 		return `mechanic:${mechanicIndex}:${lineIndex}`;
 	}
+
+	function fieldAnchorId(fieldKey: string): string {
+		return `draft-field-${fieldKey.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+	}
+
+	function groupFindings(findings: BuilderDraftFinding[]): Record<BuilderDraftFindingSeverity, BuilderDraftFinding[]> {
+		return {
+			blocker: findings.filter((finding) => finding.severity === 'blocker'),
+			warning: findings.filter((finding) => finding.severity === 'warning'),
+			info: findings.filter((finding) => finding.severity === 'info')
+		};
+	}
 </script>
 
 <section class="builder-page">
@@ -142,6 +193,7 @@
 			{#if lastDraftSource}
 				<p class="builder-source-pill">Source: {lastDraftSource === 'ai' ? 'Grok draft' : 'Fallback draft'}</p>
 			{/if}
+			<p class="builder-readiness-pill" data-testid="builder-readiness">Readiness: {readinessLabel}</p>
 		</div>
 	</header>
 
@@ -151,13 +203,19 @@
 				<p class="card-kicker">Creation entry</p>
 				<h2>Premise</h2>
 			</div>
-			<button class="btn btn-primary" on:click={generateDraft} disabled={generateState === 'loading'}>
-				{generateState === 'loading' ? 'Generating...' : 'Generate Draft'}
-			</button>
+			<div class="builder-actions">
+				<button class="btn btn-primary" on:click={generateDraft} disabled={generateState === 'loading'}>
+					{generateState === 'loading' ? 'Generating...' : 'Generate Draft'}
+				</button>
+				<button class="btn btn-secondary" on:click={runDraftQa} disabled={draftQaState === 'loading'}>
+					{draftQaState === 'loading' ? 'Running QA...' : 'Run Draft QA'}
+				</button>
+			</div>
 		</div>
-		<label class="builder-field">
+		<label class="builder-field" for={fieldAnchorId('premise')}>
 			<span class="sr-only">Story premise</span>
 			<textarea
+				id={fieldAnchorId('premise')}
 				class="builder-textarea"
 				rows="4"
 				bind:value={premise}
@@ -167,20 +225,59 @@
 		</label>
 	</section>
 
+	{#if draftQa}
+		<section class="builder-panel builder-qa-panel">
+			<div class="builder-panel-head">
+				<div>
+					<p class="card-kicker">Draft QA</p>
+					<h2>Readiness: {draftQa.evaluation.readiness}</h2>
+				</div>
+				<p class="builder-source-pill">Source: {draftQa.source === 'ai' ? 'Grok evaluator' : 'Fallback rubric'}</p>
+			</div>
+			<p class="builder-status-line">
+				Overall score {draftQa.evaluation.overallScore}/10.
+				Publishable threshold: overall ≥ {draftQa.evaluation.thresholds.minOverallScore}, each dimension ≥ {draftQa.evaluation.thresholds.minDimensionScore}, blockers ≤ {draftQa.evaluation.thresholds.maxBlockers}.
+			</p>
+			<div class="builder-dimension-grid">
+				{#each Object.entries(draftQa.evaluation.dimensionScores) as [dimension, score]}
+					<p><strong>{dimension}</strong>: {score}/10</p>
+				{/each}
+			</div>
+			{#each ['blocker', 'warning', 'info'] as severity}
+				{#if groupedFindings[severity as BuilderDraftFindingSeverity].length > 0}
+					<div class="builder-findings-group" data-severity={severity}>
+						<h3>{severity}</h3>
+						<ul>
+							{#each groupedFindings[severity as BuilderDraftFindingSeverity] as finding}
+								<li>
+									<a href={`#${fieldAnchorId(finding.fieldKey)}`}>
+										Jump to {finding.fieldKey}
+									</a>
+									<span>{finding.message}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+			{/each}
+		</section>
+	{/if}
+
 	<section class="builder-grid">
 		<div class="builder-panel">
 			<p class="card-kicker">Core identity</p>
-			<label class="builder-field">
+			<label class="builder-field" for={fieldAnchorId('title')}>
 				<span>Story Title</span>
-				<input class="builder-input" bind:value={draft.title} />
+				<input id={fieldAnchorId('title')} class="builder-input" bind:value={draft.title} />
 			</label>
-			<label class="builder-field">
+			<label class="builder-field" for={fieldAnchorId('setting')}>
 				<span>Setting</span>
-				<textarea class="builder-textarea" rows="3" bind:value={draft.setting}></textarea>
+				<textarea id={fieldAnchorId('setting')} class="builder-textarea" rows="3" bind:value={draft.setting}></textarea>
 			</label>
-			<label class="builder-field">
+			<label class="builder-field" for={fieldAnchorId('aestheticStatement')}>
 				<span>Aesthetic Statement</span>
 				<textarea
+					id={fieldAnchorId('aestheticStatement')}
 					class="builder-textarea"
 					rows="4"
 					bind:value={draft.aestheticStatement}
@@ -206,9 +303,10 @@
 				</div>
 			</div>
 			{#each draft.voiceCeilingLines as line, index}
-				<label class="builder-field">
+				<label class="builder-field" for={fieldAnchorId(`voice:${index}`)}>
 					<span>Voice ceiling {index + 1}</span>
 					<textarea
+						id={fieldAnchorId(`voice:${index}`)}
 						class="builder-textarea"
 						rows="2"
 						bind:value={draft.voiceCeilingLines[index]}
@@ -247,14 +345,14 @@
 						<span>Role</span>
 						<input class="builder-input" bind:value={draft.characters[index].role} />
 					</label>
-					<label class="builder-field">
+					<label class="builder-field" for={fieldAnchorId(`character:${index}`)}>
 						<span>Description</span>
 						<textarea
+							id={fieldAnchorId(`character:${index}`)}
 							class="builder-textarea"
 							rows="3"
 							bind:value={draft.characters[index].description}
-							on:blur={() =>
-								evaluateField(`character:${index}`, draft.characters[index].description)}
+							on:blur={() => evaluateField(`character:${index}`, draft.characters[index].description)}
 						></textarea>
 					</label>
 					{#if feedback[`character:${index}`]}
@@ -286,9 +384,13 @@
 						<span>Mechanic key</span>
 						<input class="builder-input" bind:value={draft.mechanics[mechanicIndex].key} />
 					</label>
-					<label class="builder-field">
+					<label class="builder-field" for={fieldAnchorId(`mechanic:${mechanicIndex}:label`)}>
 						<span>Mechanic label</span>
-						<input class="builder-input" bind:value={draft.mechanics[mechanicIndex].label} />
+						<input
+							id={fieldAnchorId(`mechanic:${mechanicIndex}:label`)}
+							class="builder-input"
+							bind:value={draft.mechanics[mechanicIndex].label}
+						/>
 					</label>
 					{#each mechanic.voiceMap as entry, lineIndex}
 						<div class="builder-mechanic-line">
@@ -299,9 +401,10 @@
 									bind:value={draft.mechanics[mechanicIndex].voiceMap[lineIndex].value}
 								/>
 							</label>
-							<label class="builder-field builder-grow">
+							<label class="builder-field builder-grow" for={fieldAnchorId(mechanicFeedbackKey(mechanicIndex, lineIndex))}>
 								<span>Voice line</span>
 								<textarea
+									id={fieldAnchorId(mechanicFeedbackKey(mechanicIndex, lineIndex))}
 									class="builder-textarea"
 									rows="2"
 									bind:value={draft.mechanics[mechanicIndex].voiceMap[lineIndex].line}
@@ -331,16 +434,16 @@
 	<section class="builder-grid">
 		<div class="builder-panel">
 			<p class="card-kicker">Prompts</p>
-			<label class="builder-field">
+			<label class="builder-field" for={fieldAnchorId('openingPrompt')}>
 				<span>Opening Prompt</span>
-				<textarea class="builder-textarea" rows="5" bind:value={draft.openingPrompt}></textarea>
+				<textarea id={fieldAnchorId('openingPrompt')} class="builder-textarea" rows="5" bind:value={draft.openingPrompt}></textarea>
 			</label>
 		</div>
 		<div class="builder-panel">
 			<p class="card-kicker">System prompt</p>
-			<label class="builder-field">
+			<label class="builder-field" for={fieldAnchorId('systemPrompt')}>
 				<span>System Prompt</span>
-				<textarea class="builder-textarea" rows="8" bind:value={draft.systemPrompt}></textarea>
+				<textarea id={fieldAnchorId('systemPrompt')} class="builder-textarea" rows="8" bind:value={draft.systemPrompt}></textarea>
 			</label>
 		</div>
 	</section>

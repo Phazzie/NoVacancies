@@ -6,6 +6,7 @@ import { createGameRuntime, type GameRuntime } from '$lib/game/gameRuntime';
 import { resolveImagePath } from '$lib/game/imagePaths';
 import { appendDebugError } from '$lib/debug/errorLog';
 import { createApiStoryService } from '$lib/services';
+import { mapAiErrorToUserMessage } from '$lib/errors/aiErrorMapping';
 
 export interface AppGameState {
 	settings: GameSettings | null;
@@ -32,25 +33,20 @@ const appGameStateStore = writable<AppGameState>(initialState);
 let runtime: GameRuntime | null = null;
 
 function mapUserFacingError(error: unknown): string {
-	const raw = error instanceof Error ? error.message : String(error ?? 'Unknown error');
-	const normalized = raw.toLowerCase();
-
-	if (normalized.includes('xai_api_key') || normalized.includes('required in grok-only mode')) {
-		return 'AI is not configured yet. Add XAI_API_KEY to the server environment, then redeploy.';
-	}
-	if (normalized.includes('auth') || normalized.includes('unauthorized')) {
-		return 'AI authentication failed. Check the server API key configuration.';
-	}
-	if (normalized.includes('rate_limit') || normalized.includes('rate limit') || normalized.includes('429')) {
-		return 'AI is rate-limited right now. Wait a moment and try again.';
-	}
-	if (normalized.includes('timeout') || normalized.includes('timed out')) {
-		return 'AI timed out. Please try again.';
-	}
-	if (normalized.includes('provider_down') || normalized.includes('service unavailable')) {
-		return 'AI provider is unavailable right now. Please try again in a minute.';
-	}
-	return raw || 'Something went wrong while loading AI.';
+	const typed =
+		error && typeof error === 'object'
+			? (error as { code?: unknown; status?: unknown; message?: unknown })
+			: {};
+	return mapAiErrorToUserMessage({
+		code: typeof typed.code === 'string' ? typed.code : undefined,
+		status: typeof typed.status === 'number' ? typed.status : undefined,
+		message:
+			typeof typed.message === 'string'
+				? typed.message
+				: error instanceof Error
+					? error.message
+					: String(error ?? '')
+	});
 }
 
 function getRuntime(): GameRuntime {

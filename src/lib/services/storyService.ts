@@ -25,6 +25,26 @@ export interface ApiStoryServiceConfig {
 	fetchImpl?: typeof fetch;
 }
 
+export interface ApiStoryServiceError {
+	code: string;
+	status?: number;
+	message: string;
+}
+
+function toApiStoryServiceError(input: {
+	code?: unknown;
+	status?: unknown;
+	message?: unknown;
+}): ApiStoryServiceError {
+	const message =
+		typeof input.message === 'string' && input.message.trim()
+			? input.message
+			: 'request failed';
+	const status = typeof input.status === 'number' ? input.status : undefined;
+	const code = typeof input.code === 'string' && input.code.trim() ? input.code : 'unknown';
+	return { code, status, message };
+}
+
 function ensureSceneShape(candidate: unknown, endpoint: string): Scene {
 	if (!candidate || typeof candidate !== 'object') {
 		throw new Error(`${endpoint} returned invalid payload`);
@@ -53,15 +73,20 @@ async function postJson<TResponse>(
 			body: JSON.stringify(payload)
 		});
 	} catch (error) {
+		const message =
+			error instanceof Error ? error.message : String(error ?? 'Unknown network error');
 		appendDebugError({
 			scope: 'api.network',
 			message: 'Network request failed',
 			details: {
 				url,
-				error: error instanceof Error ? error.message : String(error ?? 'Unknown network error')
+				error: message
 			}
 		});
-		throw error;
+		throw toApiStoryServiceError({
+			code: 'network',
+			message
+		});
 	}
 
 	let body: unknown = null;
@@ -72,20 +97,29 @@ async function postJson<TResponse>(
 	}
 
 	if (!response.ok) {
-		const message =
-			typeof (body as { error?: unknown } | null)?.error === 'string'
-				? ((body as { error: string }).error ?? 'request failed')
-				: `request failed (${response.status})`;
+		const routeError =
+			body && typeof body === 'object'
+				? toApiStoryServiceError({
+						code: (body as { code?: unknown }).code,
+						status: (body as { status?: unknown }).status ?? response.status,
+						message: (body as { error?: unknown }).error
+					})
+				: toApiStoryServiceError({
+						code: response.status >= 500 ? 'http_error' : 'unknown',
+						status: response.status,
+						message: `request failed (${response.status})`
+					});
 		appendDebugError({
 			scope: 'api.http',
-			message,
+			message: routeError.message,
 			details: {
 				url,
 				status: response.status,
-				statusText: response.statusText
+				statusText: response.statusText,
+				code: routeError.code
 			}
 		});
-		throw new Error(message);
+		throw routeError;
 	}
 
 	return body as TResponse;

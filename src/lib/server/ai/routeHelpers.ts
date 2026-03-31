@@ -7,7 +7,7 @@ import {
 	selectImageProvider,
 	selectTextProvider
 } from '$lib/server/ai/providers';
-import { type GenerateSceneInput } from '$lib/server/ai/provider.interface';
+import { type AiErrorCode, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
 import { emitAiServerTelemetry, sanitizeForErrorMessage } from '$lib/server/ai/telemetry';
 import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
 
@@ -98,13 +98,33 @@ function mapErrorStatus(error: unknown, fallbackStatus = 500): number {
 	}
 }
 
+function deriveRouteErrorCode(
+	error: unknown,
+	message: string,
+	status: number
+): AiErrorCode | 'missing_api_key' | 'http_error' | 'unknown' {
+	const typed = error as { code?: unknown };
+	if (typeof typed.code === 'string' && typed.code.trim()) {
+		return typed.code as AiErrorCode;
+	}
+
+	const normalized = message.toLowerCase();
+	if (normalized.includes('xai_api_key') || normalized.includes('grok-only mode')) {
+		return 'missing_api_key';
+	}
+	if (status >= 500) return 'http_error';
+	return 'unknown';
+}
+
 export function asRouteError(event: RequestEvent, error: unknown, status = 500) {
 	const message = sanitizeForErrorMessage(error);
 	const resolvedStatus = mapErrorStatus(error, status);
+	const code = deriveRouteErrorCode(error, message, resolvedStatus);
 	emitAiServerTelemetry('route_error', {
 		route: event.url.pathname,
 		error: message,
-		status: resolvedStatus
+		status: resolvedStatus,
+		code
 	});
-	return json({ error: message }, { status: resolvedStatus });
+	return json({ error: message, code, status: resolvedStatus }, { status: resolvedStatus });
 }

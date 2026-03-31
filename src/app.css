@@ -1304,6 +1304,61 @@ padding: 8px 12px;
 	gap: 1rem;
 }
 
+.builder-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem;
+}
+
+.builder-readiness-pill {
+	margin-top: 0.6rem;
+	font-size: 0.85rem;
+	color: var(--text-main);
+}
+
+.builder-qa-panel {
+	border-color: rgba(255, 191, 109, 0.35);
+}
+
+.builder-dimension-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.4rem 1rem;
+}
+
+.builder-dimension-grid p {
+	margin: 0;
+	color: var(--text-soft);
+}
+
+.builder-findings-group {
+	display: grid;
+	gap: 0.5rem;
+	padding: 0.75rem 0.9rem;
+	border: 1px solid rgba(255, 191, 109, 0.25);
+}
+
+.builder-findings-group h3 {
+	margin: 0;
+	text-transform: capitalize;
+}
+
+.builder-findings-group ul {
+	margin: 0;
+	padding-left: 1.1rem;
+	display: grid;
+	gap: 0.45rem;
+}
+
+.builder-findings-group li {
+	color: var(--text-soft);
+}
+
+.builder-findings-group a {
+	color: var(--accent-bright);
+	margin-right: 0.5rem;
+}
+
 .builder-field {
 	display: grid;
 	gap: 0.45rem;

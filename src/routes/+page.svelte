@@ -2,10 +2,13 @@
 	import { goto } from '$app/navigation';
 	import { gameStore } from '$lib/game';
 	import { getSafeActiveStoryCartridge } from '$lib/stories';
+	import { selectStoryPresentation } from '$lib/stories/selectors';
 
 	const activeStory = getSafeActiveStoryCartridge();
 	const homeStoryTitle = activeStory?.title ?? 'Story Configuration Blocked';
-	const presentation = activeStory?.presentation ?? {
+	const presentation = selectStoryPresentation(activeStory, {
+		metaDescription: 'Active story unavailable in home fallback mode.',
+		shellKicker: 'Story engine / configuration blocked',
 		homeKicker: 'Interactive fiction / configuration blocked',
 		homeSubtitle: 'Check Story Selection',
 		homeTagline:
@@ -16,7 +19,7 @@
 			'Builder and play routes stay available for troubleshooting.',
 			'Check settings to configure the active story.'
 		]
-	};
+	});
 
 	function beginStory(): void {
 		gameStore.clearError();
