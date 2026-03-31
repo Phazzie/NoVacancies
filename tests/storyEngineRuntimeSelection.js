@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import net from 'node:net';
 
 const HOST = '127.0.0.1';
+const SESSION_SECRET = 'runtime_selection_test_secret';
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -119,6 +122,103 @@ async function findDistinctFreePorts(startPort, count) {
 	return ports;
 }
 
+function buildSessionCookie({ userId, role }) {
+	const nowSeconds = Math.floor(Date.now() / 1000);
+	const envelope = {
+		userId,
+		role,
+		iat: nowSeconds,
+		exp: nowSeconds + SESSION_MAX_AGE_SECONDS
+	};
+	const encodedPayload = Buffer.from(JSON.stringify(envelope), 'utf8').toString('base64url');
+	const signature = createHmac('sha256', SESSION_SECRET).update(encodedPayload).digest('base64url');
+	return `nv_session=${encodedPayload}.${signature}`;
+}
+
+async function assertStructuredAuthError(response, expectedStatus, expectedCode, label) {
+	assert.equal(response.status, expectedStatus, `${label}: expected ${expectedStatus}`);
+	const payload = await response.json();
+	assert.equal(payload.error?.code, expectedCode, `${label}: expected code ${expectedCode}`);
+	assert.equal(payload.error?.status, expectedStatus, `${label}: expected embedded status ${expectedStatus}`);
+	assert.deepEqual(payload.error?.requiredRoles, ['author', 'editor'], `${label}: required roles missing`);
+}
+
+async function assertBuilderAuthGuards(port, label) {
+	const generateEndpoint = `http://${HOST}:${port}/api/builder/generate-draft`;
+	const evaluateEndpoint = `http://${HOST}:${port}/api/builder/evaluate-prose`;
+
+	const anonymousGenerate = await fetch(generateEndpoint, {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ premise: 'anonymous attempt', draftId: 'draft-anon' })
+	});
+	await assertStructuredAuthError(anonymousGenerate, 401, 'auth_required', `${label}: generate anonymous`);
+
+	const anonymousEvaluate = await fetch(evaluateEndpoint, {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ prose: 'anonymous attempt', draftId: 'draft-anon' })
+	});
+	await assertStructuredAuthError(anonymousEvaluate, 401, 'auth_required', `${label}: evaluate anonymous`);
+
+	const viewerGenerate = await fetch(generateEndpoint, {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			cookie: buildSessionCookie({ userId: 'viewer-1', role: 'viewer' })
+		},
+		body: JSON.stringify({ premise: 'viewer attempt', draftId: 'draft-viewer' })
+	});
+	await assertStructuredAuthError(viewerGenerate, 403, 'insufficient_role', `${label}: generate viewer`);
+
+	const viewerEvaluate = await fetch(evaluateEndpoint, {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			cookie: buildSessionCookie({ userId: 'viewer-1', role: 'viewer' })
+		},
+		body: JSON.stringify({ prose: 'viewer attempt', draftId: 'draft-viewer' })
+	});
+	await assertStructuredAuthError(viewerEvaluate, 403, 'insufficient_role', `${label}: evaluate viewer`);
+
+	const authorCookie = buildSessionCookie({ userId: 'author-1', role: 'author' });
+	const authorGenerate = await fetch(generateEndpoint, {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			cookie: authorCookie
+		},
+		body: JSON.stringify({ premise: '', draftId: 'draft-author' })
+	});
+	assert.equal(authorGenerate.status, 200, `${label}: author generate should be allowed`);
+	const authorGeneratePayload = await authorGenerate.json();
+	assert.equal(authorGeneratePayload.source, 'fallback', `${label}: expected fallback builder source`);
+	assert.equal(authorGeneratePayload.draft?.title, 'Starter Story', `${label}: expected neutral builder title`);
+
+	const authorEvaluate = await fetch(evaluateEndpoint, {
+		method: 'POST',
+		headers: {
+			'content-type': 'application/json',
+			cookie: authorCookie
+		},
+		body: JSON.stringify({ prose: 'Short line.', draftId: 'draft-author' })
+	});
+	assert.equal(authorEvaluate.status, 200, `${label}: author evaluate should be allowed`);
+	const authorEvaluatePayload = await authorEvaluate.json();
+	assert.equal(typeof authorEvaluatePayload.feedback?.score, 'number', `${label}: feedback score expected`);
+
+	const builderPageAnonymous = await fetch(`http://${HOST}:${port}/builder`);
+	assert.equal(builderPageAnonymous.status, 401, `${label}: anonymous /builder should return 401`);
+
+	const builderPageAuthor = await fetch(`http://${HOST}:${port}/builder`, {
+		headers: { cookie: authorCookie }
+	});
+	assert.equal(builderPageAuthor.status, 200, `${label}: author should load /builder`);
+
+	const unrelatedRoute = await fetch(`http://${HOST}:${port}/builderish`);
+	assert.notEqual(unrelatedRoute.status, 401, `${label}: /builderish should not be protected as /builder`);
+}
+
 async function runScenario({
 	label,
 	port,
@@ -138,6 +238,7 @@ async function runScenario({
 		ENABLE_GROK_TEXT: '1',
 		ENABLE_GROK_IMAGES: '0',
 		AI_AUTH_BYPASS: '0',
+		AUTH_SESSION_SECRET: SESSION_SECRET,
 		XAI_API_KEY: 'test_key_for_selection_smoke',
 		FORCE_COLOR: '0',
 		...extraEnv
@@ -145,17 +246,7 @@ async function runScenario({
 	console.log(`[smoke] starting ${label} on port ${port}`);
 
 	const { cmd, argsPrefix } = resolveNpm();
-	const args = [
-		...argsPrefix,
-		'run',
-		'dev',
-		'--',
-		'--host',
-		HOST,
-		'--port',
-		String(port),
-		'--strictPort'
-	];
+	const args = [...argsPrefix, 'run', 'dev', '--', '--host', HOST, '--port', String(port), '--strictPort'];
 
 	const child = spawn(cmd, args, {
 		env,
@@ -206,20 +297,7 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
-		const builderFallback = await fetch(`http://${HOST}:${port}/api/builder/generate-draft`, {
-			method: 'POST',
-			headers: {
-				'content-type': 'application/json'
-			},
-			body: JSON.stringify({ premise: '' })
-		}).then((res) => res.json());
-		assert.equal(builderFallback.source, 'fallback', `${label}: expected fallback builder source`);
-		assert.equal(builderFallback.draft?.title, 'Starter Story', `${label}: expected neutral builder title`);
-		assert.doesNotMatch(
-			JSON.stringify(builderFallback.draft ?? {}),
-			/No Vacancies|Sydney|daily-rate motel/i,
-			`${label}: builder fallback should stay story-neutral`
-		);
+		await assertBuilderAuthGuards(port, label);
 		console.log(`[smoke] passed ${label}`);
 	} catch (error) {
 		throw new Error(

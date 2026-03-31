@@ -56,6 +56,7 @@ Server/runtime variables used by the SvelteKit AI provider layer:
 - `AI_PROVIDER`: `grok` only (`mock` is disabled).
 - `AI_OUTAGE_MODE`: `hard_fail` (required in preview/production).
 - `XAI_API_KEY`: required in Grok-only mode.
+- `AUTH_SESSION_SECRET`: required to validate signed `nv_session` cookies for builder/admin auth checks.
 - `ENABLE_GROK_TEXT`, `ENABLE_GROK_IMAGES`, `ENABLE_PROVIDER_PROBE`: feature toggles (`0`/`1`).
 - `AI_AUTH_BYPASS`: disabled in Grok-only mode.
 - `GROK_TEXT_MODEL`, `GROK_IMAGE_MODEL`: optional model override strings.
@@ -113,7 +114,7 @@ npm run test:e2e
 
 Notes:
 
-- `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, and invalid-id fail-fast behavior).
+- `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, invalid-id fail-fast behavior, and builder auth enforcement for anonymous/unauthorized/authorized requests).
 - `npm run test:narrative` runs deterministic Tier 1 source/contract gates for prompt wiring, context coverage, continuity dimensions, and builder/story-registry integration. It is a structural regression suite, not a full fixture-scored prose evaluation pass.
 - `npm run test:e2e` runs Playwright against the SvelteKit app, including the builder flow and route-shell checks.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.

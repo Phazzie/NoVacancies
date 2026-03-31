@@ -1,4 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
+import { authErrorResponse, BUILDER_ROLES, getSessionUser, isBuilderRole } from '$lib/server/auth';
+import { emitAiServerTelemetry } from '$lib/server/ai/telemetry';
 
 const BASELINE_SECURITY_HEADERS: Record<string, string> = {
 	'X-Content-Type-Options': 'nosniff',
@@ -53,10 +55,53 @@ function applySecurityHeaders(response: Response, isHttps: boolean): void {
 	}
 }
 
+function isBuilderProtectedRoute(path: string): boolean {
+	if (path === '/builder' || path.startsWith('/builder/')) return true;
+	return path.startsWith('/api/builder/');
+}
+
+function emitBuilderAccessDenied(path: string, reason: 'auth_required' | 'insufficient_role', userId: string | null) {
+	emitAiServerTelemetry('builder_access_denied', {
+		action: 'builder_access_denied',
+		reason,
+		path,
+		userId
+	});
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
 	const path = event.url.pathname;
 	const forwardedProto = event.request.headers.get('x-forwarded-proto');
 	const isHttps = event.url.protocol === 'https:' || forwardedProto === 'https';
+
+	const sessionUser = await getSessionUser(event);
+	event.locals.sessionUser = sessionUser;
+
+	if (isBuilderProtectedRoute(path)) {
+		if (!sessionUser) {
+			emitBuilderAccessDenied(path, 'auth_required', null);
+			const response = authErrorResponse({
+				status: 401,
+				code: 'auth_required',
+				message: 'You must be signed in to access builder tools.',
+				path
+			});
+			applySecurityHeaders(response, isHttps);
+			return response;
+		}
+
+		if (!isBuilderRole(sessionUser.role)) {
+			emitBuilderAccessDenied(path, 'insufficient_role', sessionUser.userId);
+			const response = authErrorResponse({
+				status: 403,
+				code: 'insufficient_role',
+				message: `Builder access requires one of: ${BUILDER_ROLES.join(', ')}.`,
+				path
+			});
+			applySecurityHeaders(response, isHttps);
+			return response;
+		}
+	}
 
 	// Rate-limit AI endpoints before handing off to the route handler.
 	if (AI_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix))) {
