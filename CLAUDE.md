@@ -181,7 +181,7 @@ npm run serve        # Preview on 0.0.0.0:8080
 
 **Key test conventions:**
 - E2E tests block service workers (`serviceWorkers: 'block'`) for isolation
-- Playwright uses single worker (`workers: 1`), headless Chromium, baseURL `http://localhost:8080`
+- Playwright uses single worker (`workers: 1`), headless Chromium, environment-configurable host/port via `E2E_HOST` and `E2E_PORT` (defaults to `127.0.0.1:8080`)
 - Grok live canary only runs when `LIVE_GROK=1` env var is set
 - GitHub Actions cancels superseded runs (concurrency group per PR/branch)
 
