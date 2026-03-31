@@ -4,14 +4,20 @@
 	import '../app.css';
 	import { registerPwaServiceWorker } from '$lib/client/pwa';
 	import { getSafeActiveStoryCartridge } from '$lib/stories';
+	import { selectStoryPresentation } from '$lib/stories/selectors';
 
 	const activeStory = getSafeActiveStoryCartridge();
 	const shellStoryTitle = activeStory?.title ?? 'Story Configuration Blocked';
-	const shellPresentation = activeStory?.presentation ?? {
+	const shellPresentation = selectStoryPresentation(activeStory, {
 		metaDescription:
 			'The selected story cartridge could not be loaded. Check the demo readiness panel for configuration details.',
-		shellKicker: 'Story engine / configuration blocked'
-	};
+		shellKicker: 'Story engine / configuration blocked',
+		homeKicker: 'Interactive fiction / configuration blocked',
+		homeSubtitle: 'Check Story Selection',
+		homeTagline: 'Unable to resolve active story cartridge.',
+		homeSupportCopy: 'Visible shell copy is running in fallback mode until configuration is fixed.',
+		storyBriefItems: ['Check Story Selection in settings to resolve cartridge configuration.']
+	});
 
 	onMount(() => {
 		registerPwaServiceWorker();
