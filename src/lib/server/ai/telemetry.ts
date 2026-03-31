@@ -1,4 +1,8 @@
+import { ConsoleTelemetrySink, type TelemetrySink } from './telemetrySink';
+
 const SENSITIVE_KEY_PATTERN = /(api.?key|secret|token|authorization|password)/i;
+
+let aiTelemetrySink: TelemetrySink = new ConsoleTelemetrySink();
 
 function redactUnknown(value: unknown): unknown {
 	if (Array.isArray(value)) return value.map(redactUnknown);
@@ -22,13 +26,21 @@ export interface AiTelemetryEvent {
 	payload: Record<string, unknown>;
 }
 
+export function setAiTelemetrySink(sink: TelemetrySink): void {
+	aiTelemetrySink = sink;
+}
+
+export function resetAiTelemetrySink(): void {
+	aiTelemetrySink = new ConsoleTelemetrySink();
+}
+
 export function emitAiServerTelemetry(stage: string, payload: Record<string, unknown>): AiTelemetryEvent {
 	const event: AiTelemetryEvent = {
 		stage,
 		timestamp: new Date().toISOString(),
 		payload: redactUnknown(payload) as Record<string, unknown>
 	};
-	console.info(`[AI_SERVER][${event.stage}] ${JSON.stringify(event.payload)}`);
+	aiTelemetrySink.emit(event.stage, event.payload);
 	return event;
 }
 
@@ -36,4 +48,3 @@ export function sanitizeForErrorMessage(error: unknown): string {
 	const raw = error instanceof Error ? error.message : String(error ?? 'Unknown error');
 	return raw.replace(/[A-Za-z0-9_-]{20,}/g, '[REDACTED]');
 }
-

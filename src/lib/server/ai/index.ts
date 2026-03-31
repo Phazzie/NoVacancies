@@ -4,3 +4,4 @@ export * from './providers';
 export * from './sanity';
 export * from './telemetry';
 
+export * from './telemetrySink';
