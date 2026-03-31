@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Unified Scene Contract Schema:** Added a shared `parseScene`/`isScene` schema module with typed `SceneContractError`, then refactored game contract checks, API story-service response parsing, and Grok normalization validation to use the single source of truth plus new invalid-payload matrix coverage (`src/lib/contracts/schemas/scene.ts`, `src/lib/contracts/game.ts`, `src/lib/services/storyService.ts`, `src/lib/server/ai/providers/grok.ts`, `tests/unit/contracts/sceneSchema.spec.ts`).
 - **CI Noise Reduction:** Added workflow concurrency cancellation, split the blocking GitHub Actions gate into explicit legacy-guard and runtime-smoke steps, and limited Tier 2 Claude evaluation plus the live provider canary to `main` pushes/manual runs so PR checks stay deterministic (`.github/workflows/narrative-quality.yml`, `README.md`).
 - **Builder Neutrality Hardening:** Switched the builder's initial and fallback draft scaffold to the neutral `starter-kit` story so authoring no longer seeds Sydney/motel-specific copy when AI generation is unavailable (`src/routes/builder/+page.svelte`, `src/lib/server/ai/builder.ts`, `src/lib/builder/store.ts`).
 - **Active Story Branding Wiring:** Moved shared shell and home-route presentation onto story-level metadata so `PUBLIC_STORY_ID` now changes visible branding as well as runtime behavior/readiness metadata (`src/lib/stories/types.ts`, `src/lib/stories/no-vacancies/index.ts`, `src/lib/stories/starter-kit/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`).
