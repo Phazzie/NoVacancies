@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { loadAiConfig } from '$lib/server/ai/config';
-import { createProviderRegistry } from '$lib/server/ai/providers';
+import { createProviderRegistry, selectProbeProvider } from '$lib/server/ai/providers';
 import { asRouteError } from '$lib/server/ai/routeHelpers';
 
 export const GET: RequestHandler = async (event) => {
@@ -11,7 +11,8 @@ export const GET: RequestHandler = async (event) => {
 		}
 
 		const providers = createProviderRegistry(config);
-		const result = await providers.grok.probe?.();
+		const provider = selectProbeProvider(config, providers);
+		const result = await provider.probe();
 		return json({
 			probe: result ?? null,
 			config: {
@@ -24,4 +25,3 @@ export const GET: RequestHandler = async (event) => {
 		return asRouteError(event, error);
 	}
 };
-
