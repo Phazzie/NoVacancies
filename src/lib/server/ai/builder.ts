@@ -2,6 +2,7 @@ import { noVacanciesCartridge } from '$lib/stories/no-vacancies';
 import { starterKitCartridge } from '$lib/stories/starter-kit';
 import type { BuilderFieldFeedback, BuilderStoryDraft } from '$lib/stories/types';
 import { loadAiConfig } from '$lib/server/ai/config';
+import { extractJsonObject } from '$lib/server/ai/json/extractJsonObject';
 
 const XAI_CHAT_URL = 'https://api.x.ai/v1/chat/completions';
 
@@ -11,28 +12,6 @@ interface ChatChoice {
 
 interface ChatResponse {
 	choices?: ChatChoice[];
-}
-
-function extractJsonObject(text: string): string {
-	const trimmed = text.trim();
-	if (!trimmed) throw new Error('Empty builder response');
-
-	const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-	if (fenced?.[1]) {
-		return fenced[1].trim();
-	}
-
-	if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-		return trimmed;
-	}
-
-	const firstBrace = trimmed.indexOf('{');
-	const lastBrace = trimmed.lastIndexOf('}');
-	if (firstBrace >= 0 && lastBrace > firstBrace) {
-		return trimmed.slice(firstBrace, lastBrace + 1);
-	}
-
-	throw new Error('No JSON object found in builder response');
 }
 
 function normalizeLineArray(value: unknown, fallback: string[]): string[] {
@@ -284,7 +263,12 @@ Generate the first draft now.`;
 
 	try {
 		const raw = await callBuilderModel(systemPrompt, userPrompt);
-		const parsed = JSON.parse(extractJsonObject(raw));
+		const parsed = JSON.parse(
+			extractJsonObject(raw, {
+				emptyErrorMessage: 'Empty builder response',
+				notFoundErrorMessage: 'No parseable JSON object found in builder response'
+			})
+		);
 		return {
 			draft: normalizeDraft(parsed, trimmedPremise),
 			source: 'ai'
@@ -378,7 +362,12 @@ If the line sounds like Hallmark-card summary prose, say so directly.`;
 
 	try {
 		const raw = await callBuilderModel(systemPrompt, userPrompt);
-		const parsed = JSON.parse(extractJsonObject(raw)) as Partial<BuilderFieldFeedback>;
+		const parsed = JSON.parse(
+			extractJsonObject(raw, {
+				emptyErrorMessage: 'Empty builder response',
+				notFoundErrorMessage: 'No parseable JSON object found in builder response'
+			})
+		) as Partial<BuilderFieldFeedback>;
 		const feedback: BuilderFieldFeedback = {
 			score:
 				typeof parsed.score === 'number' && Number.isFinite(parsed.score)
