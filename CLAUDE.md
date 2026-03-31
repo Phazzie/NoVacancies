@@ -2,7 +2,7 @@
 
 AI assistant reference for the No Vacancies repository. Read this before making any changes.
 
-> **Note:** `claude.md` (lowercase) in the repo root is a legacy artifact from the pre-SvelteKit / Gemini era. Treat it as archived. This file (`CLAUDE.md`) is the authoritative reference.
+> **Note:** Both `claude.md` (lowercase) and this file (`CLAUDE.md`) are non-canonical operational logs archived for historical reference. The repository's canonical documentation consists of `README.md`, `CHANGELOG.md`, and `AI_LESSONS_LEARNED.md`.
 
 ---
 
@@ -281,6 +281,8 @@ These must never be broken. Any change touching one requires a test update.
 | `AI_LESSONS_LEARNED.md` | 54 durable engineering/narrative lessons |
 | `AGENTS.md` | AI workflow rules, autonomy defaults, stop conditions |
 | `docs/DECISIONS.md` | Major architecture/product tradeoffs (if present) |
+
+**Non-canonical operational logs (not authoritative):** `codexreview.md` and `claude.md` are archived operational logs and should not be treated as the source of truth.
 
 **Update routing:**
 - Behavior change → `CHANGELOG.md`
