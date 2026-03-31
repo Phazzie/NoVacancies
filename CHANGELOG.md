@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **AI Telemetry Sink Abstraction:** Added a `TelemetrySink` interface with default `ConsoleTelemetrySink`, refactored server telemetry emission to route through injectable sinks while preserving payload redaction behavior, and added dedicated unit coverage for redaction + sink swapping (`src/lib/server/ai/telemetry.ts`, `src/lib/server/ai/telemetrySink.ts`, `tests/unit/telemetry/redaction.spec.ts`, `tests/unit/telemetry/sink.spec.ts`).
 - **CI Noise Reduction:** Added workflow concurrency cancellation, split the blocking GitHub Actions gate into explicit legacy-guard and runtime-smoke steps, and limited Tier 2 Claude evaluation plus the live provider canary to `main` pushes/manual runs so PR checks stay deterministic (`.github/workflows/narrative-quality.yml`, `README.md`).
 - **Builder Neutrality Hardening:** Switched the builder's initial and fallback draft scaffold to the neutral `starter-kit` story so authoring no longer seeds Sydney/motel-specific copy when AI generation is unavailable (`src/routes/builder/+page.svelte`, `src/lib/server/ai/builder.ts`, `src/lib/builder/store.ts`).
 - **Active Story Branding Wiring:** Moved shared shell and home-route presentation onto story-level metadata so `PUBLIC_STORY_ID` now changes visible branding as well as runtime behavior/readiness metadata (`src/lib/stories/types.ts`, `src/lib/stories/no-vacancies/index.ts`, `src/lib/stories/starter-kit/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`).
