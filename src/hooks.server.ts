@@ -16,7 +16,8 @@ const AI_ROUTE_PREFIXES = [
 	'/api/story/next',
 	'/api/image',
 	'/api/builder/generate-draft',
-	'/api/builder/evaluate-prose'
+	'/api/builder/evaluate-prose',
+	'/api/builder/evaluate-draft'
 ];
 
 // In-memory rate limiter: 20 AI requests per IP per minute.

@@ -175,11 +175,13 @@ function testBuilderSurfaces() {
 	const builderPage = readSource('src/routes/builder/+page.svelte');
 	const generateRoute = readSource('src/routes/api/builder/generate-draft/+server.ts');
 	const evaluateRoute = readSource('src/routes/api/builder/evaluate-prose/+server.ts');
+	const evaluateDraftRoute = readSource('src/routes/api/builder/evaluate-draft/+server.ts');
 
 	assert(builderModule !== null, 'builder server module exists');
 	assert(builderPage !== null, 'builder page exists');
 	assert(generateRoute !== null, 'generate-draft route exists');
 	assert(evaluateRoute !== null, 'evaluate-prose route exists');
+	assert(evaluateDraftRoute !== null, 'evaluate-draft route exists');
 
 	assert(
 		builderModule.includes('generateDraftFromPremise'),
@@ -188,6 +190,10 @@ function testBuilderSurfaces() {
 	assert(
 		builderModule.includes('evaluateBuilderProse'),
 		'builder module exposes prose evaluation'
+	);
+	assert(
+		builderModule.includes('evaluateBuilderDraft'),
+		'builder module exposes full draft evaluation'
 	);
 	assert(
 		builderModule.includes('callBuilderModel'),
@@ -208,6 +214,10 @@ function testBuilderSurfaces() {
 	assert(
 		builderPage.includes('/api/builder/evaluate-prose'),
 		'builder page calls evaluate-prose endpoint on prose fields'
+	);
+	assert(
+		builderPage.includes('/api/builder/evaluate-draft'),
+		'builder page calls evaluate-draft endpoint for full QA'
 	);
 }
 
