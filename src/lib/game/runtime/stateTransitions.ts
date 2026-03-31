@@ -25,7 +25,7 @@ export function applyOpeningScene(gameState: GameState, openingScene: Scene): vo
 		}
 	];
 
-	if (openingScene.lessonId != null) {
+	if (openingScene.lessonId != null && !gameState.lessonsEncountered.includes(openingScene.lessonId)) {
 		gameState.lessonsEncountered.push(openingScene.lessonId);
 	}
 
