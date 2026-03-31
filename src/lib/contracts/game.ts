@@ -1,3 +1,5 @@
+import { isScene } from './schemas/scene';
+
 export const EndingTypes = {
 	LOOP: 'loop',
 	SHIFT: 'shift',
@@ -204,14 +206,7 @@ export function mergeThreadUpdates(
 }
 
 export function validateScene(scene: unknown): scene is Scene {
-	if (!scene || typeof scene !== 'object') return false;
-	const typedScene = scene as Scene;
-	if (typeof typedScene.sceneId !== 'string') return false;
-	if (typeof typedScene.sceneText !== 'string') return false;
-	if (!Array.isArray(typedScene.choices)) return false;
-	if (typeof typedScene.isEnding !== 'boolean') return false;
-	if (typedScene.isEnding && !typedScene.endingType) return false;
-	return true;
+	return isScene(scene);
 }
 
 export function validateChoice(choice: unknown): choice is Choice {

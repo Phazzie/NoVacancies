@@ -1,4 +1,11 @@
-import type { GameState, NarrativeContext, Scene, StoryThreads } from '../contracts';
+import {
+	parseScene,
+	SceneContractError,
+	type GameState,
+	type NarrativeContext,
+	type Scene,
+	type StoryThreads
+} from '../contracts';
 import { appendDebugError } from '../debug/errorLog';
 
 export interface StoryServiceOptions {
@@ -26,18 +33,17 @@ export interface ApiStoryServiceConfig {
 }
 
 function ensureSceneShape(candidate: unknown, endpoint: string): Scene {
-	if (!candidate || typeof candidate !== 'object') {
-		throw new Error(`${endpoint} returned invalid payload`);
+	try {
+		return parseScene(candidate);
+	} catch (error) {
+		if (error instanceof SceneContractError) {
+			throw new SceneContractError(`${endpoint} returned invalid scene contract: ${error.message}`, {
+				field: error.field,
+				code: error.code
+			});
+		}
+		throw error;
 	}
-	const scene = candidate as Scene;
-	if (
-		typeof scene.sceneId !== 'string' ||
-		typeof scene.sceneText !== 'string' ||
-		!Array.isArray(scene.choices)
-	) {
-		throw new Error(`${endpoint} returned invalid scene contract`);
-	}
-	return scene;
 }
 
 async function postJson<TResponse>(

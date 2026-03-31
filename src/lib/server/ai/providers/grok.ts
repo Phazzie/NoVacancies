@@ -1,4 +1,4 @@
-import { validateEndingType, validateScene, type Scene, type StoryThreads } from '$lib/contracts';
+import { parseScene, validateEndingType, type Scene, type StoryThreads } from '$lib/contracts';
 import type { AiConfig } from '$lib/server/ai/config';
 import { getActiveStoryCartridge } from '$lib/stories';
 import { evaluateStorySanity } from '$lib/server/ai/sanity';
@@ -360,14 +360,7 @@ export class GrokAiProvider implements AiProvider {
 			const { scene } = await this.callChat(prompt);
 			const fallbackSceneId =
 				mode === 'opening' ? 'opening' : `scene_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-			const normalized = normalizeScene(scene, fallbackSceneId);
-
-			if (!validateScene(normalized)) {
-				throw new AiProviderError('xAI scene failed contract validation', {
-					code: 'invalid_response',
-					retryable: false
-				});
-			}
+			const normalized = parseScene(normalizeScene(scene, fallbackSceneId));
 
 			const sanity = evaluateStorySanity(normalized);
 			lastSanityIssues = sanity.issues;
