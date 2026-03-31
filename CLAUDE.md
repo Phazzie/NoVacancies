@@ -198,7 +198,8 @@ npm run serve        # Preview on 0.0.0.0:8080
 
 ### Imports
 
-- Always use `$lib` alias, never relative imports into `src/lib`
+- Prefer `$lib` alias for imports that cross top-level feature areas under `src/lib` (e.g., `src/lib/game` → `$lib/services/...`)
+- Relative imports are acceptable within a cohesive feature/package folder under `src/lib` (e.g., siblings in `src/lib/game/*`, `src/lib/services/*`)
 - Never import `$lib/server/*` from client-side modules — SvelteKit enforces this boundary at build time
 
 ### Formatting
