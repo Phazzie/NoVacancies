@@ -13,6 +13,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test:unit": "playwright test --config playwright.unit.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:stable": "node tests/runE2EStability.js",
     "test:narrative": "node tests/narrative/narrativeQuality.test.js"

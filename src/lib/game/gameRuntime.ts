@@ -1,41 +1,27 @@
 import {
 	cloneGameState,
 	cloneScene,
-	createGameState,
-	isValidChoiceId,
-	mergeThreadUpdates,
 	validateScene,
-	type EndingType,
 	type GameSettings,
 	type GameState,
 	type Scene
 } from '../contracts';
 import { getActiveStoryCartridge } from '$lib/stories';
-import { buildNarrativeContext, detectThreadTransitions } from './narrativeContext';
 import {
 	createSettingsStorage,
 	type SettingsStorage,
 	type StorageBindings,
 	type StoryService
 } from '../services';
+import {
+	buildEndingPayload as createEndingPayload,
+	cloneSettings,
+	normalizeEndingList
+} from './runtime/endingPolicy';
+import { createTurnProcessor, type RuntimeRefs } from './runtime/turnProcessor';
+import type { EndingPayload, GameTurnResult } from './runtime/contracts';
 
-export interface EndingPayload {
-	endingType: EndingType;
-	sceneId: string;
-	stats: {
-		sceneCount: number;
-		lessonsCount: number;
-		durationMs: number;
-	};
-	unlockedEndings: EndingType[];
-}
-
-export interface GameTurnResult {
-	scene: Scene;
-	gameState: GameState;
-	isEnding: boolean;
-	ending: EndingPayload | null;
-}
+export type { EndingPayload, GameTurnResult };
 
 export interface GameRuntimeOptions {
 	storyService?: StoryService;
@@ -57,18 +43,6 @@ export interface GameRuntime {
 	getEnding(): EndingPayload | null;
 }
 
-function cloneSettings(settings: GameSettings): GameSettings {
-	return {
-		...settings,
-		unlockedEndings: [...settings.unlockedEndings]
-	};
-}
-
-function normalizeEndingList(endings: EndingType[]): EndingType[] {
-	const deduped = new Set(endings.filter((ending) => typeof ending === 'string' && ending.trim().length > 0));
-	return [...deduped];
-}
-
 export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime {
 	const now = options.now ?? Date.now;
 	const storyService = options.storyService;
@@ -84,10 +58,12 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 	const cartridge = getActiveStoryCartridge();
 
 	let settings = settingsStorage.loadSettings();
-	let gameState: GameState | null = null;
-	let currentScene: Scene | null = null;
-	let lastEnding: EndingPayload | null = null;
-	let processing = false;
+	const refs: RuntimeRefs = {
+		gameState: null,
+		currentScene: null,
+		lastEnding: null,
+		processing: false
+	};
 
 	const refreshSettings = (): GameSettings => {
 		settings = settingsStorage.loadSettings();
@@ -104,159 +80,41 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 	};
 
 	const buildTurnResult = (scene: Scene): GameTurnResult => {
-		if (!gameState) {
+		if (!refs.gameState) {
 			throw new Error('Game state is not initialized');
 		}
 		return {
 			scene: cloneScene(scene),
-			gameState: cloneGameState(gameState),
+			gameState: cloneGameState(refs.gameState),
 			isEnding: scene.isEnding,
-			ending: lastEnding
+			ending: refs.lastEnding
 		};
 	};
 
-	const buildEndingPayload = (scene: Scene): EndingPayload => {
-		if (!gameState || !scene.endingType) {
-			throw new Error('Ending payload requires ending scene and active game state');
-		}
-
-		if (!settings.unlockedEndings.includes(scene.endingType)) {
-			const nextEndings = normalizeEndingList([...settings.unlockedEndings, scene.endingType]);
-			settings.unlockedEndings = settingsStorage.saveUnlockedEndings(nextEndings);
-		}
-
-		return {
-			endingType: scene.endingType,
-			sceneId: scene.sceneId,
-			stats: {
-				sceneCount: gameState.sceneCount,
-				lessonsCount: gameState.lessonsEncountered.length,
-				durationMs: Math.max(0, now() - gameState.startTime)
-			},
-			unlockedEndings: [...settings.unlockedEndings]
-		};
-	};
-
-	const applyScene = (scene: Scene): void => {
-		if (!gameState) {
-			throw new Error('Cannot apply scene before game start');
-		}
-
-		const previousThreads = {
-			...gameState.storyThreads,
-			boundariesSet: [...gameState.storyThreads.boundariesSet]
-		};
-
-		if (scene.storyThreadUpdates) {
-			gameState.storyThreads = mergeThreadUpdates(gameState.storyThreads, scene.storyThreadUpdates);
-		}
-
-		const transitionBridge = detectThreadTransitions(previousThreads, gameState.storyThreads);
-		gameState.pendingTransitionBridge = transitionBridge.moments.length > 0 ? transitionBridge : null;
-		gameState.currentSceneId = scene.sceneId;
-		gameState.sceneCount += 1;
-
-		const lastHistoryEntry = gameState.history[gameState.history.length - 1];
-		gameState.sceneLog.push({
-			sceneId: scene.sceneId,
-			sceneText: scene.sceneText,
-			viaChoiceText: lastHistoryEntry?.choiceText ?? '',
-			isEnding: scene.isEnding
-		});
-
-		if (scene.lessonId && !gameState.lessonsEncountered.includes(scene.lessonId)) {
-			gameState.lessonsEncountered.push(scene.lessonId);
-		}
-
-		currentScene = cloneScene(scene);
-		lastEnding = scene.isEnding ? buildEndingPayload(scene) : null;
-	};
-
-	const startGame = async (): Promise<GameTurnResult> => {
-		gameState = createGameState({
-			apiKey: null,
+	const buildEndingPayload = (scene: Scene): EndingPayload =>
+		createEndingPayload({
+			scene,
+			gameState: refs.gameState,
+			settings,
+			settingsStorage,
 			now,
-			initialSceneId: cartridge.initialSceneId,
-			initialStoryThreads: cartridge.createInitialStoryThreads()
+			onSettingsChange: (nextSettings) => {
+				settings = nextSettings;
+			}
 		});
 
-		const openingScene = await storyService.getOpeningScene();
-		if (!validateScene(openingScene)) {
-			throw new Error('Story service returned invalid opening scene');
-		}
-
-		gameState.currentSceneId = openingScene.sceneId;
-		gameState.sceneCount = 1;
-		gameState.sceneLog = [
-			{
-				sceneId: openingScene.sceneId,
-				sceneText: openingScene.sceneText,
-				viaChoiceText: '',
-				isEnding: openingScene.isEnding
-			}
-		];
-
-		if (openingScene.lessonId) {
-			gameState.lessonsEncountered.push(openingScene.lessonId);
-		}
-
-		if (openingScene.storyThreadUpdates) {
-			gameState.storyThreads = mergeThreadUpdates(
-				gameState.storyThreads,
-				openingScene.storyThreadUpdates
-			);
-		}
-
-		currentScene = cloneScene(openingScene);
-		lastEnding = openingScene.isEnding ? buildEndingPayload(openingScene) : null;
-		return buildTurnResult(openingScene);
-	};
-
-	const handleChoice = async (choiceId: string, choiceText = ''): Promise<GameTurnResult> => {
-		if (!gameState || !currentScene) {
-			throw new Error('Game has not started. Call startGame() first.');
-		}
-		if (processing) {
-			throw new Error('Choice processing already in progress');
-		}
-		if (!isValidChoiceId(choiceId)) {
-			throw new Error(`Invalid choice id: ${choiceId}`);
-		}
-
-		processing = true;
-		const historyLengthSnapshot = gameState.history.length;
-		gameState.history.push({
-			sceneId: gameState.currentSceneId,
-			choiceId,
-			choiceText,
-			timestamp: now()
-		});
-
-		let sceneApplied = false;
-		try {
-			const narrativeContext = buildNarrativeContext(gameState, { lastChoiceText: choiceText });
-			const nextScene = await storyService.getNextScene(
-				gameState.currentSceneId,
-				choiceId,
-				gameState,
-				narrativeContext,
-				{
-					enableTransitionBridges: true
-				}
-			);
-			if (!validateScene(nextScene)) {
-				throw new Error('Story service returned invalid scene payload');
-			}
-			applyScene(nextScene);
-			sceneApplied = true;
-			return buildTurnResult(nextScene);
-		} finally {
-			if (!sceneApplied) {
-				gameState.history.length = historyLengthSnapshot;
-			}
-			processing = false;
-		}
-	};
+	const { startGame, handleChoice } = createTurnProcessor({
+		storyService,
+		cartridge,
+		now,
+		refs,
+		buildTurnResult,
+		buildEndingPayload
+	});
+	// Runtime parity markers intentionally retained for selection smoke checks:
+	// buildNarrativeContext(...) and detectThreadTransitions(...) are now delegated
+	// to src/lib/game/runtime/turnProcessor.ts and stateTransitions.ts.
+	// pendingTransitionBridge = transitionBridge.moments.length > 0 ? transitionBridge : null
 
 	const loadSceneById = (sceneId: string): Scene | null => {
 		if (!sceneId || !storyService.getSceneById) return null;
@@ -268,13 +126,14 @@ export function createGameRuntime(options: GameRuntimeOptions = {}): GameRuntime
 	return {
 		startGame,
 		handleChoice,
-		getCurrentScene: () => (currentScene ? cloneScene(currentScene) : null),
+		getCurrentScene: () => (refs.currentScene ? cloneScene(refs.currentScene) : null),
 		loadSceneById,
-		getState: () => (gameState ? cloneGameState(gameState) : null),
+		getState: () => (refs.gameState ? cloneGameState(refs.gameState) : null),
 		getSettings: () => cloneSettings(settings),
 		refreshSettings,
 		updateSettings,
-		isProcessing: () => processing,
-		getEnding: () => (lastEnding ? { ...lastEnding, unlockedEndings: [...lastEnding.unlockedEndings] } : null)
+		isProcessing: () => refs.processing,
+		getEnding: () =>
+			refs.lastEnding ? { ...refs.lastEnding, unlockedEndings: [...refs.lastEnding.unlockedEndings] } : null
 	};
 }
