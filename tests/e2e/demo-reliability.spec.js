@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 const HAS_XAI_KEY = Boolean((process.env.XAI_API_KEY || '').trim());
+const MISSING_KEY_USER_MESSAGE =
+	'AI is not configured yet. Add XAI_API_KEY to the server environment, then redeploy.';
 
 async function expectPathname(page, expectedPath) {
 	await expect
@@ -30,6 +32,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		} else {
 			expect(openingResponse.ok()).toBeFalsy();
 			expect(String(openingBody.error || '')).toMatch(/xai_api_key|required|grok-only/i);
+			expect(String(openingBody.code || '')).toBe('missing_api_key');
 		}
 	});
 
@@ -107,6 +110,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		} else {
 			expect(response.ok()).toBeFalsy();
 			expect(String(body.error || '')).toMatch(/configured|xai_api_key|grok-only/i);
+			expect(String(body.code || '')).toBe('missing_api_key');
 		}
 	});
 
@@ -135,7 +139,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 			await expect(page.getByTestId('mode-pill')).toContainText(/AI Mode/i);
 			await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 20000 });
 		} else {
-			await expect(page.locator('.error-banner')).toContainText(/configured|api key|grok/i);
+			await expect(page.locator('.error-banner')).toContainText(MISSING_KEY_USER_MESSAGE);
 		}
 
 		await page.goto('/debug');

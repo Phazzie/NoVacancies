@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **AI Error Code Mapping Hardening:** Centralized typed client-side AI error mapping by provider/route code, updated API routes to preserve structured `{ code, status }` on error responses, and added regression coverage for stable user-facing messaging in unit + e2e reliability suites (`src/lib/errors/aiErrorMapping.ts`, `src/lib/services/storyService.ts`, `src/lib/game/store.ts`, `src/lib/server/ai/routeHelpers.ts`, `tests/unit/errors/aiErrorMapping.spec.ts`, `tests/e2e/demo-reliability.spec.js`).
 - **CI Noise Reduction:** Added workflow concurrency cancellation, split the blocking GitHub Actions gate into explicit legacy-guard and runtime-smoke steps, and limited Tier 2 Claude evaluation plus the live provider canary to `main` pushes/manual runs so PR checks stay deterministic (`.github/workflows/narrative-quality.yml`, `README.md`).
 - **Builder Neutrality Hardening:** Switched the builder's initial and fallback draft scaffold to the neutral `starter-kit` story so authoring no longer seeds Sydney/motel-specific copy when AI generation is unavailable (`src/routes/builder/+page.svelte`, `src/lib/server/ai/builder.ts`, `src/lib/builder/store.ts`).
 - **Active Story Branding Wiring:** Moved shared shell and home-route presentation onto story-level metadata so `PUBLIC_STORY_ID` now changes visible branding as well as runtime behavior/readiness metadata (`src/lib/stories/types.ts`, `src/lib/stories/no-vacancies/index.ts`, `src/lib/stories/starter-kit/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`).
