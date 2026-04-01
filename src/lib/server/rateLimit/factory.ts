@@ -6,8 +6,11 @@ const DEFAULT_OPTIONS: RateLimitOptions = {
 	windowMs: 60_000
 };
 
+const runtimeEnv: Record<string, string | undefined> =
+	(globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+
 function getStoreKind(): string {
-	return (process.env.RATE_LIMIT_STORE ?? 'memory').trim().toLowerCase();
+	return (runtimeEnv.RATE_LIMIT_STORE ?? 'memory').trim().toLowerCase();
 }
 
 export function createRateLimitStore(options: Partial<RateLimitOptions> = {}): RateLimitStore {
