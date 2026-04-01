@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.0] - 2026-03-31
+
+### Added / Changed
+
+- **Pluggable Rate Limit Store:** Extracted `MemoryRateLimitStore` behind a `RateLimitStore` interface with factory (`src/lib/server/rateLimit/`). `aiRateLimit` middleware selects the store via `createRateLimitStore()`; no behavior change at runtime.
+- **Modular Grok Provider:** Split the Grok provider into `transport.ts`, `retryPolicy.ts`, `sceneParser.ts`, and `sceneNormalizer.ts` under `src/lib/server/ai/providers/grok/`. `grok.ts` orchestrates them.
+- **Story Selectors:** Added `src/lib/stories/selectors.ts` with typed slice accessors (`selectStoryPrompts`, `selectStoryContextAdapter`, `selectStoryPresentation`, `selectStoryUiAssets`).
+- **AI Error Mapping:** Added `src/lib/server/ai/errors/` with `mapAiErrorToUserMessage()` for stable user-facing strings. `game/store.ts` uses this instead of inline message concatenation.
+- **Builder Modules:** Extracted `draftGenerator.ts`, `proseEvaluator.ts`, and `fallbackDraftFactory.ts` under `src/lib/server/ai/builder/`. `builder.ts` delegates to these.
+- **JSON Extraction Utility:** Added `src/lib/server/ai/json/extractJsonObject.ts` (strict + lenient modes) with full unit coverage.
+- **Scene Schema Validation:** Centralized in `src/lib/contracts/schemas/scene.ts` — `parseScene()` throws typed `SceneContractError`; `isScene()` is used by `validateScene()` in `contracts/game.ts`.
+- **Telemetry Sink Abstraction:** Added `src/lib/server/ai/telemetrySink.ts` with injectable `TelemetrySink` interface; default is a console sink.
+- **Builder Auth Middleware:** Added `src/lib/server/middleware/builderAuth.ts`; registered in `hooks.server.ts` `sequence()`. Builder API routes now return `401` without a valid token.
+- **Builder QA Evaluate-Draft Endpoint:** Added `POST /api/builder/evaluate-draft` route backed by `builder/draftEvaluator.ts`.
+- **Structured Route Error Payloads:** `asRouteError()` in `routeHelpers.ts` now returns `{ error, code, status }` JSON.
+- **`ApiStoryServiceError` type:** `storyService.ts` now exports a typed error class for client-side error handling.
+- **CLAUDE.md:** Added authoritative AI assistant reference document.
+- **Test fixes:** `narrativeContext.ts` now reads `recentChoiceTexts` from `sceneLog[].viaChoiceText`. Mock scenes in `openingThreadUpdate.spec.ts` updated to include `imageKey`, `lessonId: null` required by strict scene schema.
+
 ## [1.0.0] - 2026-03-26
 
 ### Changed

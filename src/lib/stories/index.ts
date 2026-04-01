@@ -59,3 +59,10 @@ export function getActiveStoryDefinition(): StoryDefinition {
 
 export { noVacanciesCartridge, starterKitCartridge };
 export type { StoryCartridge, StoryDefinition } from '$lib/stories/types';
+
+export {
+	selectStoryContextAdapter,
+	selectStoryPresentation,
+	selectStoryPrompts,
+	selectStoryUiAssets
+} from '$lib/stories/selectors';

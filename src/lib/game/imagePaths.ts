@@ -1,15 +1,15 @@
 import { ImageKeys } from '$lib/contracts';
-import { getActiveStoryCartridge } from '$lib/stories';
+import { selectStoryUiAssets } from '$lib/stories/selectors';
 
 const fallbackImagePaths: Record<string, string> = {
 	[ImageKeys.HOTEL_ROOM]: '/images/hotel_room.png'
 };
 
 function getStoryImageConfig() {
-	const cartridge = getActiveStoryCartridge();
+	const uiAssets = selectStoryUiAssets();
 	return {
-		imagePaths: cartridge.ui.imagePaths,
-		pregeneratedImagePool: cartridge.ui.pregeneratedImagePool
+		imagePaths: uiAssets.imagePaths,
+		pregeneratedImagePool: uiAssets.pregeneratedImagePool
 	};
 }
 

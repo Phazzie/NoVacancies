@@ -70,6 +70,37 @@ export interface BuilderFieldFeedback {
 	suggestion: string;
 }
 
+export type BuilderDraftDimension =
+	| 'voiceConsistency'
+	| 'behavioralSpecificity'
+	| 'mechanicClarity'
+	| 'promptCoherence'
+	| 'repetitionRisk';
+
+export type BuilderDraftFindingSeverity = 'blocker' | 'warning' | 'info';
+
+export interface BuilderDraftFinding {
+	severity: BuilderDraftFindingSeverity;
+	dimension: BuilderDraftDimension;
+	fieldKey: string;
+	message: string;
+}
+
+export interface BuilderDraftReadinessThresholds {
+	minOverallScore: number;
+	minDimensionScore: number;
+	maxBlockers: number;
+}
+
+export interface BuilderDraftEvaluation {
+	overallScore: number;
+	dimensionScores: Record<BuilderDraftDimension, number>;
+	findings: BuilderDraftFinding[];
+	thresholds: BuilderDraftReadinessThresholds;
+	readiness: 'publishable' | 'needs-revision' | 'blocked';
+	publishable: boolean;
+}
+
 export interface BuilderStoryCharacterDraft {
 	name: string;
 	role: string;

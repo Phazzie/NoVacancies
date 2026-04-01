@@ -1,11 +1,11 @@
 /// <reference types="@sveltejs/kit" />
+import type { SessionUser } from '$lib/server/auth';
 
 declare global {
 	namespace App {
-		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
-		// interface Platform {}
+		interface Locals {
+			sessionUser: SessionUser | null;
+		}
 	}
 }
 
