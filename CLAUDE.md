@@ -181,7 +181,7 @@ npm run serve        # Preview on 0.0.0.0:8080
 
 **Key test conventions:**
 - E2E tests block service workers (`serviceWorkers: 'block'`) for isolation
-- Playwright uses single worker (`workers: 1`), headless Chromium, baseURL `http://localhost:8080`
+- Playwright uses single worker (`workers: 1`), headless Chromium, environment-configurable host/port via `E2E_HOST` and `E2E_PORT` (defaults to `127.0.0.1:8080`)
 - Grok live canary only runs when `LIVE_GROK=1` env var is set
 - GitHub Actions cancels superseded runs (concurrency group per PR/branch)
 
@@ -198,7 +198,8 @@ npm run serve        # Preview on 0.0.0.0:8080
 
 ### Imports
 
-- Always use `$lib` alias, never relative imports into `src/lib`
+- Prefer `$lib` alias for imports that cross top-level feature areas under `src/lib` (e.g., `src/lib/game` → `$lib/services/...`)
+- Relative imports are acceptable within a cohesive feature/package folder under `src/lib` (e.g., siblings in `src/lib/game/*`, `src/lib/services/*`)
 - Never import `$lib/server/*` from client-side modules — SvelteKit enforces this boundary at build time
 
 ### Formatting
@@ -242,7 +243,7 @@ Story content is isolated from engine code via the `StoryDefinition` interface (
 The server holds no game state. Each request includes the full `GameState` + `NarrativeContext` from the client. State is persisted in localStorage. This enables horizontal scaling with no session affinity.
 
 ### Narrative Context Budget
-Hard 12,000-character budget per generation call. Deterministic truncation order: older summaries first → older recent prose → (rarely) line clipping. Truncation metadata is emitted for observability. Never trim high-signal context (last 2 full scenes, lesson history, thread/boundary lines) to chase the cap.
+Target ~12,000-character context budget per generation call (not a strict hard cap). Deterministic truncation order: drop older summaries first → then older recent prose → then, if still over budget, trim recent scene prose (including the last 2 scenes) in small fixed-size steps down to a minimum length, and only as a last resort perform line clipping. Truncation metadata is emitted for observability. High-signal context (lesson history, thread/boundary lines, and the most recent scenes) is deprioritized for trimming and only reduced after lower-priority context has been exhausted; estimates may still slightly exceed the target if nothing else is safely trimmable.
 
 ### Structural Validators Only
 `sanity.ts` enforces only deterministic constraints: word count, choice count, JSON schema, duplicate choices. No taste-based regex checks (no apology-loop counters, no therapy-speak detectors). Narrative taste enforcement lives in the system prompt and Tier 2 scoring.
