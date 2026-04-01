@@ -13,7 +13,7 @@ interface ChatResponse {
 export async function callBuilderModel(systemPrompt: string, userPrompt: string): Promise<string> {
 	const config = loadAiConfig();
 	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), 30_000);
+	const timeoutId = setTimeout(() => controller.abort(), config.requestTimeoutMs);
 
 	let response: Response;
 	try {

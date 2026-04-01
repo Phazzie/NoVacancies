@@ -1,8 +1,6 @@
-import { validateEndingType, validateScene, type Scene, type StoryThreads } from '$lib/contracts';
+import { Moods, validateEndingType, validateScene, type Scene, type StoryThreads } from '$lib/contracts';
 import { AiProviderError } from '$lib/server/ai/provider.interface';
 import type { SceneCandidate } from '$lib/server/ai/providers/grok/sceneParser';
-
-const VALID_MOODS: Scene['mood'][] = ['neutral', 'tense', 'hopeful', 'dark', 'triumphant'];
 
 function normalizeChoiceId(text: string, index: number): string {
 	const normalized = text
@@ -44,7 +42,7 @@ export function normalizeSceneCandidate(candidate: SceneCandidate, fallbackScene
 		imagePrompt: typeof candidate.imagePrompt === 'string' ? candidate.imagePrompt : undefined,
 		isEnding,
 		endingType,
-		mood: typeof candidate.mood === 'string' && VALID_MOODS.includes(candidate.mood as Scene['mood'])
+		mood: typeof candidate.mood === 'string' && (Object.values(Moods) as string[]).includes(candidate.mood)
 			? (candidate.mood as Scene['mood'])
 			: undefined,
 		storyThreadUpdates:
