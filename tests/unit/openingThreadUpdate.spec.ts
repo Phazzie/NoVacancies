@@ -19,17 +19,15 @@ test.describe('Opening Scene Thread Updates (Wu-Bob Hardening)', () => {
                 sceneId: 'start',
                 sceneText: 'The saga begins.',
                 isEnding: false,
+                endingType: null,
+                lessonId: null,
+                imageKey: 'hotel_room',
                 // The critical payload we are testing:
                 storyThreadUpdates: {
                     oswaldoConflict: expectedConflictLevel
                 },
                 // Minimal valid scene requirements:
                 choices: [{ id: '1', text: 'Enter the 36 Chambers' }],
-                analysis: { 
-                    mood: 'grim', 
-                    suitability: 1, 
-                    reasoning: mockAnalysisCode // Tracer bullet
-                }
             }),
             getNextScene: async () => { throw new Error("Should not be called in this test"); },
             getSceneById: () => null
@@ -61,6 +59,9 @@ test.describe('Opening Scene Thread Updates (Wu-Bob Hardening)', () => {
                 sceneId: 'start', 
                 sceneText: 'Quiet.', 
                 isEnding: false,
+                endingType: null,
+                lessonId: null,
+                imageKey: 'hotel_room',
                 choices: [],
                 // No thread updates provided
             }),

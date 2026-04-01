@@ -171,7 +171,9 @@ export function buildNarrativeContext(
 	const context: NarrativeContext = {
 		sceneCount: Number(gameState?.sceneCount || 0),
 		lastChoiceText: lastChoiceText || '',
-		recentChoiceTexts: buildRecentChoiceTexts(gameState?.history || []),
+		recentChoiceTexts: buildRecentChoiceTexts(
+			(gameState?.sceneLog || []).map((e) => ({ choiceText: e.viaChoiceText }))
+		),
 		threadState: gameState?.storyThreads || null,
 		threadNarrativeLines: translateThreadStateNarrative(gameState?.storyThreads || null),
 		boundaryNarrativeLines: translateBoundaries(gameState?.storyThreads?.boundariesSet || []),
