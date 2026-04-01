@@ -36,7 +36,7 @@ export async function callBuilderModel(systemPrompt: string, userPrompt: string)
 		});
 	} catch (error) {
 		if (error instanceof Error && error.name === 'AbortError') {
-			throw new Error('Builder model request timed out after 30 seconds');
+			throw new Error(`Builder model request timed out after ${config.requestTimeoutMs}ms`);
 		}
 		throw error;
 	} finally {
