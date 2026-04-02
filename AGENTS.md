@@ -20,16 +20,12 @@ Narrative decision rule:
 ## Canonical Documentation Policy
 
 These are the only canonical docs for persistent project knowledge:
-- `README.md` -> how to run/use, current operational status, doc map
-- `CHANGELOG.md` -> dated "what changed" and short rationale
-- `AI_LESSONS_LEARNED.md` -> durable engineering/content lessons
+- `README.md` → how to run/use, current operational status, doc map
+- `CHANGELOG.md` → dated "what changed" and short rationale
+- `AI_LESSONS_LEARNED.md` → durable engineering/content lessons
 
 Optional canonical rationale file:
-- `docs/DECISIONS.md` -> major architecture/product tradeoffs
-
-Non-canonical operational logs:
-- `codexreview.md` -> working review/audit log only
-- `claude.md` -> instruction file only (no running status logs)
+- `docs/DECISIONS.md` → major architecture/product tradeoffs
 
 Preservation rule (keep-over-delete):
 - If content is useful but non-canonical, move to `docs/archive/` with date and source.
@@ -48,15 +44,14 @@ At task end, always include a "Docs Updated" list in the handoff.
 ### Change Trigger Matrix
 
 If these files change, update the paired docs/tests in the same task:
-- `js/contracts.js` -> update `tests/integrationTest.js` contract coverage and `CHANGELOG.md`
-- `js/prompts.js` or `js/services/geminiStoryService.js` -> update AI quality/recovery tests and `AI_LESSONS_LEARNED.md` when new prompt behavior lessons emerge
-- `index.html` / `style.css` / `js/renderer.js` -> update renderer/e2e checks and `README.md` UX notes if behavior changed
-- `tests/*` pipeline behavior -> update `README.md` test commands/status expectations
+- `src/lib/contracts/game.ts` → update `tests/unit/` contract coverage and `CHANGELOG.md`
+- `src/lib/stories/no-vacancies/prompts.ts` or `src/lib/server/ai/providers/grok.ts` → update `tests/narrative/narrativeQuality.test.js` and `AI_LESSONS_LEARNED.md` when new prompt behavior lessons emerge
+- `src/routes/**/*.svelte` or `src/app.css` → update `tests/e2e/` checks and `README.md` UX notes if behavior changed
+- `tests/*` pipeline behavior → update `README.md` test commands/status expectations
 
 ## Non-Negotiable Product Invariants
 
-- AI->mock fallback must preserve playability; no abrupt forced ending from incompatible scene IDs.
-- Parse recovery/fallback flow must be bounded; no infinite retry loops.
+- Hard-fail must preserve playability — parse failures must not produce abrupt endings; recovery must be bounded (no infinite retry loops).
 - API keys/secrets must never be logged, exported, or included in recaps.
 - Accessibility baseline must be preserved (zoom enabled, focus continuity, readable scene formatting).
 - Image content guardrail: never depict Oswaldo's face or bare skin.
@@ -68,25 +63,21 @@ If these files change, update the paired docs/tests in the same task:
 2. Prefer test-first for bug fixes and reliability-sensitive changes.
 3. Keep changes minimal and local; avoid unrelated refactors.
 4. Re-run relevant validation:
-   - `npm run lint`
+   - `npm run lint` + `npm run check` (lint covers tests/, check covers src/)
    - `npm test`
    - `npm run test:e2e` when e2e-related paths change (or clearly report environment block)
 5. Report evidence, not assumptions (commands run + pass/fail summary).
 
 ## Autonomy Defaults (Execution Contract)
 
-- Canonical active implementation plan: `docs/LOCAL_NARRATIVE_UPGRADE_PLAN.md`.
-- On `feat/sveltekit-migration`, active migration docs are:
-  - `docs/SVELTEKIT_MIGRATION_PLAN.md`
-  - `docs/GROK_API_SWITCH_PLAN_POST_SVELTEKIT.md` (follow-up only, post-SvelteKit)
 - Execution cadence defaults:
   - commit per phase
   - push per passed phase
   - ignore unrelated files unless they block touched files
 - Test gates per phase:
-  - `npm run lint`
+  - `npm run lint` + `npm run check`
   - `npm test`
-  - `npm run test:e2e` when renderer/e2e paths change
+  - `npm run test:e2e` when route/e2e paths change
 - Mandatory Review/Critique/Revise loop per phase.
 - Mandatory critique question in every phase:
   - `What would a group of haters say about the work I just did?`

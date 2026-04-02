@@ -1,32 +1,42 @@
-# AGENTS.md (tests/)
+# AGENTS.md — tests/
 
-Scope: `tests/` and subfolders unless deeper file overrides.
+Behavioral rules for the test suite. Extends root `AGENTS.md`.
 
-## Purpose
+The tests directory is the enforcement layer for every invariant in `CLAUDE.md` and `AGENTS.md`. Weakening a test weakens a guarantee. Treat test changes with the same scrutiny as source changes.
 
-Guarantee regression resistance with deterministic, meaningful tests.
+---
 
-## Test Design Rules
+## Stop / Ask Before Proceeding
 
-- Prefer deterministic tests over timing-dependent behavior.
-- Use clear Arrange/Act/Assert structure.
-- Test names should describe behavior, not implementation details.
-- Every bug fix should include a regression test in the closest relevant suite.
+**STOP and ask the user before:**
+- Removing or weakening any Tier 1 guard — these are the blocking PR gates; removal requires explicit authorization
+- Promoting a Tier 2 check (prose quality, AI rubric) to Tier 1 — Tier 1 must remain fully deterministic
+- Disabling or skipping a Playwright test — investigate the root cause; don't silence failures
+- Changing `noLegacyProviderMarkers.js` parity checks — removing a check requires explaining what else prevents that regression
 
-## Reliability Rules
+---
 
-- Do not depend on live network by default in standard test runs.
-- Avoid flaky sleeps; use explicit state checks/timeouts.
-- Keep test fixtures minimal and readable.
+## Confidence Requirements
 
-## Coverage Priorities
+- **Never claim a test passes without running it** — report the exact command and its output summary
+- **Playwright test changes must be verified** with `npm run test:e2e` before marking done
+- **Fixture changes** in `tests/narrative/fixtures/` require a `npm run test:narrative` pass
+- **CI workflow changes** require a manual workflow run to verify correct behavior
 
-1. AI error handling and fallback paths
-2. Contract/validation boundaries
-3. State transitions and persistence edge cases
-4. Renderer/accessibility behavior
+---
 
-## Maintenance Rules
+## Anti-Goals
 
-- If a suite becomes obsolete, archive/remove it with rationale in `CHANGELOG.md`.
-- Keep `npm test` representative of core quality gates.
+- Do not add taste/semantic heuristics to `narrativeQuality.test.js` — structural and contract checks only
+- Do not add live API calls to any Tier 1 test
+- Do not add `sleep()` or arbitrary timing waits to Playwright tests — fix the root cause
+- Do not add `test.skip()` to avoid a flaky test without justification and a follow-up task
+
+---
+
+## Cross-References
+
+- `storyEngineRuntimeSelection.js` tests `PUBLIC_STORY_ID` behavior → changes to `src/lib/stories/index.ts` must keep this test green
+- `narrativeQuality.test.js` imports from `src/` → source contract changes may require test updates in the same PR
+- `noLegacyProviderMarkers.js` scans `src/**`, `tests/e2e/**`, `package.json` → scope changes must be documented in `CHANGELOG.md`
+- `contextBudget.spec.ts` + `transitionBridge.spec.ts` → changes to `src/lib/game/narrativeContext.ts` must keep these green
