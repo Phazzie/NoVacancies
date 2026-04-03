@@ -22,7 +22,7 @@ function bytesToBase64Url(bytes) {
 		.replace(/=+$/g, '');
 }
 
-async function signPayload(encodedPayload, secret) {
+async function signPayload(payloadString, secret) {
 	const encoder = new TextEncoder();
 	const key = await crypto.subtle.importKey(
 		'raw',
@@ -31,19 +31,19 @@ async function signPayload(encodedPayload, secret) {
 		false,
 		['sign']
 	);
-	const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(encodedPayload));
+	const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payloadString));
 	return bytesToBase64Url(new Uint8Array(signatureBuffer));
 }
 
 async function createSignedSessionCookieValue(
-	user,
+	sessionUser,
 	secret,
 	issuedAtSeconds = Math.floor(Date.now() / 1000),
 	expiresInSeconds = 300
 ) {
 	const envelope = {
-		userId: user.userId,
-		role: user.role,
+		userId: sessionUser.userId,
+		role: sessionUser.role,
 		iat: issuedAtSeconds,
 		exp: issuedAtSeconds + expiresInSeconds
 	};
