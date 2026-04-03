@@ -65,15 +65,15 @@ test.describe('builder modelClient', () => {
         ]);
     });
 
-	test('throws a timeout error when request is aborted', async () => {
-		globalThis.fetch = (async () => {
-			const err = new Error('aborted');
-			(err as Error & { name: string }).name = 'AbortError';
-			throw err;
-		}) as MockFetch;
+    test('throws a timeout error when request is aborted', async () => {
+        globalThis.fetch = (async () => {
+            const err = new Error('aborted');
+            (err as Error & { name: string }).name = 'AbortError';
+            throw err;
+        }) as MockFetch;
 
-		await expect(callBuilderModel('system', 'user')).rejects.toThrow(/timed out/i);
-	});
+        await expect(callBuilderModel('system', 'user')).rejects.toThrow(/timed out/i);
+    });
 
     test('throws when provider returns empty content', async () => {
         globalThis.fetch = (async () =>
