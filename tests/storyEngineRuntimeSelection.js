@@ -12,8 +12,7 @@ function wait(ms) {
 }
 
 function bytesToBase64Url(bytes) {
-	const binary = String.fromCharCode(...bytes);
-	return Buffer.from(binary, 'binary')
+	return Buffer.from(bytes)
 		.toString('base64')
 		.replace(/\+/g, '-')
 		.replace(/\//g, '_')
@@ -248,7 +247,7 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
-		const sessionCookie = await createSignedSessionCookieValue(
+		const sessionCookieValue = await createSignedSessionCookieValue(
 			{ userId: 'smoke-test-user', role: 'author' },
 			TEST_AUTH_SECRET
 		);
@@ -256,7 +255,7 @@ async function runScenario({
 			method: 'POST',
 			headers: {
 				'content-type': 'application/json',
-				cookie: `${SESSION_COOKIE_NAME}=${sessionCookie}`
+				cookie: `${SESSION_COOKIE_NAME}=${sessionCookieValue}`
 			},
 			body: JSON.stringify({ premise: '' })
 		}).then((res) => res.json());
