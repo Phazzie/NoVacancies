@@ -4,9 +4,46 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 
 const HOST = '127.0.0.1';
+const SESSION_COOKIE_NAME = 'nv_session';
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
+const TEST_AUTH_SECRET = 'story-selection-smoke-secret';
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function bytesToBase64Url(bytes) {
+	const binary = String.fromCharCode(...bytes);
+	return Buffer.from(binary, 'binary')
+		.toString('base64')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_')
+		.replace(/=+$/g, '');
+}
+
+async function signPayload(encodedPayload, secret) {
+	const encoder = new TextEncoder();
+	const key = await crypto.subtle.importKey(
+		'raw',
+		encoder.encode(secret),
+		{ name: 'HMAC', hash: 'SHA-256' },
+		false,
+		['sign']
+	);
+	const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(encodedPayload));
+	return bytesToBase64Url(new Uint8Array(signatureBuffer));
+}
+
+async function createSignedSessionCookieValue(user, secret, nowSeconds = Math.floor(Date.now() / 1000)) {
+	const envelope = {
+		userId: user.userId,
+		role: user.role,
+		iat: nowSeconds,
+		exp: nowSeconds + SESSION_MAX_AGE_SECONDS
+	};
+	const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(envelope)));
+	const signature = await signPayload(encodedPayload, secret);
+	return `${encodedPayload}.${signature}`;
 }
 
 function formatCapturedOutput(stdout, stderr) {
@@ -138,6 +175,7 @@ async function runScenario({
 		ENABLE_GROK_TEXT: '1',
 		ENABLE_GROK_IMAGES: '0',
 		AI_AUTH_BYPASS: '0',
+		AUTH_SESSION_SECRET: TEST_AUTH_SECRET,
 		XAI_API_KEY: 'test_key_for_selection_smoke',
 		FORCE_COLOR: '0',
 		...extraEnv
@@ -206,10 +244,15 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
+		const sessionCookie = await createSignedSessionCookieValue(
+			{ userId: 'smoke-test-user', role: 'author' },
+			TEST_AUTH_SECRET
+		);
 		const builderFallback = await fetch(`http://${HOST}:${port}/api/builder/generate-draft`, {
 			method: 'POST',
 			headers: {
-				'content-type': 'application/json'
+				'content-type': 'application/json',
+				cookie: `${SESSION_COOKIE_NAME}=${sessionCookie}`
 			},
 			body: JSON.stringify({ premise: '' })
 		}).then((res) => res.json());
