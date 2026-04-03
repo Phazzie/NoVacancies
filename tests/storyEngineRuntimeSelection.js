@@ -2,8 +2,30 @@
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import net from 'node:net';
+import { createHmac } from 'node:crypto';
 
 const HOST = '127.0.0.1';
+const TEST_SESSION_SECRET = 'test_runtime_selection_secret';
+
+function toBase64Url(value) {
+	return Buffer.from(value)
+		.toString('base64')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_')
+		.replace(/=+$/g, '');
+}
+
+function createSignedSessionCookie(user, secret, nowSeconds = Math.floor(Date.now() / 1000)) {
+	const payload = {
+		userId: user.userId,
+		role: user.role,
+		iat: nowSeconds,
+		exp: nowSeconds + 60 * 60
+	};
+	const encodedPayload = toBase64Url(JSON.stringify(payload));
+	const signature = createHmac('sha256', secret).update(encodedPayload).digest('base64url');
+	return `${encodedPayload}.${signature}`;
+}
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -138,6 +160,7 @@ async function runScenario({
 		ENABLE_GROK_TEXT: '1',
 		ENABLE_GROK_IMAGES: '0',
 		AI_AUTH_BYPASS: '0',
+		AUTH_SESSION_SECRET: TEST_SESSION_SECRET,
 		XAI_API_KEY: 'test_key_for_selection_smoke',
 		FORCE_COLOR: '0',
 		...extraEnv
@@ -206,10 +229,15 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
+		const sessionCookieValue = createSignedSessionCookie(
+			{ userId: 'runtime-selection-smoke', role: 'author' },
+			env.AUTH_SESSION_SECRET || TEST_SESSION_SECRET
+		);
 		const builderFallback = await fetch(`http://${HOST}:${port}/api/builder/generate-draft`, {
 			method: 'POST',
 			headers: {
-				'content-type': 'application/json'
+				'content-type': 'application/json',
+				cookie: `nv_session=${sessionCookieValue}`
 			},
 			body: JSON.stringify({ premise: '' })
 		}).then((res) => res.json());

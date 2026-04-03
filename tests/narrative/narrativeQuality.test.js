@@ -67,7 +67,7 @@ function testStoryRegistryAndPromptOwnership() {
 		'narrative facade no longer hardcodes No Vacancies system prompt text'
 	);
 	assert(
-		/return getActiveStoryCartridge\(\)\.prompts\.getContinuePromptFromContext/.test(narrativeSource),
+		/return storyPrompts\.getContinuePromptFromContext/.test(narrativeSource),
 		'narrative facade delegates continue prompts to active story'
 	);
 }
@@ -196,11 +196,11 @@ function testBuilderSurfaces() {
 		'builder module exposes full draft evaluation'
 	);
 	assert(
-		builderModule.includes('callBuilderModel'),
+		builderModule.includes('generateDraftFromPremiseInternal'),
 		'builder module uses AI-first builder calls'
 	);
 	assert(
-		builderModule.includes('createFallbackDraft'),
+		builderModule.includes('evaluateBuilderDraftInternal'),
 		'builder module has deterministic fallback draft generation'
 	);
 	assert(
