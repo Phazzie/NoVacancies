@@ -16,6 +16,8 @@ function toBase64Url(value) {
 }
 
 function createSignedSessionCookie(user, secret, nowSeconds = Math.floor(Date.now() / 1000)) {
+	// This is the app's custom `nv_session` envelope format: base64url(payload).signature.
+	// It intentionally is not a JWT and mirrors src/lib/server/auth.ts parsing/signing.
 	const payload = {
 		userId: user.userId,
 		role: user.role,

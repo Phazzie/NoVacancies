@@ -197,11 +197,11 @@ function testBuilderSurfaces() {
 	);
 	assert(
 		builderModule.includes('generateDraftFromPremiseInternal'),
-		'builder module uses AI-first builder calls'
+		'builder module delegates draft generation to internal implementation'
 	);
 	assert(
 		builderModule.includes('evaluateBuilderDraftInternal'),
-		'builder module has deterministic fallback draft generation'
+		'builder module delegates draft evaluation to internal implementation'
 	);
 	assert(
 		builderPage.includes('premise'),
