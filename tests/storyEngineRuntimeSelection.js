@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 
 const HOST = '127.0.0.1';
+// Keep aligned with src/lib/server/auth.ts SESSION_COOKIE_NAME; duplicated here because this
+// standalone Node smoke script cannot import TypeScript source constants directly.
 const SESSION_COOKIE_NAME = 'nv_session';
+// Test-only signing secret for smoke scenarios; never used by deployed environments.
 const TEST_AUTH_SECRET = 'story-selection-smoke-secret';
 
 function wait(ms) {
@@ -35,14 +38,14 @@ async function signPayload(encodedPayload, secret) {
 async function createSignedSessionCookieValue(
 	user,
 	secret,
-	nowSeconds = Math.floor(Date.now() / 1000),
+	issuedAtSeconds = Math.floor(Date.now() / 1000),
 	expiresInSeconds = 300
 ) {
 	const envelope = {
 		userId: user.userId,
 		role: user.role,
-		iat: nowSeconds,
-		exp: nowSeconds + expiresInSeconds
+		iat: issuedAtSeconds,
+		exp: issuedAtSeconds + expiresInSeconds
 	};
 	const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(envelope)));
 	const signature = await signPayload(encodedPayload, secret);
