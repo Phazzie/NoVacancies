@@ -17,7 +17,8 @@ function toBase64Url(value) {
 
 function createSignedSessionCookie(user, secret, nowSeconds = Math.floor(Date.now() / 1000)) {
 	// This is the app's custom `nv_session` envelope format: base64url(payload).signature.
-	// It intentionally is not a JWT and mirrors src/lib/server/auth.ts parsing/signing.
+	// It intentionally is not a JWT because builder auth uses a lightweight HMAC-signed envelope.
+	// This mirrors `parseSessionCookie` + `signPayload` in src/lib/server/auth.ts.
 	const payload = {
 		userId: user.userId,
 		role: user.role,
@@ -231,9 +232,10 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
+		const authSessionSecret = env.AUTH_SESSION_SECRET?.trim() ?? TEST_SESSION_SECRET;
 		const sessionCookieValue = createSignedSessionCookie(
 			{ userId: 'runtime-selection-smoke', role: 'author' },
-			env.AUTH_SESSION_SECRET || TEST_SESSION_SECRET
+			authSessionSecret
 		);
 		const builderFallback = await fetch(`http://${HOST}:${port}/api/builder/generate-draft`, {
 			method: 'POST',
