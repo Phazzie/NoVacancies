@@ -4,9 +4,52 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 
 const HOST = '127.0.0.1';
+// Keep aligned with src/lib/server/auth.ts SESSION_COOKIE_NAME; duplicated here because this
+// standalone Node smoke script cannot import TypeScript source constants directly.
+const SESSION_COOKIE_NAME = 'nv_session';
+// Test-only signing secret for smoke scenarios; never used by deployed environments.
+const TEST_AUTH_SECRET = 'story-selection-smoke-secret';
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function bytesToBase64Url(bytes) {
+	return Buffer.from(bytes)
+		.toString('base64')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_')
+		.replace(/=+$/g, '');
+}
+
+async function signPayload(payloadString, secret) {
+	const encoder = new TextEncoder();
+	const key = await crypto.subtle.importKey(
+		'raw',
+		encoder.encode(secret),
+		{ name: 'HMAC', hash: 'SHA-256' },
+		false,
+		['sign']
+	);
+	const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(payloadString));
+	return bytesToBase64Url(new Uint8Array(signatureBuffer));
+}
+
+async function createSignedSessionCookieValue(
+	sessionUser,
+	secret,
+	issuedAtSeconds = Math.floor(Date.now() / 1000),
+	expiresInSeconds = 300
+) {
+	const envelope = {
+		userId: sessionUser.userId,
+		role: sessionUser.role,
+		iat: issuedAtSeconds,
+		exp: issuedAtSeconds + expiresInSeconds
+	};
+	const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(envelope)));
+	const signature = await signPayload(encodedPayload, secret);
+	return `${encodedPayload}.${signature}`;
 }
 
 function formatCapturedOutput(stdout, stderr) {
@@ -138,6 +181,7 @@ async function runScenario({
 		ENABLE_GROK_TEXT: '1',
 		ENABLE_GROK_IMAGES: '0',
 		AI_AUTH_BYPASS: '0',
+		AUTH_SESSION_SECRET: TEST_AUTH_SECRET,
 		XAI_API_KEY: 'test_key_for_selection_smoke',
 		FORCE_COLOR: '0',
 		...extraEnv
@@ -206,10 +250,15 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
+		const sessionCookieValue = await createSignedSessionCookieValue(
+			{ userId: 'smoke-test-user', role: 'author' },
+			TEST_AUTH_SECRET
+		);
 		const builderFallback = await fetch(`http://${HOST}:${port}/api/builder/generate-draft`, {
 			method: 'POST',
 			headers: {
-				'content-type': 'application/json'
+				'content-type': 'application/json',
+				cookie: `${SESSION_COOKIE_NAME}=${sessionCookieValue}`
 			},
 			body: JSON.stringify({ premise: '' })
 		}).then((res) => res.json());
