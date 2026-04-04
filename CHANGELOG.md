@@ -4,6 +4,7 @@
 
 ### Added / Changed
 
+- **Unit Coverage Hardening (AI modules):** Added targeted unit tests for AI config parsing/guards, route helper input/error shaping + telemetry emission, builder model client timeout/http/empty-content handling, and draft evaluator fallback/AI-normalized paths to improve robustness against runtime misconfiguration and provider failure modes (`tests/unit/config.spec.ts`, `tests/unit/routeHelpers.spec.ts`, `tests/unit/builder/modelClient.spec.ts`, `tests/unit/builder/draftEvaluator.spec.ts`).
 - **Pluggable Rate Limit Store:** Extracted `MemoryRateLimitStore` behind a `RateLimitStore` interface with factory (`src/lib/server/rateLimit/`). `aiRateLimit` middleware selects the store via `createRateLimitStore()`; no behavior change at runtime.
 - **Modular Grok Provider:** Split the Grok provider into `transport.ts`, `retryPolicy.ts`, `sceneParser.ts`, and `sceneNormalizer.ts` under `src/lib/server/ai/providers/grok/`. `grok.ts` orchestrates them.
 - **Story Selectors:** Added `src/lib/stories/selectors.ts` with typed slice accessors (`selectStoryPrompts`, `selectStoryContextAdapter`, `selectStoryPresentation`, `selectStoryUiAssets`).
