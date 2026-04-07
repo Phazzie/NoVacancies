@@ -1,9 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Added / Changed
+
+- **Release Runbook Operationalized:** Added a documented stability-first release runbook in `README.md` that applies lessons learned directly to ship sequencing: scope lock, lane-based merge train ordering (A-D), mandatory deterministic quality gates per lane (`lint` -> `test` -> `test:narrative` -> `test:e2e`), explicit release blockers tied to Grok hard-fail + structural sanity + fail-fast cartridge selection, demo-readiness operator/failure-path checks, and RC rollback criteria.
+- **Gate Test Realignment (Lane A):** Updated Tier 1 narrative/e2e checks to match current architecture and auth posture: narrative quality assertions now validate selector-based prompt delegation and modular builder internals, while e2e route-shell coverage now reflects the current home shell and verifies `/builder` is anonymous-protected (401 `auth_required`) instead of expecting unauthenticated builder authoring.
+
 ## [1.1.0] - 2026-03-31
 
 ### Added / Changed
 
+- **Unit Coverage Hardening (AI modules):** Added targeted unit tests for AI config parsing/guards, route helper input/error shaping + telemetry emission, builder model client timeout/http/empty-content handling, and draft evaluator fallback/AI-normalized paths to improve robustness against runtime misconfiguration and provider failure modes (`tests/unit/config.spec.ts`, `tests/unit/routeHelpers.spec.ts`, `tests/unit/builder/modelClient.spec.ts`, `tests/unit/builder/draftEvaluator.spec.ts`).
 - **Pluggable Rate Limit Store:** Extracted `MemoryRateLimitStore` behind a `RateLimitStore` interface with factory (`src/lib/server/rateLimit/`). `aiRateLimit` middleware selects the store via `createRateLimitStore()`; no behavior change at runtime.
 - **Modular Grok Provider:** Split the Grok provider into `transport.ts`, `retryPolicy.ts`, `sceneParser.ts`, and `sceneNormalizer.ts` under `src/lib/server/ai/providers/grok/`. `grok.ts` orchestrates them.
 - **Story Selectors:** Added `src/lib/stories/selectors.ts` with typed slice accessors (`selectStoryPrompts`, `selectStoryContextAdapter`, `selectStoryPresentation`, `selectStoryUiAssets`).
