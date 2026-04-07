@@ -108,7 +108,7 @@ Core quality gate:
 npm run lint
 npm test
 npm run test:narrative
-npx playwright test -c playwright-unit.config.js
+npm run test:unit
 npm run test:e2e
 ```
 
@@ -116,7 +116,7 @@ Notes:
 
 - `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, and invalid-id fail-fast behavior).
 - `npm run test:narrative` remains a deterministic Tier 1 smoke gate that validates fixture/reporting wiring only, so it stays fast and stable.
-- `npx playwright test -c playwright-unit.config.js` runs behavior-first unit suites (story registry runtime selection/fail-fast, prompt delegation ownership, and narrative-context contract outputs) using exported runtime APIs.
+- `npm run test:unit` runs behavior-first unit suites (story registry runtime selection/fail-fast, prompt delegation ownership, and narrative-context contract outputs) using exported runtime APIs.
 - `npm run test:e2e` runs Playwright against the SvelteKit app, including the builder flow and route-shell checks.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
 - GitHub PRs run only the blocking Tier 1 workflow gate. Tier 2 Claude evaluation and the live provider canary run on `main` pushes or manual workflow dispatch so PR feedback stays deterministic and lower-noise.
