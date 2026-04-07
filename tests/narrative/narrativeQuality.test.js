@@ -202,6 +202,14 @@ function testBuilderSurfaces() {
 		'builder module exposes full draft evaluation'
 	);
 	assert(
+		builderModule.includes('generateDraftFromPremiseInternal'),
+		'builder module delegates draft generation to internal implementation'
+	);
+	assert(
+		builderModule.includes('evaluateBuilderDraftInternal'),
+		'builder module delegates draft evaluation to internal implementation'
+	);
+	assert(
 		draftGeneratorModule.includes('callBuilderModel'),
 		'builder module uses AI-first builder calls'
 	);
