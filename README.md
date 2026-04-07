@@ -153,8 +153,9 @@ Release blockers (must hold to ship):
 
 Demo readiness pass before tag:
 
-1. Run operator flow: `/` -> `/play` full run -> `/settings` -> `/debug` -> `/builder`.
-2. Run one provider-misconfiguration path and verify clear recovery guidance in UI.
+1. Run operator flow: `/` -> `/play` full run -> `/settings` -> `/debug`.
+2. Validate `/builder` using a signed-in builder-capable session, or confirm anonymous access returns `401 auth_required`.
+3. Run one provider-misconfiguration path and verify clear recovery guidance in UI.
 
 RC cut + ship:
 

@@ -207,7 +207,7 @@ function testBuilderSurfaces() {
 	);
 	assert(
 		fallbackDraftFactoryModule.includes('createFallbackDraft'),
-		'builder module has deterministic fallback draft generation'
+		'fallback draft factory module has deterministic fallback draft generation'
 	);
 	assert(
 		builderPage.includes('premise'),
