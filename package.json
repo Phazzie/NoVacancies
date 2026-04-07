@@ -10,7 +10,7 @@
     "format": "prettier --write \"js/**/*.js\" \"src/**/*.{ts,svelte,css}\" \"*.css\" \"*.html\"",
     "serve": "vite preview --host 0.0.0.0 --port 8080",
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "svelte-kit sync && vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test:unit": "playwright test --config playwright.unit.config.ts",

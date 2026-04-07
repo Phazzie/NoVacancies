@@ -19,6 +19,7 @@
 - **CLAUDE.md:** Added authoritative AI assistant reference document.
 - **Test fixes:** `narrativeContext.ts` now reads `recentChoiceTexts` from `sceneLog[].viaChoiceText`. Mock scenes in `openingThreadUpdate.spec.ts` updated to include `imageKey`, `lessonId: null` required by strict scene schema.
 - **Narrative Context Trim Stability:** Fixed a non-terminating budget-trim edge case by ensuring recent prose trimming always makes forward progress near minimum-length boundaries, and updated context-budget unit assertions to validate trim ordering without brittle zero-trim assumptions (`src/lib/game/narrativeContext.ts`, `tests/unit/contextBudget.spec.ts`).
+- **Vercel Build Stability Hardening:** Updated `npm run build` to run `svelte-kit sync` before `vite build`, and removed manual `baseUrl`/`paths` overrides from `tsconfig.json` to align with SvelteKit defaults and eliminate tsconfig-resolution warnings seen during clean build environments (`package.json`, `tsconfig.json`).
 
 ## [1.0.0] - 2026-03-26
 
