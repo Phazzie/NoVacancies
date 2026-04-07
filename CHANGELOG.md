@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added / Changed
+
+- **Release Runbook Operationalized:** Added a documented stability-first release runbook in `README.md` that applies lessons learned directly to ship sequencing: scope lock, lane-based merge train ordering (A-D), mandatory deterministic quality gates per lane (`lint` -> `test` -> `test:narrative` -> `test:e2e`), explicit release blockers tied to Grok hard-fail + structural sanity + fail-fast cartridge selection, demo-readiness operator/failure-path checks, and RC rollback criteria.
+
 ## [1.1.0] - 2026-03-31
 
 ### Added / Changed
