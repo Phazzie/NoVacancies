@@ -18,6 +18,7 @@
 - **`ApiStoryServiceError` type:** `storyService.ts` now exports a typed error class for client-side error handling.
 - **CLAUDE.md:** Added authoritative AI assistant reference document.
 - **Test fixes:** `narrativeContext.ts` now reads `recentChoiceTexts` from `sceneLog[].viaChoiceText`. Mock scenes in `openingThreadUpdate.spec.ts` updated to include `imageKey`, `lessonId: null` required by strict scene schema.
+- **Narrative Context Trim Stability:** Fixed a non-terminating budget-trim edge case by ensuring recent prose trimming always makes forward progress near minimum-length boundaries, and updated context-budget unit assertions to validate trim ordering without brittle zero-trim assumptions (`src/lib/game/narrativeContext.ts`, `tests/unit/contextBudget.spec.ts`).
 
 ## [1.0.0] - 2026-03-26
 

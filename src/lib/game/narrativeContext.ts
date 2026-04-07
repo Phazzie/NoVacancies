@@ -60,9 +60,18 @@ function estimateContextChars(context: unknown): number {
 }
 
 function trimRecentSceneProse(text: string): string {
-	if (text.length <= MIN_RECENT_SCENE_PROSE_CHARS) return text;
-	const nextLength = Math.max(MIN_RECENT_SCENE_PROSE_CHARS, text.length - RECENT_SCENE_PROSE_TRIM_STEP);
-	const trimmed = text.slice(0, nextLength).trimEnd();
+	const normalized = text.replace(/(?:…|\.{3})$/, '');
+	if (normalized.length <= MIN_RECENT_SCENE_PROSE_CHARS) {
+		return normalized.trimEnd();
+	}
+	const nextLength = Math.max(
+		MIN_RECENT_SCENE_PROSE_CHARS,
+		normalized.length - RECENT_SCENE_PROSE_TRIM_STEP
+	);
+	const trimmed = normalized.slice(0, nextLength).trimEnd();
+	if (trimmed.length <= MIN_RECENT_SCENE_PROSE_CHARS) {
+		return trimmed;
+	}
 	return trimmed.endsWith('...') || trimmed.endsWith('…') ? trimmed : `${trimmed}…`;
 }
 
@@ -94,9 +103,13 @@ function applyContextBudget(context: NarrativeContext, maxChars: number): Narrat
 		for (let index = 0; index < budgeted.recentSceneProse.length; index += 1) {
 			const prose = budgeted.recentSceneProse[index];
 			if (prose.text.length > MIN_RECENT_SCENE_PROSE_CHARS) {
+				const nextText = trimRecentSceneProse(prose.text);
+				if (nextText === prose.text) {
+					continue;
+				}
 				budgeted.recentSceneProse[index] = {
 					...prose,
-					text: trimRecentSceneProse(prose.text)
+					text: nextText
 				};
 				dropped.recentProse += 1;
 				trimmed = true;

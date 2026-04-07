@@ -219,6 +219,11 @@
 **Insight:** If ending guidance only describes structure (loop/shift/exit/rare) but not emotional polarity, the model can drift toward unearned hopeful resolution.
 **Lesson:** State ending polarity directly in prompt instructions (for this project: bad-to-uneasy only, no clean wins) and reinforce it inside each ending steering branch.
 
+## 39. Budget Trimming Needs a Progress Guard at Floor Boundaries
+
+**Insight:** Even bounded truncation loops can become non-terminating when "trim" output does not strictly shrink near minimum-length floors (for example, suffix normalization that preserves length).
+**Lesson:** In every budget loop, enforce a progress guard (`next !== current`) before counting a trim step, and add boundary-focused tests that exercise near-floor lengths so hangs are caught in CI.
+
 ## 39. Cartridge Selection Should Fail Fast, Not Silently Fallback
 
 **Insight:** A default cartridge fallback hides misconfiguration and can make a deploy appear healthy while serving the wrong narrative content.

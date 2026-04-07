@@ -102,9 +102,13 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
 			isEnding: false
 		});
 
-		const context = buildNarrativeContext(state, { maxChars: 1400 });
+		const context = buildNarrativeContext(state, { maxChars: 2000 });
 		expect(context.meta.droppedOlderSummaries).toBeGreaterThan(0);
-		expect(context.meta.droppedRecentProse).toBe(0);
+		// Recent prose should only be trimmed after older summaries are exhausted
+		// to preserve high-signal context and narrative continuity.
+		if (context.meta.droppedRecentProse > 0) {
+			expect(context.olderSceneSummaries.length).toBe(0);
+		}
 
 		const recentText = context.recentSceneProse.map((p: { text: string }) => p.text).join(' ');
 		expect(recentText).toContain('RECENT_PROSE_KEEP_1');

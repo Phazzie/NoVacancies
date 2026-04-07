@@ -26,6 +26,7 @@ function createSignedSessionCookie(user, secret, nowSeconds = Math.floor(Date.no
 		exp: nowSeconds + 60 * 60
 	};
 	const encodedPayload = toBase64Url(JSON.stringify(payload));
+	// `base64url` digest output is available in Node 15+; this repo requires Node 22.x.
 	const signature = createHmac('sha256', secret).update(encodedPayload).digest('base64url');
 	return `${encodedPayload}.${signature}`;
 }
@@ -232,10 +233,9 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
-		const authSessionSecret = env.AUTH_SESSION_SECRET?.trim() ?? TEST_SESSION_SECRET;
 		const sessionCookieValue = createSignedSessionCookie(
 			{ userId: 'runtime-selection-smoke', role: 'author' },
-			authSessionSecret
+			env.AUTH_SESSION_SECRET
 		);
 		const builderFallback = await fetch(`http://${HOST}:${port}/api/builder/generate-draft`, {
 			method: 'POST',
