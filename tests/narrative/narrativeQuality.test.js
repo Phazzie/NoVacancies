@@ -172,16 +172,18 @@ function testBuilderSurfaces() {
 	suite('Builder Surfaces');
 
 	const builderModule = readSource('src/lib/server/ai/builder.ts');
-	const draftGenerator = readSource('src/lib/server/ai/builder/draftGenerator.ts');
-	const fallbackDraftFactory = readSource('src/lib/server/ai/builder/fallbackDraftFactory.ts');
+	const draftGeneratorModule = readSource('src/lib/server/ai/builder/draftGenerator.ts');
+	const fallbackDraftFactoryModule = readSource(
+		'src/lib/server/ai/builder/fallbackDraftFactory.ts'
+	);
 	const builderPage = readSource('src/routes/builder/+page.svelte');
 	const generateRoute = readSource('src/routes/api/builder/generate-draft/+server.ts');
 	const evaluateRoute = readSource('src/routes/api/builder/evaluate-prose/+server.ts');
 	const evaluateDraftRoute = readSource('src/routes/api/builder/evaluate-draft/+server.ts');
 
 	assert(builderModule !== null, 'builder server module exists');
-	assert(draftGenerator !== null, 'builder draft generator exists');
-	assert(fallbackDraftFactory !== null, 'builder fallback draft factory exists');
+	assert(draftGeneratorModule !== null, 'builder draft generator exists');
+	assert(fallbackDraftFactoryModule !== null, 'builder fallback draft factory exists');
 	assert(builderPage !== null, 'builder page exists');
 	assert(generateRoute !== null, 'generate-draft route exists');
 	assert(evaluateRoute !== null, 'evaluate-prose route exists');
@@ -200,11 +202,11 @@ function testBuilderSurfaces() {
 		'builder module exposes full draft evaluation'
 	);
 	assert(
-		draftGenerator.includes('callBuilderModel'),
+		draftGeneratorModule.includes('callBuilderModel'),
 		'builder module uses AI-first builder calls'
 	);
 	assert(
-		fallbackDraftFactory.includes('createFallbackDraft'),
+		fallbackDraftFactoryModule.includes('createFallbackDraft'),
 		'builder module has deterministic fallback draft generation'
 	);
 	assert(
