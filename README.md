@@ -120,6 +120,49 @@ Notes:
 - GitHub PRs run only the blocking Tier 1 workflow gate. Tier 2 Claude evaluation and the live provider canary run on `main` pushes or manual workflow dispatch so PR feedback stays deterministic and lower-noise.
 - GitHub Actions now cancel superseded in-progress runs for the same PR/branch, which reduces duplicate check spam while iterating quickly.
 
+## Release Runbook (Stability + Demo Confidence)
+
+Release scope policy:
+
+- This release is scoped to stability and demo confidence only (no net-new feature work).
+- Any nice-to-have work is explicitly deferred to the next milestone before merge-train start.
+
+Merge train order (risk lanes):
+
+1. Lane A: tests/docs/low-risk refactors
+2. Lane B: contracts/parsing/error-shaping/telemetry
+3. Lane C: builder auth + builder QA + builder UX
+4. Lane D: prompt/narrative behavior changes (merge last)
+
+Required gate before each lane merge:
+
+```bash
+npm run lint
+npm test
+npm run test:narrative
+npm run test:e2e
+```
+
+Release blockers (must hold to ship):
+
+- Grok hard-fail behavior remains intact (no runtime fallback drift).
+- Sanity enforcement remains structural-only (no brittle taste regex checks reintroduced).
+- Unknown story/config IDs fail fast (never silently fallback to another cartridge).
+- Telemetry remains structural/sanitized (no keys/secrets/prompt dumps in logs).
+- Parse recovery remains bounded and typed (no synthetic story-content masking provider defects).
+
+Demo readiness pass before tag:
+
+1. Run operator flow: `/` -> `/play` full run -> `/settings` -> `/debug`.
+2. Validate `/builder` using a signed-in builder-capable session, or confirm anonymous access returns `401 auth_required`.
+3. Run one provider-misconfiguration path and verify clear recovery guidance in UI.
+
+RC cut + ship:
+
+1. Freeze `main` for release candidate validation.
+2. Update `CHANGELOG.md`, tag RC, deploy, and smoke-test production routes.
+3. If any blocker fails in smoke, rollback immediately and reopen only the failing lane.
+
 ## PWA
 
 - Manifest: `/manifest.json`

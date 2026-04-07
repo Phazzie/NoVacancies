@@ -67,7 +67,7 @@ function testStoryRegistryAndPromptOwnership() {
 		'narrative facade no longer hardcodes No Vacancies system prompt text'
 	);
 	assert(
-		/return getActiveStoryCartridge\(\)\.prompts\.getContinuePromptFromContext/.test(narrativeSource),
+		/storyPrompts\.getContinuePromptFromContext/.test(narrativeSource),
 		'narrative facade delegates continue prompts to active story'
 	);
 }
@@ -172,12 +172,18 @@ function testBuilderSurfaces() {
 	suite('Builder Surfaces');
 
 	const builderModule = readSource('src/lib/server/ai/builder.ts');
+	const draftGeneratorModule = readSource('src/lib/server/ai/builder/draftGenerator.ts');
+	const fallbackDraftFactoryModule = readSource(
+		'src/lib/server/ai/builder/fallbackDraftFactory.ts'
+	);
 	const builderPage = readSource('src/routes/builder/+page.svelte');
 	const generateRoute = readSource('src/routes/api/builder/generate-draft/+server.ts');
 	const evaluateRoute = readSource('src/routes/api/builder/evaluate-prose/+server.ts');
 	const evaluateDraftRoute = readSource('src/routes/api/builder/evaluate-draft/+server.ts');
 
 	assert(builderModule !== null, 'builder server module exists');
+	assert(draftGeneratorModule !== null, 'builder draft generator exists');
+	assert(fallbackDraftFactoryModule !== null, 'builder fallback draft factory exists');
 	assert(builderPage !== null, 'builder page exists');
 	assert(generateRoute !== null, 'generate-draft route exists');
 	assert(evaluateRoute !== null, 'evaluate-prose route exists');
@@ -196,12 +202,12 @@ function testBuilderSurfaces() {
 		'builder module exposes full draft evaluation'
 	);
 	assert(
-		builderModule.includes('callBuilderModel'),
+		draftGeneratorModule.includes('callBuilderModel'),
 		'builder module uses AI-first builder calls'
 	);
 	assert(
-		builderModule.includes('createFallbackDraft'),
-		'builder module has deterministic fallback draft generation'
+		fallbackDraftFactoryModule.includes('createFallbackDraft'),
+		'fallback draft factory module has deterministic fallback draft generation'
 	);
 	assert(
 		builderPage.includes('premise'),

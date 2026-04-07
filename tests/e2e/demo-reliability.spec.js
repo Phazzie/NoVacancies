@@ -113,16 +113,14 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('route shells render', async ({ page }) => {
 		await page.goto('/');
 		await expectPathname(page, '/');
-		await expect(page.getByRole('heading', { level: 2, name: 'Carry What Matters' })).toBeVisible();
-		await expect(page.getByRole('heading', { level: 3, name: 'Demo Readiness' })).toBeVisible();
-		await expect(page.locator('.readiness-card')).toBeVisible();
-
-		await page
-			.getByRole('navigation', { name: 'Primary navigation' })
-			.getByRole('link', { name: /Builder/i })
-			.click();
-		await expectPathname(page, '/builder');
-		await expect(page.getByRole('heading', { level: 1, name: 'Builder' })).toBeVisible();
+		await expect(page.locator('.home-page')).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Begin Story' })).toBeVisible();
+		await expect(page.locator('.story-brief')).toBeVisible();
+		await expect(
+			page
+				.getByRole('navigation', { name: 'Primary navigation' })
+				.getByRole('link', { name: /Builder/i })
+		).toBeVisible();
 
 		await page.goto('/settings');
 		await expectPathname(page, '/settings');
@@ -171,24 +169,11 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await expect(page.getByText(/No debug errors recorded yet/i)).toBeVisible();
 	});
 
-	test('builder generates a draft from a premise and exposes editable fields', async ({ page }) => {
-		test.setTimeout(90000);
-		await page.goto('/builder');
-		await expect(page.getByRole('heading', { level: 1, name: 'Builder' })).toBeVisible();
-		await expect(page.getByTestId('builder-ready')).toHaveText('ready');
-		await page.getByLabel('Story premise').fill(
-			'A night janitor at a frozen warehouse keeps covering for her brother until the cold starts sounding personal.'
-		);
-		await page.getByRole('button', { name: /Generate Draft/i }).click();
-
-		await expect(page.locator('.builder-status-line')).toContainText(/Draft generated/i, {
-			timeout: 30000
-		});
-		await expect(page.locator('.builder-source-pill')).toBeVisible({ timeout: 30000 });
-		await expect(page.getByLabel('Story Title')).toBeVisible();
-		await expect(page.getByLabel('Setting')).toBeVisible();
-		await expect(page.getByLabel('Aesthetic Statement')).toBeVisible();
-		await expect(page.getByLabel('Story Title')).not.toHaveValue('Starter Story');
-		await expect(page.getByLabel('Story Title')).not.toHaveValue('No Vacancies');
+	test('builder route is protected for anonymous users', async ({ request }) => {
+		const response = await request.get('/builder');
+		expect(response.status()).toBe(401);
+		const body = await response.json();
+		expect(body.error?.code).toBe('auth_required');
+		expect(String(body.error?.message || '')).toMatch(/signed in|builder/i);
 	});
 });
