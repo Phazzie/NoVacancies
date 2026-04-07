@@ -63,7 +63,11 @@ function trimRecentSceneProse(text: string): string {
 	if (text.length <= MIN_RECENT_SCENE_PROSE_CHARS) return text;
 	const nextLength = Math.max(MIN_RECENT_SCENE_PROSE_CHARS, text.length - RECENT_SCENE_PROSE_TRIM_STEP);
 	const trimmed = text.slice(0, nextLength).trimEnd();
-	return trimmed.endsWith('...') || trimmed.endsWith('…') ? trimmed : `${trimmed}…`;
+	const withEllipsis = trimmed.endsWith('...') || trimmed.endsWith('…') ? trimmed : `${trimmed}…`;
+	// Invariant: each trim call must either reduce length or return the original text unchanged.
+	if (withEllipsis.length < text.length) return withEllipsis;
+	if (trimmed.length < text.length) return trimmed;
+	return text;
 }
 
 function applyContextBudget(context: NarrativeContext, maxChars: number): NarrativeContext {
@@ -94,9 +98,13 @@ function applyContextBudget(context: NarrativeContext, maxChars: number): Narrat
 		for (let index = 0; index < budgeted.recentSceneProse.length; index += 1) {
 			const prose = budgeted.recentSceneProse[index];
 			if (prose.text.length > MIN_RECENT_SCENE_PROSE_CHARS) {
+				const nextText = trimRecentSceneProse(prose.text);
+				if (nextText === prose.text) {
+					continue;
+				}
 				budgeted.recentSceneProse[index] = {
 					...prose,
-					text: trimRecentSceneProse(prose.text)
+					text: nextText
 				};
 				dropped.recentProse += 1;
 				trimmed = true;

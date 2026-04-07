@@ -4,8 +4,9 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 
 const HOST = '127.0.0.1';
+// Keep local to this standalone Node smoke script; importing TS source constants is not supported here.
 const SESSION_COOKIE_NAME = 'nv_session';
-const AUTH_SESSION_SECRET = 'smoke_test_session_secret';
+const AUTH_SESSION_SECRET = process.env.AUTH_SESSION_SECRET || 'e2e_session_secret';
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));

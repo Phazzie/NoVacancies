@@ -1,6 +1,56 @@
 import { test, expect } from '@playwright/test';
 
 const HAS_XAI_KEY = Boolean((process.env.XAI_API_KEY || '').trim());
+// Kept local for test portability across Playwright and standalone smoke harnesses.
+const SESSION_COOKIE_NAME = 'nv_session';
+const AUTH_SESSION_SECRET = process.env.AUTH_SESSION_SECRET || 'e2e_session_secret';
+const E2E_HOST = process.env.E2E_HOST || '127.0.0.1';
+const E2E_PORT = process.env.E2E_PORT || '8080';
+const E2E_BASE_URL = `http://${E2E_HOST}:${E2E_PORT}`;
+
+function bytesToBase64Url(bytes) {
+	return Buffer.from(bytes)
+		.toString('base64')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_')
+		.replace(/=+$/g, '');
+}
+
+async function createSignedSessionCookieValue({
+	userId = 'e2e-author',
+	role = 'author',
+	secret = AUTH_SESSION_SECRET
+} = {}) {
+	const nowSeconds = Math.floor(Date.now() / 1000);
+	const payload = {
+		userId,
+		role,
+		iat: nowSeconds,
+		exp: nowSeconds + 60 * 60 * 12
+	};
+	const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+	const key = await crypto.subtle.importKey(
+		'raw',
+		new TextEncoder().encode(secret),
+		{ name: 'HMAC', hash: 'SHA-256' },
+		false,
+		['sign']
+	);
+	const signatureBuffer = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(encodedPayload));
+	const signature = bytesToBase64Url(new Uint8Array(signatureBuffer));
+	return `${encodedPayload}.${signature}`;
+}
+
+async function ensureBuilderSession(page) {
+	const cookieValue = await createSignedSessionCookieValue();
+	await page.context().addCookies([
+		{
+			name: SESSION_COOKIE_NAME,
+			value: cookieValue,
+			url: E2E_BASE_URL
+		}
+	]);
+}
 
 async function expectPathname(page, expectedPath) {
 	await expect
@@ -113,10 +163,10 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	test('route shells render', async ({ page }) => {
 		await page.goto('/');
 		await expectPathname(page, '/');
-		await expect(page.getByRole('heading', { level: 2, name: 'Carry What Matters' })).toBeVisible();
-		await expect(page.getByRole('heading', { level: 3, name: 'Demo Readiness' })).toBeVisible();
-		await expect(page.locator('.readiness-card')).toBeVisible();
+		await expect(page.getByRole('heading', { level: 1, name: /No Vacancies|Starter Kit Story/i })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Begin Story' })).toBeVisible();
 
+		await ensureBuilderSession(page);
 		await page
 			.getByRole('navigation', { name: 'Primary navigation' })
 			.getByRole('link', { name: /Builder/i })
@@ -173,6 +223,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 
 	test('builder generates a draft from a premise and exposes editable fields', async ({ page }) => {
 		test.setTimeout(90000);
+		await ensureBuilderSession(page);
 		await page.goto('/builder');
 		await expect(page.getByRole('heading', { level: 1, name: 'Builder' })).toBeVisible();
 		await expect(page.getByTestId('builder-ready')).toHaveText('ready');

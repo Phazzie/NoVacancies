@@ -33,6 +33,7 @@ export default defineConfig({
             ENABLE_GROK_IMAGES: process.env.ENABLE_GROK_IMAGES || '0',
             ENABLE_GROK_TEXT: process.env.ENABLE_GROK_TEXT || '1',
             ENABLE_PROVIDER_PROBE: process.env.ENABLE_PROVIDER_PROBE || '0',
+            AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET || 'e2e_session_secret',
             E2E_HOST: host,
             E2E_PORT: String(port),
             XAI_API_KEY: process.env.XAI_API_KEY || ''

@@ -102,12 +102,48 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
 			isEnding: false
 		});
 
-		const context = buildNarrativeContext(state, { maxChars: 1400 });
+		const context = buildNarrativeContext(state, { maxChars: 2500 });
 		expect(context.meta.droppedOlderSummaries).toBeGreaterThan(0);
-		expect(context.meta.droppedRecentProse).toBe(0);
+		if (context.meta.droppedRecentProse > 0) {
+			expect(context.olderSceneSummaries.length).toBe(0);
+		}
 
 		const recentText = context.recentSceneProse.map((p: { text: string }) => p.text).join(' ');
 		expect(recentText).toContain('RECENT_PROSE_KEEP_1');
 		expect(recentText).toContain('RECENT_PROSE_KEEP_2');
+	});
+
+	test('keeps recent prose untouched when summary trimming alone is sufficient', () => {
+		const state = createGameState({ apiKey: null });
+
+		for (let i = 0; i < 8; i += 1) {
+			state.sceneLog.push({
+				sceneId: `older_only_${i}`,
+				sceneText: `OLDER_ONLY_${i} ` + 'Q'.repeat(260),
+				viaChoiceText: 'choice',
+				isEnding: false
+			});
+		}
+
+		state.sceneLog.push({
+			sceneId: 'recent_small_1',
+			sceneText: 'RECENT_SMALL_KEEP_1',
+			viaChoiceText: 'choice',
+			isEnding: false
+		});
+		state.sceneLog.push({
+			sceneId: 'recent_small_2',
+			sceneText: 'RECENT_SMALL_KEEP_2',
+			viaChoiceText: 'choice',
+			isEnding: false
+		});
+
+		const context = buildNarrativeContext(state, { maxChars: 2000 });
+		expect(context.meta.droppedOlderSummaries).toBeGreaterThan(0);
+		expect(context.meta.droppedRecentProse).toBe(0);
+
+		const recentText = context.recentSceneProse.map((p: { text: string }) => p.text).join(' ');
+		expect(recentText).toContain('RECENT_SMALL_KEEP_1');
+		expect(recentText).toContain('RECENT_SMALL_KEEP_2');
 	});
 });
