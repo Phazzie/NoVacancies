@@ -67,7 +67,9 @@ function testStoryRegistryAndPromptOwnership() {
 		'narrative facade no longer hardcodes No Vacancies system prompt text'
 	);
 	assert(
-		/return getActiveStoryCartridge\(\)\.prompts\.getContinuePromptFromContext/.test(narrativeSource),
+		/storyPrompts\.getContinuePromptFromContext|getActiveStoryCartridge\(\)\.prompts\.getContinuePromptFromContext/.test(
+			narrativeSource
+		),
 		'narrative facade delegates continue prompts to active story'
 	);
 }
@@ -172,12 +174,16 @@ function testBuilderSurfaces() {
 	suite('Builder Surfaces');
 
 	const builderModule = readSource('src/lib/server/ai/builder.ts');
+	const draftGeneratorModule = readSource('src/lib/server/ai/builder/draftGenerator.ts');
+	const fallbackDraftFactory = readSource('src/lib/server/ai/builder/fallbackDraftFactory.ts');
 	const builderPage = readSource('src/routes/builder/+page.svelte');
 	const generateRoute = readSource('src/routes/api/builder/generate-draft/+server.ts');
 	const evaluateRoute = readSource('src/routes/api/builder/evaluate-prose/+server.ts');
 	const evaluateDraftRoute = readSource('src/routes/api/builder/evaluate-draft/+server.ts');
 
 	assert(builderModule !== null, 'builder server module exists');
+	assert(draftGeneratorModule !== null, 'builder draft generator module exists');
+	assert(fallbackDraftFactory !== null, 'builder fallback draft module exists');
 	assert(builderPage !== null, 'builder page exists');
 	assert(generateRoute !== null, 'generate-draft route exists');
 	assert(evaluateRoute !== null, 'evaluate-prose route exists');
@@ -196,11 +202,13 @@ function testBuilderSurfaces() {
 		'builder module exposes full draft evaluation'
 	);
 	assert(
-		builderModule.includes('callBuilderModel'),
+		(builderModule.includes('callBuilderModel') || draftGeneratorModule.includes('callBuilderModel')),
 		'builder module uses AI-first builder calls'
 	);
 	assert(
-		builderModule.includes('createFallbackDraft'),
+		(builderModule.includes('createFallbackDraft') ||
+			draftGeneratorModule.includes('createFallbackDraft') ||
+			fallbackDraftFactory.includes('createFallbackDraft')),
 		'builder module has deterministic fallback draft generation'
 	);
 	assert(

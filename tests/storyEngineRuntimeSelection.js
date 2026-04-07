@@ -4,9 +4,44 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 
 const HOST = '127.0.0.1';
+const SESSION_COOKIE_NAME = 'nv_session';
+const AUTH_SESSION_SECRET = 'smoke_test_session_secret';
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function bytesToBase64Url(bytes) {
+	return Buffer.from(bytes)
+		.toString('base64')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_')
+		.replace(/=+$/g, '');
+}
+
+async function createSignedSessionCookieValue({
+	userId = 'story-smoke-author',
+	role = 'author',
+	secret = AUTH_SESSION_SECRET
+} = {}) {
+	const nowSeconds = Math.floor(Date.now() / 1000);
+	const payload = {
+		userId,
+		role,
+		iat: nowSeconds,
+		exp: nowSeconds + 60 * 60 * 12
+	};
+	const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+	const key = await crypto.subtle.importKey(
+		'raw',
+		new TextEncoder().encode(secret),
+		{ name: 'HMAC', hash: 'SHA-256' },
+		false,
+		['sign']
+	);
+	const signatureBuffer = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(encodedPayload));
+	const signature = bytesToBase64Url(new Uint8Array(signatureBuffer));
+	return `${encodedPayload}.${signature}`;
 }
 
 function formatCapturedOutput(stdout, stderr) {
@@ -139,6 +174,7 @@ async function runScenario({
 		ENABLE_GROK_IMAGES: '0',
 		AI_AUTH_BYPASS: '0',
 		XAI_API_KEY: 'test_key_for_selection_smoke',
+		AUTH_SESSION_SECRET,
 		FORCE_COLOR: '0',
 		...extraEnv
 	};
@@ -206,10 +242,12 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
+		const sessionCookie = await createSignedSessionCookieValue();
 		const builderFallback = await fetch(`http://${HOST}:${port}/api/builder/generate-draft`, {
 			method: 'POST',
 			headers: {
-				'content-type': 'application/json'
+				'content-type': 'application/json',
+				cookie: `${SESSION_COOKIE_NAME}=${sessionCookie}`
 			},
 			body: JSON.stringify({ premise: '' })
 		}).then((res) => res.json());
