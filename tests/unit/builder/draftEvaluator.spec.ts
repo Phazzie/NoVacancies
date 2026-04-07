@@ -5,7 +5,29 @@ import {
 } from '../../../src/lib/server/ai/builder/draftEvaluator';
 import { starterKitCartridge } from '../../../src/lib/stories/starter-kit';
 
+const ENV_KEYS = ['AI_PROVIDER', 'AI_OUTAGE_MODE', 'ENABLE_GROK_TEXT', 'XAI_API_KEY'] as const;
+
 test.describe('draftEvaluator', () => {
+    let originalEnv: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>> = {};
+
+    test.beforeEach(() => {
+        originalEnv = {};
+        for (const key of ENV_KEYS) {
+            originalEnv[key] = process.env[key];
+        }
+    });
+
+    test.afterEach(() => {
+        for (const key of ENV_KEYS) {
+            const value = originalEnv[key];
+            if (value === undefined) {
+                delete process.env[key];
+            } else {
+                process.env[key] = value;
+            }
+        }
+    });
+
     test('fallback evaluator blocks drafts with no mechanics', () => {
         const draft = starterKitCartridge.builder.createEmptyDraft();
         draft.mechanics = [];
