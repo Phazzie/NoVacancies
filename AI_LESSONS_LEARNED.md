@@ -304,7 +304,7 @@
 **Insight:** A source/contract regression suite can be genuinely valuable, but calling it a fixture-scored narrative quality floor overstates what it protects and creates false confidence in reviews.
 **Lesson:** Describe Tier 1 narrative gates by what they actually enforce today. If the suite is structural, say that plainly and treat richer prose-quality scoring as separate follow-up work.
 
-## 55. Lessons Learned Must Become Ship Gates, Not Just Notes
+## 56. Lessons Learned Must Become Ship Gates, Not Just Notes
 
 **Insight:** Teams can agree on good lessons and still repeat the same failures when release flow does not force those lessons into merge behavior.
 **Lesson:** Translate key lessons into one release runbook with explicit merge lanes, mandatory deterministic gates on each lane, and hard ship blockers for invariants. If a lesson is not reflected in release criteria, treat it as unimplemented.
