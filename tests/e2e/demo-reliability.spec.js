@@ -138,6 +138,13 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await expectPathname(page, '/');
 		await expect(page.getByRole('heading', { level: 1, name: /No Vacancies|Starter Kit Story/i })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Begin Story' })).toBeVisible();
+		await expect(page.locator('.home-page')).toBeVisible();
+		await expect(page.locator('.story-brief')).toBeVisible();
+		await expect(
+			page
+				.getByRole('navigation', { name: 'Primary navigation' })
+				.getByRole('link', { name: /Builder/i })
+		).toBeVisible();
 
 		await ensureBuilderSession(page);
 		await page
@@ -214,5 +221,13 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await expect(page.getByLabel('Aesthetic Statement')).toBeVisible();
 		await expect(page.getByLabel('Story Title')).not.toHaveValue('Starter Story');
 		await expect(page.getByLabel('Story Title')).not.toHaveValue('No Vacancies');
+	});
+
+	test('builder route is protected for anonymous users', async ({ request }) => {
+		const response = await request.get('/builder');
+		expect(response.status()).toBe(401);
+		const body = await response.json();
+		expect(body.error?.code).toBe('auth_required');
+		expect(String(body.error?.message || '')).toMatch(/signed in|builder/i);
 	});
 });

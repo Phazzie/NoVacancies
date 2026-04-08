@@ -5,7 +5,7 @@ import net from 'node:net';
 import { createSignedSessionCookieValue, SESSION_COOKIE_NAME } from './helpers/sessionCookie.js';
 
 const HOST = '127.0.0.1';
-const AUTH_SESSION_SECRET = process.env.AUTH_SESSION_SECRET || 'e2e_session_secret';
+const AUTH_SESSION_SECRET = process.env.AUTH_SESSION_SECRET || 'story-selection-smoke-secret';
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -140,8 +140,8 @@ async function runScenario({
 		ENABLE_GROK_TEXT: '1',
 		ENABLE_GROK_IMAGES: '0',
 		AI_AUTH_BYPASS: '0',
-		XAI_API_KEY: 'test_key_for_selection_smoke',
 		AUTH_SESSION_SECRET,
+		XAI_API_KEY: 'test_key_for_selection_smoke',
 		FORCE_COLOR: '0',
 		...extraEnv
 	};

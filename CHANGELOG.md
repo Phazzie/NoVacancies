@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.1] - 2026-04-07
+## [Unreleased]
 
 ### Changed
 
@@ -10,11 +10,14 @@
 - **Context budget loop safety:** Hardened `src/lib/game/narrativeContext.ts` trimming logic to guarantee forward progress and prevent non-terminating trim loops under tight context budgets.
 - **Tier-1 narrative gate alignment:** Updated source-assertion checks in `tests/narrative/narrativeQuality.test.js` to follow refactored narrative/builder module boundaries without weakening coverage.
 - **Context budget unit coverage:** Expanded `tests/unit/contextBudget.spec.ts` to validate both tight-budget fallback behavior and a summary-only trimming scenario where recent prose remains untouched.
+- **Release Runbook Operationalized:** Added a documented stability-first release runbook in `README.md` that applies lessons learned directly to ship sequencing: scope lock, lane-based merge train ordering (A-D), mandatory deterministic quality gates per lane (`lint` -> `test` -> `test:narrative` -> `test:e2e`), explicit release blockers tied to Grok hard-fail + structural sanity + fail-fast cartridge selection, demo-readiness operator/failure-path checks, and RC rollback criteria.
+- **Gate Test Realignment (Lane A):** Updated Tier 1 narrative/e2e checks to match current architecture and auth posture: narrative quality assertions now validate selector-based prompt delegation and modular builder internals, while e2e route-shell coverage now reflects the current home shell and verifies `/builder` is anonymous-protected (401 `auth_required`) instead of expecting unauthenticated builder authoring.
 
 ## [1.1.0] - 2026-03-31
 
 ### Added / Changed
 
+- **Unit Coverage Hardening (AI modules):** Added targeted unit tests for AI config parsing/guards, route helper input/error shaping + telemetry emission, builder model client timeout/http/empty-content handling, and draft evaluator fallback/AI-normalized paths to improve robustness against runtime misconfiguration and provider failure modes (`tests/unit/config.spec.ts`, `tests/unit/routeHelpers.spec.ts`, `tests/unit/builder/modelClient.spec.ts`, `tests/unit/builder/draftEvaluator.spec.ts`).
 - **Pluggable Rate Limit Store:** Extracted `MemoryRateLimitStore` behind a `RateLimitStore` interface with factory (`src/lib/server/rateLimit/`). `aiRateLimit` middleware selects the store via `createRateLimitStore()`; no behavior change at runtime.
 - **Modular Grok Provider:** Split the Grok provider into `transport.ts`, `retryPolicy.ts`, `sceneParser.ts`, and `sceneNormalizer.ts` under `src/lib/server/ai/providers/grok/`. `grok.ts` orchestrates them.
 - **Story Selectors:** Added `src/lib/stories/selectors.ts` with typed slice accessors (`selectStoryPrompts`, `selectStoryContextAdapter`, `selectStoryPresentation`, `selectStoryUiAssets`).
@@ -29,12 +32,15 @@
 - **`ApiStoryServiceError` type:** `storyService.ts` now exports a typed error class for client-side error handling.
 - **CLAUDE.md:** Added authoritative AI assistant reference document.
 - **Test fixes:** `narrativeContext.ts` now reads `recentChoiceTexts` from `sceneLog[].viaChoiceText`. Mock scenes in `openingThreadUpdate.spec.ts` updated to include `imageKey`, `lessonId: null` required by strict scene schema.
+- **Narrative Context Trim Stability:** Fixed a non-terminating budget-trim edge case by ensuring recent prose trimming always makes forward progress near minimum-length boundaries, and updated context-budget unit assertions to validate trim ordering without brittle zero-trim assumptions (`src/lib/game/narrativeContext.ts`, `tests/unit/contextBudget.spec.ts`).
+- **Vercel Build Stability Hardening:** Updated `npm run build` to run `svelte-kit sync` before `vite build`, and removed manual `baseUrl`/`paths` overrides from `tsconfig.json` to align with SvelteKit defaults and eliminate tsconfig-resolution warnings seen during clean build environments (`package.json`, `tsconfig.json`).
 
 ## [1.0.0] - 2026-03-26
 
 ### Changed
 
 - **Provider Contract Narrowing:** Split server provider capabilities into dedicated text-scene/image/probe contracts, kept temporary compatibility aliases, and updated provider selection + route helper call sites so each path only receives the capability it actually needs (`src/lib/server/ai/provider.interface.ts`, `src/lib/server/ai/providers/index.ts`, `src/lib/server/ai/routeHelpers.ts`, `src/routes/api/ai/probe/+server.ts`, `src/routes/api/demo/readiness/+server.ts`, `tests/unit/providers/selectionContracts.spec.ts`).
+- **Behavior-First Narrative Test Coverage:** Kept `tests/narrative/narrativeQuality.test.js` as a deterministic Tier-1 smoke gate and moved story-registry, prompt-ownership delegation, and narrative-context contract assertions into Playwright unit suites that verify exported runtime APIs instead of brittle source-string matching (`tests/narrative/narrativeQuality.test.js`, `tests/unit/storyRegistry.spec.ts`, `tests/unit/promptOwnership.spec.ts`, `tests/unit/narrativeContextContract.spec.ts`, `README.md`).
 - **CI Noise Reduction:** Added workflow concurrency cancellation, split the blocking GitHub Actions gate into explicit legacy-guard and runtime-smoke steps, and limited Tier 2 Claude evaluation plus the live provider canary to `main` pushes/manual runs so PR checks stay deterministic (`.github/workflows/narrative-quality.yml`, `README.md`).
 - **Builder Neutrality Hardening:** Switched the builder's initial and fallback draft scaffold to the neutral `starter-kit` story so authoring no longer seeds Sydney/motel-specific copy when AI generation is unavailable (`src/routes/builder/+page.svelte`, `src/lib/server/ai/builder.ts`, `src/lib/builder/store.ts`).
 - **Active Story Branding Wiring:** Moved shared shell and home-route presentation onto story-level metadata so `PUBLIC_STORY_ID` now changes visible branding as well as runtime behavior/readiness metadata (`src/lib/stories/types.ts`, `src/lib/stories/no-vacancies/index.ts`, `src/lib/stories/starter-kit/index.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`).

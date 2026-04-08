@@ -108,17 +108,62 @@ Core quality gate:
 npm run lint
 npm test
 npm run test:narrative
+npm run test:unit
 npm run test:e2e
 ```
 
 Notes:
 
 - `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, and invalid-id fail-fast behavior).
-- `npm run test:narrative` runs deterministic Tier 1 source/contract gates for prompt wiring, context coverage, continuity dimensions, and builder/story-registry integration. It is a structural regression suite, not a full fixture-scored prose evaluation pass.
+- `npm run test:narrative` remains a deterministic Tier 1 smoke gate that validates fixture/reporting wiring only, so it stays fast and stable.
+- `npm run test:unit` runs behavior-first unit suites (story registry runtime selection/fail-fast, prompt delegation ownership, and narrative-context contract outputs) using exported runtime APIs.
 - `npm run test:e2e` runs Playwright against the SvelteKit app, including the builder flow and route-shell checks.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
 - GitHub PRs run only the blocking Tier 1 workflow gate. Tier 2 Claude evaluation and the live provider canary run on `main` pushes or manual workflow dispatch so PR feedback stays deterministic and lower-noise.
 - GitHub Actions now cancel superseded in-progress runs for the same PR/branch, which reduces duplicate check spam while iterating quickly.
+
+## Release Runbook (Stability + Demo Confidence)
+
+Release scope policy:
+
+- This release is scoped to stability and demo confidence only (no net-new feature work).
+- Any nice-to-have work is explicitly deferred to the next milestone before merge-train start.
+
+Merge train order (risk lanes):
+
+1. Lane A: tests/docs/low-risk refactors
+2. Lane B: contracts/parsing/error-shaping/telemetry
+3. Lane C: builder auth + builder QA + builder UX
+4. Lane D: prompt/narrative behavior changes (merge last)
+
+Required gate before each lane merge:
+
+```bash
+npm run lint
+npm test
+npm run test:narrative
+npm run test:e2e
+```
+
+Release blockers (must hold to ship):
+
+- Grok hard-fail behavior remains intact (no runtime fallback drift).
+- Sanity enforcement remains structural-only (no brittle taste regex checks reintroduced).
+- Unknown story/config IDs fail fast (never silently fallback to another cartridge).
+- Telemetry remains structural/sanitized (no keys/secrets/prompt dumps in logs).
+- Parse recovery remains bounded and typed (no synthetic story-content masking provider defects).
+
+Demo readiness pass before tag:
+
+1. Run operator flow: `/` -> `/play` full run -> `/settings` -> `/debug`.
+2. Validate `/builder` using a signed-in builder-capable session, or confirm anonymous access returns `401 auth_required`.
+3. Run one provider-misconfiguration path and verify clear recovery guidance in UI.
+
+RC cut + ship:
+
+1. Freeze `main` for release candidate validation.
+2. Update `CHANGELOG.md`, tag RC, deploy, and smoke-test production routes.
+3. If any blocker fails in smoke, rollback immediately and reopen only the failing lane.
 
 ## PWA
 
