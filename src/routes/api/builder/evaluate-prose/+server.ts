@@ -2,7 +2,7 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { evaluateBuilderProse } from '$lib/server/ai/builder';
 import { emitAiServerTelemetry } from '$lib/server/ai/telemetry';
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, url }) => {
 	const payload = (await request.json().catch(() => ({}))) as { prose?: string; draftId?: string };
 	const prose = typeof payload.prose === 'string' ? payload.prose : '';
 	const draftId = typeof payload.draftId === 'string' && payload.draftId.trim() ? payload.draftId.trim() : null;
@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		userId: locals.sessionUser?.userId ?? 'unknown',
 		draftId,
 		source: result.source,
-		route: '/api/builder/evaluate-prose'
+		route: url.pathname
 	});
 
 	return json(result);

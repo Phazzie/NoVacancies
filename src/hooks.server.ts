@@ -74,7 +74,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const forwardedProto = event.request.headers.get('x-forwarded-proto');
 	const isHttps = event.url.protocol === 'https:' || forwardedProto === 'https';
 
-	const sessionUser = await getSessionUser(event);
+	let sessionUser = null;
+	// Only perform async session verification when required:
+	// - for builder-protected routes, or
+	// - when a session cookie is present.
+	if (isBuilderProtectedRoute(path) || event.cookies.get('nv_session')) {
+		sessionUser = await getSessionUser(event);
+	}
 	event.locals.sessionUser = sessionUser;
 
 	if (isBuilderProtectedRoute(path)) {

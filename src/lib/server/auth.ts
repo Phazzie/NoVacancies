@@ -6,6 +6,32 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 const encoder = new TextEncoder();
 
+// Cache derived CryptoKeys by secret value.
+// In normal operation there is exactly one active AUTH_SESSION_SECRET, so this
+// cache will hold a single entry. If secrets are ever rotated without a process
+// restart the old entry becomes stale but harmless (it won't match new tokens).
+// Cap to 4 entries as a lightweight safeguard against unbounded growth.
+const MAX_CRYPTO_CACHE_SIZE = 4;
+const cryptoKeyCache = new Map<string, CryptoKey>();
+
+async function getOrImportKey(secret: string): Promise<CryptoKey> {
+	const cached = cryptoKeyCache.get(secret);
+	if (cached) return cached;
+	const key = await crypto.subtle.importKey(
+		'raw',
+		encoder.encode(secret),
+		{ name: 'HMAC', hash: 'SHA-256' },
+		false,
+		['sign']
+	);
+	if (cryptoKeyCache.size >= MAX_CRYPTO_CACHE_SIZE) {
+		// Evict the oldest entry (insertion order) when the cap is reached.
+		cryptoKeyCache.delete(cryptoKeyCache.keys().next().value as string);
+	}
+	cryptoKeyCache.set(secret, key);
+	return key;
+}
+
 export function isBuilderRole(role: string): role is (typeof BUILDER_ROLES)[number] {
 	return BUILDER_ROLES.includes(role as (typeof BUILDER_ROLES)[number]);
 }
@@ -48,13 +74,7 @@ function base64UrlDecode(value: string): string {
 }
 
 async function signPayload(encodedPayload: string, secret: string): Promise<string> {
-	const key = await crypto.subtle.importKey(
-		'raw',
-		encoder.encode(secret),
-		{ name: 'HMAC', hash: 'SHA-256' },
-		false,
-		['sign']
-	);
+	const key = await getOrImportKey(secret);
 	const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(encodedPayload));
 	return bytesToBase64Url(new Uint8Array(signatureBuffer));
 }
