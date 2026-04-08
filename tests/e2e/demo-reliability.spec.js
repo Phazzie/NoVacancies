@@ -2,7 +2,10 @@ import { test, expect } from '@playwright/test';
 import { createSignedSessionCookieValue, SESSION_COOKIE_NAME } from '../helpers/sessionCookie.js';
 
 const HAS_XAI_KEY = Boolean((process.env.XAI_API_KEY || '').trim());
-const AUTH_SESSION_SECRET = process.env.AUTH_SESSION_SECRET || '';
+const AUTH_SESSION_SECRET = process.env.AUTH_SESSION_SECRET;
+if (!AUTH_SESSION_SECRET) {
+	throw new Error('AUTH_SESSION_SECRET must be set for e2e builder-auth coverage');
+}
 const E2E_HOST = process.env.E2E_HOST || '127.0.0.1';
 const E2E_PORT = process.env.E2E_PORT || '8080';
 const E2E_BASE_URL = `http://${E2E_HOST}:${E2E_PORT}`;

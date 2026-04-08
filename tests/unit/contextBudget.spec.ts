@@ -75,7 +75,7 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
         expect(recentText).toContain('CRITICAL_DATA_2');
     });
 
-	test('trims older summaries first under pressure while preserving recent prose', () => {
+	test('trims older summaries before recent prose under budget pressure', () => {
 		const state = createGameState({ apiKey: null });
 
 		// Many older entries force summary trimming pressure.
