@@ -75,7 +75,7 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
         expect(recentText).toContain('CRITICAL_DATA_2');
     });
 
-	test('trims older summaries before touching recent prose', () => {
+	test('trims older summaries first under pressure while preserving recent prose', () => {
 		const state = createGameState({ apiKey: null });
 
 		// Many older entries force summary trimming pressure.
@@ -102,11 +102,9 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
 			isEnding: false
 		});
 
-		const context = buildNarrativeContext(state, { maxChars: 2500 });
+		const context = buildNarrativeContext(state, { maxChars: 3000 });
 		expect(context.meta.droppedOlderSummaries).toBeGreaterThan(0);
-		if (context.meta.droppedRecentProse > 0) {
-			expect(context.olderSceneSummaries.length).toBe(0);
-		}
+		expect(context.meta.droppedRecentProse).toBe(0);
 
 		const recentText = context.recentSceneProse.map((p: { text: string }) => p.text).join(' ');
 		expect(recentText).toContain('RECENT_PROSE_KEEP_1');

@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { randomBytes } from 'node:crypto';
 
 const host = process.env.E2E_HOST || '127.0.0.1';
 const port = Number(process.env.E2E_PORT || 8080);
@@ -7,6 +8,9 @@ const liveGrok = process.env.LIVE_GROK === '1';
 const hasXaiKey = Boolean((process.env.XAI_API_KEY || '').trim());
 const enableLiveGrok = liveGrok && hasXaiKey;
 const serverCommand = process.env.E2E_SERVER_COMMAND || `npm run dev -- --host ${host} --port ${port}`;
+const authSessionSecret = process.env.AUTH_SESSION_SECRET || randomBytes(24).toString('hex');
+
+process.env.AUTH_SESSION_SECRET = authSessionSecret;
 
 export default defineConfig({
     testDir: './tests/e2e',
@@ -33,7 +37,7 @@ export default defineConfig({
             ENABLE_GROK_IMAGES: process.env.ENABLE_GROK_IMAGES || '0',
             ENABLE_GROK_TEXT: process.env.ENABLE_GROK_TEXT || '1',
             ENABLE_PROVIDER_PROBE: process.env.ENABLE_PROVIDER_PROBE || '0',
-            AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET || 'e2e_session_secret',
+            AUTH_SESSION_SECRET: authSessionSecret,
             E2E_HOST: host,
             E2E_PORT: String(port),
             XAI_API_KEY: process.env.XAI_API_KEY || ''

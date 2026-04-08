@@ -2,47 +2,13 @@
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import net from 'node:net';
+import { createSignedSessionCookieValue, SESSION_COOKIE_NAME } from './helpers/sessionCookie.js';
 
 const HOST = '127.0.0.1';
-// Keep local to this standalone Node smoke script; importing TS source constants is not supported here.
-const SESSION_COOKIE_NAME = 'nv_session';
 const AUTH_SESSION_SECRET = process.env.AUTH_SESSION_SECRET || 'e2e_session_secret';
 
 function wait(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function bytesToBase64Url(bytes) {
-	return Buffer.from(bytes)
-		.toString('base64')
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/g, '');
-}
-
-async function createSignedSessionCookieValue({
-	userId = 'story-smoke-author',
-	role = 'author',
-	secret = AUTH_SESSION_SECRET
-} = {}) {
-	const nowSeconds = Math.floor(Date.now() / 1000);
-	const payload = {
-		userId,
-		role,
-		iat: nowSeconds,
-		exp: nowSeconds + 60 * 60 * 12
-	};
-	const encodedPayload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
-	const key = await crypto.subtle.importKey(
-		'raw',
-		new TextEncoder().encode(secret),
-		{ name: 'HMAC', hash: 'SHA-256' },
-		false,
-		['sign']
-	);
-	const signatureBuffer = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(encodedPayload));
-	const signature = bytesToBase64Url(new Uint8Array(signatureBuffer));
-	return `${encodedPayload}.${signature}`;
 }
 
 function formatCapturedOutput(stdout, stderr) {
@@ -243,7 +209,11 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
-		const sessionCookie = await createSignedSessionCookieValue();
+		const sessionCookie = await createSignedSessionCookieValue({
+			userId: 'story-smoke-author',
+			role: 'author',
+			secret: AUTH_SESSION_SECRET
+		});
 		const builderFallback = await fetch(`http://${HOST}:${port}/api/builder/generate-draft`, {
 			method: 'POST',
 			headers: {

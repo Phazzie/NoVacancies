@@ -5,6 +5,8 @@
 ### Changed
 
 - **Deployability gate unblocks:** Updated runtime smoke and e2e reliability tests to authenticate builder routes with signed `nv_session` cookies (using `AUTH_SESSION_SECRET`) so builder coverage matches current server auth enforcement.
+- **Builder auth test helper dedupe:** Centralized signed `nv_session` cookie creation in `tests/helpers/sessionCookie.js` so smoke and e2e auth flows stay in sync when session signing inputs change.
+- **Playwright auth secret hygiene:** Replaced the static Playwright fallback session secret with a per-run generated secret that is shared between test workers and the web server when no `AUTH_SESSION_SECRET` is provided.
 - **Context budget loop safety:** Hardened `src/lib/game/narrativeContext.ts` trimming logic to guarantee forward progress and prevent non-terminating trim loops under tight context budgets.
 - **Tier-1 narrative gate alignment:** Updated source-assertion checks in `tests/narrative/narrativeQuality.test.js` to follow refactored narrative/builder module boundaries without weakening coverage.
 - **Context budget unit coverage:** Expanded `tests/unit/contextBudget.spec.ts` to validate both tight-budget fallback behavior and a summary-only trimming scenario where recent prose remains untouched.
