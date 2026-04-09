@@ -1,6 +1,12 @@
 import { ImageKeys, type NarrativeContext } from '$lib/contracts';
 import { selectStoryPrompts } from '$lib/stories/selectors';
 
+export const NARRATIVE_CARTRIDGE = {
+    id: 'no-vacancies',
+    title: 'No Vacancies',
+    version: '2026.02.16'
+} as const;
+
 export {
 	NARRATIVE_CONTEXT_CHAR_BUDGET,
 	buildNarrativeContext,

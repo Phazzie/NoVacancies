@@ -7,9 +7,10 @@ import {
 	selectImageProvider,
 	selectTextProvider
 } from '$lib/server/ai/providers';
-import { type AiErrorCode, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
+import { type AiErrorCode, AiProviderError, type GenerateSceneInput } from '$lib/server/ai/provider.interface';
 import { emitAiServerTelemetry, sanitizeForErrorMessage } from '$lib/server/ai/telemetry';
 import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
+import { recordImageGenerationFailure, recordImageGenerationSuccess } from '$lib/server/ai/diagnostics';
 
 export interface NextRoutePayload {
 	currentSceneId?: string;
@@ -74,7 +75,21 @@ export async function resolveImagePayload(prompt: string) {
 	const registry = createProviderRegistry(config);
 	const provider = selectImageProvider(config, registry);
 
-	return provider.generateImage({ prompt });
+	const started = Date.now();
+	try {
+		const image = await provider.generateImage({ prompt });
+		recordImageGenerationSuccess(Date.now() - started);
+		return image;
+	} catch (error) {
+		const typed = error instanceof AiProviderError ? error : null;
+		recordImageGenerationFailure({
+			latencyMs: Date.now() - started,
+			code: typed?.code,
+			status: typed?.status,
+			message: sanitizeForErrorMessage(error)
+		});
+		throw error;
+	}
 }
 
 function mapErrorStatus(error: unknown, fallbackStatus = 500): number {

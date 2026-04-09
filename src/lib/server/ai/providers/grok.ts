@@ -189,21 +189,17 @@ export class GrokAiProvider implements AiProvider {
 
 		assertImagePromptGuardrails(input.prompt);
 
-		const { value } = await executeWithRetry(
-			() =>
-				executeJsonRequest<{ data?: Array<{ url?: string; b64_json?: string }> }>({
-					fetchImpl: this.fetchImpl,
-					url: XAI_IMAGE_URL,
-					apiKey: this.config.xaiApiKey,
-					requestTimeoutMs: this.config.requestTimeoutMs,
-					requestType: 'image',
-					body: {
-						model: this.config.grokImageModel,
-						prompt: input.prompt
-					}
-				}),
-			{ maxRetries: this.config.maxRetries, retryBackoffMs: this.config.retryBackoffMs }
-		);
+		const value = await executeJsonRequest<{ data?: Array<{ url?: string; b64_json?: string }> }>({
+			fetchImpl: this.fetchImpl,
+			url: XAI_IMAGE_URL,
+			apiKey: this.config.xaiApiKey,
+			requestTimeoutMs: this.config.requestTimeoutMs,
+			requestType: 'image',
+			body: {
+				model: this.config.grokImageModel,
+				prompt: input.prompt
+			}
+		});
 
 		const image = value.data?.[0];
 		if (!image || (!image.url && !image.b64_json)) {
