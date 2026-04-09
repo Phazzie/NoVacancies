@@ -6,6 +6,7 @@
 
 - **Release Runbook Operationalized:** Added a documented stability-first release runbook in `README.md` that applies lessons learned directly to ship sequencing: scope lock, lane-based merge train ordering (A-D), mandatory deterministic quality gates per lane (`lint` -> `test` -> `test:narrative` -> `test:e2e`), explicit release blockers tied to Grok hard-fail + structural sanity + fail-fast cartridge selection, demo-readiness operator/failure-path checks, and RC rollback criteria.
 - **Gate Test Realignment (Lane A):** Updated Tier 1 narrative/e2e checks to match current architecture and auth posture: narrative quality assertions now validate selector-based prompt delegation and modular builder internals, while e2e route-shell coverage now reflects the current home shell and verifies `/builder` is anonymous-protected (401 `auth_required`) instead of expecting unauthenticated builder authoring.
+- **Open PR Triage Import (PR #53, #62):** Kept the low-risk pieces with immediate operational value: `auth.ts` now caches imported HMAC `CryptoKey` objects for signed-session verification, `README.md` now documents `AUTH_SESSION_SECRET` as required for builder auth, and Playwright web-server boot now injects a default `AUTH_SESSION_SECRET` to keep auth-gated e2e paths deterministic.
 
 ## [1.1.0] - 2026-03-31
 

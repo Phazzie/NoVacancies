@@ -35,6 +35,7 @@ export default defineConfig({
             ENABLE_PROVIDER_PROBE: process.env.ENABLE_PROVIDER_PROBE || '0',
             E2E_HOST: host,
             E2E_PORT: String(port),
+            AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET || 'playwright_auth_secret',
             XAI_API_KEY: process.env.XAI_API_KEY || ''
         }
     }
