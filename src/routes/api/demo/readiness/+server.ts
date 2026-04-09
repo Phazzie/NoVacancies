@@ -208,6 +208,10 @@ function buildPayload(): ReadinessPayload {
 	const pipelineCheck = checks.find((check) => check.id === 'image_pipeline_status');
 	if (pipelineCheck) {
 		pipelineCheck.details = `inFlight=${pipeline.inFlight}, cache=${pipeline.cacheEntries}, total=${pipeline.totalRequests}`;
+		if (pipeline.configError) {
+			pipelineCheck.ok = false;
+			pipelineCheck.details = `config_error=${pipeline.configError}`;
+		}
 	}
 
 	const payload: ReadinessPayload = {

@@ -275,6 +275,9 @@
 			{/if}
 
 			{#if imageStatus}
+				{#if imageStatus.configError}
+					<p class="error-banner">Pipeline config error: {imageStatus.configError}</p>
+				{/if}
 				<p class="hint">
 					Pipeline: {imageStatus.totalRequests} requests · {imageStatus.successCount} success ·
 					{imageStatus.failedCount} failed · {imageStatus.cacheEntries} cached

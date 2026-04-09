@@ -453,6 +453,50 @@ padding: 8px 12px;
 	line-height: 1.65;
 }
 
+.home-readiness {
+	margin-top: 16px;
+	padding: 16px;
+	border-radius: 16px;
+	border: 1px solid var(--line-soft);
+	background: rgba(255, 255, 255, 0.03);
+	display: grid;
+	gap: 10px;
+}
+
+.home-readiness-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.home-readiness-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 0.9rem;
+	color: var(--text-100);
+}
+
+.home-readiness-status strong {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: rgba(237, 178, 110, 0.14);
+	color: var(--amber-300);
+	letter-spacing: 0.08em;
+	font-size: 0.72rem;
+}
+
+.home-readiness-status span {
+	color: var(--text-200);
+}
+
+.readiness-hints {
+	margin-top: 4px;
+}
+
 
 .scene-loading {
 	min-height: 68vh;

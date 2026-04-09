@@ -1,5 +1,6 @@
 import { loadAiConfig, type AiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry, selectImageProvider } from '$lib/server/ai/providers';
+import { recordImageGenerationFailure, recordImageGenerationSuccess } from '$lib/server/ai/diagnostics';
 import { AiProviderError, type AiErrorCode, type GeneratedImage } from '$lib/server/ai/provider.interface';
 
 export type ImageGenerationState = 'queued' | 'running' | 'success' | 'failed';
@@ -245,6 +246,7 @@ export class ImagePipeline {
 
 		for (let attempt = 1; attempt <= record.retry.maxAttempts; attempt += 1) {
 			record.retry.attemptCount = attempt;
+			const started = this.now();
 			try {
 				const image = await this.generateImage(record.prompt);
 				record.status = 'success';
@@ -252,16 +254,24 @@ export class ImagePipeline {
 				record.error = null;
 				this.cache.set(record.cacheKey, record.requestId);
 				this.touchRecord(record);
+				recordImageGenerationSuccess(this.now() - started);
 				return this.clone(record);
 			} catch (error) {
 				const reasonCode = mapReasonCode(error);
 				const retryable = isRetryable(error);
+				const latency = this.now() - started;
 				record.retry.reasons.push({
 					attempt,
 					reasonCode,
 					retryable,
 					message: toGuardrailSafeImageMessage(reasonCode),
 					timestamp: toIso(this.now())
+				});
+				recordImageGenerationFailure({
+					latencyMs: latency,
+					code: error instanceof AiProviderError ? error.code : undefined,
+					status: error instanceof AiProviderError ? error.status : undefined,
+					message: error instanceof Error ? error.message : String(error)
 				});
 				if (!retryable || attempt >= record.retry.maxAttempts) {
 					record.status = 'failed';
@@ -289,7 +299,7 @@ export class ImagePipeline {
 		const normalizedPrompt = prompt.trim();
 		if (!normalizedPrompt) {
 			const now = this.now();
-			return {
+			const record: ImageRequestRecord = {
 				requestId: nextRequestId(now),
 				prompt: normalizedPrompt,
 				cacheKey: '',
@@ -306,11 +316,13 @@ export class ImagePipeline {
 				decision: null,
 				cacheHit: false
 			};
+			this.addRecord(record);
+			return this.clone(record);
 		}
 
 		if (!this.config.enableGrokImages) {
 			const now = this.now();
-			return {
+			const record: ImageRequestRecord = {
 				requestId: nextRequestId(now),
 				prompt: normalizedPrompt,
 				cacheKey: buildImageCacheKey(normalizedPrompt, this.modelHint()),
@@ -327,6 +339,8 @@ export class ImagePipeline {
 				decision: 'fallback_to_static',
 				cacheHit: false
 			};
+			this.addRecord(record);
+			return this.clone(record);
 		}
 
 		const cacheKey = buildImageCacheKey(normalizedPrompt, this.modelHint());

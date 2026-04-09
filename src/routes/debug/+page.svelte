@@ -141,6 +141,9 @@
 			{:else if !imageStatus}
 				<p class="hint">No image pipeline data yet.</p>
 			{:else}
+				{#if imageStatus.configError}
+					<p class="error-banner">Pipeline config error: {imageStatus.configError}</p>
+				{/if}
 				<p class="hint">
 					in-flight: {imageStatus.inFlight} · success: {imageStatus.successCount} · failed: {imageStatus.failedCount}
 					· cache: {imageStatus.cacheEntries}

@@ -67,7 +67,9 @@ function testStoryRegistryAndPromptOwnership() {
 		'narrative facade no longer hardcodes No Vacancies system prompt text'
 	);
 	assert(
-		/storyPrompts\.getContinuePromptFromContext/.test(narrativeSource),
+		/storyPrompts\.getContinuePromptFromContext|getStoryPrompts\(\)\.getContinuePromptFromContext/.test(
+			narrativeSource
+		),
 		'narrative facade delegates continue prompts to active story'
 	);
 }
