@@ -5,6 +5,8 @@ export const SESSION_COOKIE_NAME = 'nv_session';
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 const encoder = new TextEncoder();
+// Keep this small and bounded: normal runtime uses one active secret, but secret rotation
+// or overlap windows can temporarily require validating multiple signatures.
 const MAX_CRYPTO_CACHE_SIZE = 4;
 const cryptoKeyCache = new Map<string, CryptoKey>();
 
@@ -19,9 +21,10 @@ async function getOrImportKey(secret: string): Promise<CryptoKey> {
 		['sign']
 	);
 	if (cryptoKeyCache.size >= MAX_CRYPTO_CACHE_SIZE) {
-		const oldestSecret = cryptoKeyCache.keys().next().value as string | undefined;
-		if (oldestSecret) {
-			cryptoKeyCache.delete(oldestSecret);
+		// Map iteration order is insertion order; evict the first inserted key (FIFO).
+		const firstInsertedSecret = cryptoKeyCache.keys().next().value as string | undefined;
+		if (firstInsertedSecret) {
+			cryptoKeyCache.delete(firstInsertedSecret);
 		}
 	}
 	cryptoKeyCache.set(secret, key);

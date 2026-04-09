@@ -56,7 +56,7 @@ Server/runtime variables used by the SvelteKit AI provider layer:
 - `AI_PROVIDER`: `grok` only (`mock` is disabled).
 - `AI_OUTAGE_MODE`: `hard_fail` (required in preview/production).
 - `XAI_API_KEY`: required in Grok-only mode.
-- `AUTH_SESSION_SECRET`: required to validate signed `nv_session` cookies for builder/admin auth checks.
+- `AUTH_SESSION_SECRET`: required in app runtime to validate signed `nv_session` cookies for builder/admin auth checks (Playwright tests inject a local default when unset).
 - `ENABLE_GROK_TEXT`, `ENABLE_GROK_IMAGES`, `ENABLE_PROVIDER_PROBE`: feature toggles (`0`/`1`).
 - `AI_AUTH_BYPASS`: disabled in Grok-only mode.
 - `GROK_TEXT_MODEL`, `GROK_IMAGE_MODEL`: optional model override strings.
