@@ -23,7 +23,7 @@ async function getOrImportKey(secret: string): Promise<CryptoKey> {
 	);
 	if (cryptoKeyCache.size >= MAX_CRYPTO_CACHE_SIZE) {
 		// Map iteration order is insertion order; evict the first inserted key (FIFO).
-		const firstInsertedSecret = cryptoKeyCache.keys().next().value as string | undefined;
+		const firstInsertedSecret = cryptoKeyCache.keys().next().value;
 		if (firstInsertedSecret) {
 			cryptoKeyCache.delete(firstInsertedSecret);
 		}
