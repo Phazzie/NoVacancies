@@ -10,7 +10,6 @@ export interface AiConfig {
 	enableGrokText: boolean;
 	enableGrokImages: boolean;
 	enableProviderProbe: boolean;
-	aiAuthBypass: boolean;
 	outageMode: AiOutageMode;
 	xaiApiKey: string;
 	grokTextModel: string;
@@ -51,6 +50,19 @@ function parseOutageMode(value: string | undefined): AiOutageMode | null {
 	return null;
 }
 
+function parseRetryBackoffMs(value: string | undefined): number[] {
+	const DEFAULT = [400, 1200];
+	if (typeof value !== 'string' || value.trim().length === 0) return DEFAULT;
+	const parts = value.split(',').slice(0, 4);
+	const parsed: number[] = [];
+	for (const part of parts) {
+		const n = Number.parseInt(part.trim(), 10);
+		if (Number.isNaN(n) || n < 0) return DEFAULT;
+		parsed.push(Math.min(10_000, n));
+	}
+	return parsed.length > 0 ? parsed : DEFAULT;
+}
+
 function isProdLikeEnv(env: Record<string, string | undefined>): boolean {
 	const vercelEnv = env.VERCEL_ENV?.toLowerCase();
 	if (vercelEnv === 'preview' || vercelEnv === 'production') return true;
@@ -86,7 +98,6 @@ export function loadAiConfig(env: Record<string, string | undefined> = runtimeEn
 		enableGrokText,
 		enableGrokImages,
 		enableProviderProbe,
-		aiAuthBypass,
 		outageMode,
 		xaiApiKey,
 		grokTextModel: (env.GROK_TEXT_MODEL ?? 'grok-4-1-fast-reasoning').trim(),
@@ -94,6 +105,6 @@ export function loadAiConfig(env: Record<string, string | undefined> = runtimeEn
 		maxOutputTokens: parseIntInRange(env.AI_MAX_OUTPUT_TOKENS, 1800, 200, 3200),
 		requestTimeoutMs: parseIntInRange(env.AI_REQUEST_TIMEOUT_MS, 20_000, 5_000, 60_000),
 		maxRetries: parseIntInRange(env.AI_MAX_RETRIES, 2, 0, 5),
-		retryBackoffMs: [400, 1200]
+		retryBackoffMs: parseRetryBackoffMs(env.AI_RETRY_BACKOFF_MS)
 	};
 }

@@ -44,4 +44,79 @@ test.describe('sceneNormalizer', () => {
 		expect(scene.isEnding).toBe(true);
 		expect(scene.endingType).toBeTruthy();
 	});
+
+	test.describe('sanitizeStoryThreadUpdates', () => {
+		test('preserves all valid numeric, boolean, and array fields', () => {
+			const scene = normalizeSceneCandidate(
+				{
+					sceneText: 'A beat.',
+					choices: [{ id: 'a', text: 'A' }],
+					storyThreadUpdates: {
+						oswaldoConflict: 2,
+						trinaTension: 1,
+						moneyResolved: true,
+						carMentioned: false,
+						boundariesSet: ['no_money', 'no_lying'],
+						exhaustionLevel: 3
+					}
+				},
+				'scene_1'
+			);
+			expect(scene.storyThreadUpdates).toEqual({
+				oswaldoConflict: 2,
+				trinaTension: 1,
+				moneyResolved: true,
+				carMentioned: false,
+				boundariesSet: ['no_money', 'no_lying'],
+				exhaustionLevel: 3
+			});
+		});
+
+		test('drops a field when its value has wrong type (e.g. string for exhaustionLevel)', () => {
+			const scene = normalizeSceneCandidate(
+				{
+					sceneText: 'A beat.',
+					choices: [{ id: 'a', text: 'A' }],
+					storyThreadUpdates: {
+						exhaustionLevel: 'very tired' as unknown as number,
+						oswaldoConflict: 1
+					}
+				},
+				'scene_1'
+			);
+			expect((scene.storyThreadUpdates as Record<string, unknown>)?.exhaustionLevel).toBeUndefined();
+			expect((scene.storyThreadUpdates as Record<string, unknown>)?.oswaldoConflict).toBe(1);
+		});
+
+		test('drops unknown keys silently', () => {
+			const scene = normalizeSceneCandidate(
+				{
+					sceneText: 'A beat.',
+					choices: [{ id: 'a', text: 'A' }],
+					storyThreadUpdates: {
+						oswaldoConflict: 1,
+						unknownKey: 'should be dropped'
+					} as Record<string, unknown>
+				},
+				'scene_1'
+			);
+			expect((scene.storyThreadUpdates as Record<string, unknown>)?.unknownKey).toBeUndefined();
+			expect((scene.storyThreadUpdates as Record<string, unknown>)?.oswaldoConflict).toBe(1);
+		});
+
+		test('returns null when all fields are malformed', () => {
+			const scene = normalizeSceneCandidate(
+				{
+					sceneText: 'A beat.',
+					choices: [{ id: 'a', text: 'A' }],
+					storyThreadUpdates: {
+						oswaldoConflict: 'bad' as unknown as number,
+						moneyResolved: 'yes' as unknown as boolean
+					}
+				},
+				'scene_1'
+			);
+			expect(scene.storyThreadUpdates).toBeNull();
+		});
+	});
 });

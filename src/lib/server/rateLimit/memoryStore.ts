@@ -5,6 +5,8 @@ type CounterEntry = {
 	resetAt: number;
 };
 
+const GC_THRESHOLD = 500;
+
 export class MemoryRateLimitStore implements RateLimitStore {
 	private readonly counters = new Map<string, CounterEntry>();
 
@@ -14,6 +16,14 @@ export class MemoryRateLimitStore implements RateLimitStore {
 		const current = this.counters.get(key);
 
 		if (!current || now >= current.resetAt) {
+			// Lazy GC: only when the map is large enough to be worth sweeping.
+			if (this.counters.size >= GC_THRESHOLD) {
+				for (const [k, entry] of this.counters) {
+					if (now >= entry.resetAt) {
+						this.counters.delete(k);
+					}
+				}
+			}
 			this.counters.set(key, {
 				count: 1,
 				resetAt: now + this.options.windowMs

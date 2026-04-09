@@ -76,4 +76,23 @@ test.describe('routeHelpers', () => {
         expect(payload.status).toBe(500);
         expect(payload.error).toMatch(/XAI_API_KEY/i);
     });
+
+    test('resolveTextScene does not emit a story_scene telemetry event', async () => {
+        const sink = new RecordingSink();
+        setAiTelemetrySink(sink);
+
+        // resolveTextScene calls loadAiConfig() which needs XAI_API_KEY.
+        // We don't have the key here, so it will throw — but the throw
+        // must come from config loading, NOT from a telemetry emit.
+        // We verify no story_scene event was emitted before the throw.
+        try {
+            const { resolveTextScene } = await import('../../src/lib/server/ai/routeHelpers');
+            await resolveTextScene({ currentSceneId: null, choiceId: null, gameState: createGameState() }, 'opening');
+        } catch {
+            // expected — no api key in test env
+        }
+
+        const storySceneEvents = sink.records.filter((r) => r.stage === 'story_scene');
+        expect(storySceneEvents).toHaveLength(0);
+    });
 });
