@@ -4,6 +4,9 @@
 
 ### Added / Changed
 
+- **SSR ending URL fix (Issue #26):** Moved URL param parsing on `/ending` from `onMount` into a SvelteKit `+page.ts` load function. Share links now render the correct ending content on first paint — no content-flash, OG crawlers see real data. (`src/routes/ending/+page.ts`, `src/routes/ending/+page.svelte`)
+- **`brace-expansion` vulnerability patched:** Ran `npm audit fix` to update `brace-expansion` transitive dependencies from `<1.1.13` to `>=1.1.13` (3 low-severity advisories resolved). The `cookie@<0.7.0` advisory in `@sveltejs/kit` is an upstream ecosystem blocker — `@sveltejs/kit@2.57.0` (latest) still ships `cookie@^0.6.0`; no safe in-range fix is available.
+
 - **Reliability & Correctness Batch (6 items):**
   - **`MemoryRateLimitStore` memory leak fix:** Added lazy GC sweep in `consume()` — when the map exceeds 500 entries and the current request hits an expired or new slot, all expired entries are pruned in one pass. Previously, every unique IP that ever hit the server remained in memory forever. (`src/lib/server/rateLimit/memoryStore.ts`, `tests/unit/rateLimit/memoryStore.spec.ts`)
   - **Removed duplicate/inaccurate telemetry in `resolveTextScene`:** Deleted the hardcoded `story_scene` event (always emitted with `retryCount: 0, parseAttempts: 1`) from `routeHelpers.ts`. The accurate `provider_chat` event already emitted by `GrokAiProvider.callChat()` covers this. (`src/lib/server/ai/routeHelpers.ts`, `tests/unit/routeHelpers.spec.ts`)
