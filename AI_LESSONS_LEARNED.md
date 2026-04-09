@@ -308,3 +308,8 @@
 
 **Insight:** Teams can agree on good lessons and still repeat the same failures when release flow does not force those lessons into merge behavior.
 **Lesson:** Translate key lessons into one release runbook with explicit merge lanes, mandatory deterministic gates on each lane, and hard ship blockers for invariants. If a lesson is not reflected in release criteria, treat it as unimplemented.
+
+## 56. Always Sanitize AI-Supplied Partial Structs Before Applying to Game State
+
+**Insight:** The Grok provider was casting AI-returned `storyThreadUpdates` directly to `Partial<StoryThreads>` with no field-level type checking. A malformed AI response (e.g., `"exhaustionLevel": "very tired"`) would propagate silently into the runtime and corrupt narrative thread values.
+**Lesson:** Any AI-supplied object that will be merged into game state must be sanitized through a typed filter: copy only known keys, validate the value type for each field (number/boolean/string[]), and return `null` if nothing valid remains. Never trust a raw `as Partial<T>` cast on externally-sourced data. This guard belongs at the parse/normalize boundary, not in game runtime code.

@@ -11,6 +11,49 @@ function normalizeChoiceId(text: string, index: number): string {
 	return normalized || `choice_${index + 1}`;
 }
 
+// Validates and sanitizes a raw AI-supplied storyThreadUpdates object.
+// Only known keys with correct value types are preserved; unknown keys and
+// type-mismatched values are silently dropped.
+function sanitizeStoryThreadUpdates(raw: unknown): Partial<StoryThreads> | null {
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+		return null;
+	}
+	const src = raw as Record<string, unknown>;
+	const result: Partial<StoryThreads> = {};
+
+	const numericKeys: Array<keyof StoryThreads> = [
+		'oswaldoConflict',
+		'trinaTension',
+		'sydneyRealization',
+		'oswaldoAwareness',
+		'exhaustionLevel',
+		'dexTriangulation'
+	];
+	for (const key of numericKeys) {
+		const val = src[key];
+		if (typeof val === 'number' && Number.isFinite(val)) {
+			(result as Record<string, unknown>)[key] = val;
+		}
+	}
+
+	const booleanKeys: Array<keyof StoryThreads> = ['moneyResolved', 'carMentioned'];
+	for (const key of booleanKeys) {
+		const val = src[key];
+		if (typeof val === 'boolean') {
+			(result as Record<string, unknown>)[key] = val;
+		}
+	}
+
+	if (
+		Array.isArray(src.boundariesSet) &&
+		(src.boundariesSet as unknown[]).every((el) => typeof el === 'string')
+	) {
+		result.boundariesSet = src.boundariesSet as string[];
+	}
+
+	return Object.keys(result).length > 0 ? result : null;
+}
+
 export function normalizeSceneCandidate(candidate: SceneCandidate, fallbackSceneId: string): Scene {
 	const choices = Array.isArray(candidate.choices)
 		? candidate.choices
@@ -45,10 +88,7 @@ export function normalizeSceneCandidate(candidate: SceneCandidate, fallbackScene
 		mood: typeof candidate.mood === 'string' && (Object.values(Moods) as string[]).includes(candidate.mood)
 			? (candidate.mood as Scene['mood'])
 			: undefined,
-		storyThreadUpdates:
-			candidate.storyThreadUpdates && typeof candidate.storyThreadUpdates === 'object'
-				? (candidate.storyThreadUpdates as Partial<StoryThreads>)
-				: null
+		storyThreadUpdates: sanitizeStoryThreadUpdates(candidate.storyThreadUpdates ?? null)
 	};
 }
 
