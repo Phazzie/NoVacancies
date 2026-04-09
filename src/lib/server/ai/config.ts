@@ -57,7 +57,7 @@ function parseRetryBackoffMs(value: string | undefined): number[] {
 	const parsed: number[] = [];
 	for (const part of parts) {
 		const n = Number.parseInt(part.trim(), 10);
-		if (!Number.isFinite(n) || n < 0) return DEFAULT;
+		if (Number.isNaN(n) || n < 0) return DEFAULT;
 		parsed.push(Math.min(10_000, n));
 	}
 	return parsed.length > 0 ? parsed : DEFAULT;

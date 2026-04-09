@@ -78,6 +78,11 @@ test.describe('ai config loading', () => {
             expect(config.retryBackoffMs).toEqual([400, 1200]);
         });
 
+        test('falls back to default when the first entry is non-numeric', () => {
+            const config = loadAiConfig({ ...BASE_ENV, AI_RETRY_BACKOFF_MS: 'abc,100,500' });
+            expect(config.retryBackoffMs).toEqual([400, 1200]);
+        });
+
         test('takes only the first 4 values when more than 4 are provided', () => {
             const config = loadAiConfig({ ...BASE_ENV, AI_RETRY_BACKOFF_MS: '10,20,30,40,50' });
             expect(config.retryBackoffMs).toEqual([10, 20, 30, 40]);
