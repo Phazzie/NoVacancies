@@ -23,7 +23,8 @@ keep `consume()` O(n) only occasionally, only run the sweep when the map exceeds
 Do **not** change the public `RateLimitStore` interface or test-reset helper.
 
 **Test requirement:**  
-Add a test in `tests/unit/rateLimit/` (new file `memoryStore.spec.ts`) that:
+Add a test to the **existing** `tests/unit/rateLimit/memoryStore.spec.ts` (do not create a new
+file — one already exists) that:
 1. Creates a store with `windowMs: 50`.
 2. Adds 600 unique keys (loop with `consume('key_N')`).
 3. Waits 60 ms (all entries now expired).
@@ -60,9 +61,15 @@ Delete the entire `emitAiServerTelemetry('story_scene', ...)` call from `resolve
 The `provider_chat` event from inside the provider already covers this. No other changes needed.
 
 **Test requirement:**  
-Update `tests/unit/routeHelpers.spec.ts` (if it exists) or add a test that confirms
-`resolveTextScene` no longer emits a `story_scene` event. Use `setAiTelemetrySink` from
+Update the **existing** `tests/unit/routeHelpers.spec.ts` to confirm that `resolveTextScene`
+no longer emits a `story_scene` event. Use `setAiTelemetrySink` from
 `$lib/server/ai/telemetry` to capture events and assert none have `stage === 'story_scene'`.
+
+⚠️ **Determinism note:** `resolveTextScene` calls `loadAiConfig()` internally which requires
+`XAI_API_KEY`. In a test environment without a real key, `loadAiConfig()` will throw before
+any network call occurs. The test should wrap the call in a `try/catch` (the throw is
+expected), then assert that no `story_scene` event was captured. This ensures the test is
+fully deterministic with no live network calls and no flakiness in CI.
 
 ---
 
@@ -89,11 +96,15 @@ Cover these cases:
 | 403 Forbidden | `ok: false`, `status: 403` | throws `AiProviderError` with `code: 'auth'`, `status: 403`, `retryable: false` |
 | 429 Rate Limit | `ok: false`, `status: 429` | throws `AiProviderError` with `code: 'rate_limit'`, `retryable: true` |
 | 503 Server Error | `ok: false`, `status: 503` | throws `AiProviderError` with `code: 'provider_down'`, `retryable: true` |
-| AbortError timeout | `fetch` throws `{ name: 'AbortError' }` | throws `AiProviderError` with `code: 'timeout'`, `retryable: true`, `status: 504` |
+| AbortError timeout | `fetch` throws `Object.assign(new Error('aborted'), { name: 'AbortError' })` | throws `AiProviderError` with `code: 'timeout'`, `retryable: true`, `status: 504` |
 | Generic network error | `fetch` throws `new Error('socket hang up')` | throws `AiProviderError` with `code: 'unknown'`, `retryable: false` |
 
-Use `requestTimeoutMs: 5000` and a real `AbortController` for the timeout test (or pass a
-`fetchImpl` that synchronously throws a `DOMException` with `name: 'AbortError'`).
+Use `requestTimeoutMs: 5000` for all tests. For the timeout case, `fetch` must throw an
+actual `Error` instance with `name: 'AbortError'` (e.g.,
+`Object.assign(new Error('aborted'), { name: 'AbortError' })`), because `executeJsonRequest`
+checks `error instanceof Error && error.name === 'AbortError'`. A plain object
+`{ name: 'AbortError' }` will not match the `instanceof Error` guard and will be treated as
+a generic network error instead.
 
 ---
 
@@ -216,9 +227,11 @@ readiness check. It always reports `ok: true` because the field is always false.
 
 **Test requirement:**  
 Update `tests/unit/config.spec.ts`:
-1. Confirm that `loadAiConfig({})` (no env vars set, except `XAI_API_KEY`) does NOT include
-   an `aiAuthBypass` property in the returned object.
-2. Confirm that `loadAiConfig({ AI_AUTH_BYPASS: 'true', XAI_API_KEY: 'x' })` still throws.
+1. Confirm that the returned config from `loadAiConfig` does NOT include an `aiAuthBypass`
+   property. Pass a valid env object: `loadAiConfig({ AI_PROVIDER: 'grok', AI_OUTAGE_MODE: 'hard_fail', XAI_API_KEY: 'test-key' })`.
+   Note: calling `loadAiConfig({})` with no env vars will throw (because `XAI_API_KEY` is
+   required) — always pass an explicit env object with all required fields.
+2. Confirm that `loadAiConfig({ AI_AUTH_BYPASS: 'true', XAI_API_KEY: 'x', AI_OUTAGE_MODE: 'hard_fail' })` still throws.
 
 ---
 
