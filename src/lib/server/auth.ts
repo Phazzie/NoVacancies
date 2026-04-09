@@ -5,8 +5,9 @@ export const SESSION_COOKIE_NAME = 'nv_session';
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 const encoder = new TextEncoder();
-// Keep this small and bounded: normal runtime uses one active secret, but secret rotation
-// or overlap windows can temporarily require validating multiple signatures.
+// Keep this small and bounded: normal runtime uses one active secret, but rotation overlap
+// can require validating a few signatures at once. Four entries comfortably covers common
+// rollover windows (current + prior keys) without allowing unbounded growth.
 const MAX_CRYPTO_CACHE_SIZE = 4;
 const cryptoKeyCache = new Map<string, CryptoKey>();
 
