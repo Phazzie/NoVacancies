@@ -1,16 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { gameStore } from '$lib/game';
-	import { EndingTypes } from '$lib/contracts';
 	import type { EndingPayload } from '$lib/game';
+	import type { PageData } from './$types';
 
-	// Canonical ending type values for URL param validation
-	const KNOWN_ENDING_TYPES = new Set(Object.values(EndingTypes));
+	export let data: PageData;
 
 	let ending: EndingPayload | null = null;
-	let urlEnding: EndingPayload | null = null;
 	let shareUrl = '';
 	let shareCopied = false;
 	let shareFailed = false;
@@ -22,12 +19,11 @@
 
 	onMount(() => {
 		gameStore.initialize();
-		urlEnding = parseEndingFromUrl($page.url.searchParams);
 		return () => unsubscribe();
 	});
 
-	// Deterministic precedence: active in-memory ending wins; URL params are fallback only.
-	$: activeEnding = ending ?? urlEnding;
+	// Deterministic precedence: active in-memory ending wins; URL params (from SSR load) are fallback.
+	$: activeEnding = ending ?? data.urlEnding;
 
 	$: if (activeEnding) {
 		const params = new URLSearchParams({
@@ -37,41 +33,6 @@
 			duration: String(Math.floor(activeEnding.stats.durationMs / 60_000))
 		});
 		shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/ending?${params.toString()}`;
-	}
-
-	function parseEndingFromUrl(params: URLSearchParams): EndingPayload | null {
-		const type = params.get('type');
-		if (!type) return null;
-
-		// Validate ending type against known canonical values.
-		// Custom ending types (strings not in EndingTypes) are allowed per the contract,
-		// but must be non-empty strings. Reject clearly invalid values.
-		const trimmedType = type.trim();
-		if (!trimmedType) return null;
-
-		const scenes = safeParseNonNegativeInt(params.get('scenes'));
-		const lessons = safeParseNonNegativeInt(params.get('lessons'));
-		const durationMinutes = safeParseNonNegativeInt(params.get('duration'));
-
-		return {
-			endingType: trimmedType,
-			sceneId: '',
-			stats: {
-				sceneCount: scenes,
-				lessonsCount: lessons,
-				durationMs: durationMinutes * 60_000
-			},
-			unlockedEndings: KNOWN_ENDING_TYPES.has(trimmedType as (typeof EndingTypes)[keyof typeof EndingTypes])
-				? [trimmedType as (typeof EndingTypes)[keyof typeof EndingTypes]]
-				: []
-		};
-	}
-
-	function safeParseNonNegativeInt(value: string | null): number {
-		if (value === null) return 0;
-		const parsed = parseInt(value, 10);
-		if (!Number.isFinite(parsed)) return 0;
-		return Math.max(0, parsed);
 	}
 
 	function formatDuration(ms: number): string {
