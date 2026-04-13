@@ -4,6 +4,17 @@
 
 ### Added / Changed
 
+- **CI & Test Coverage Remediation (2026-04-13):**
+  - **Phase 1 — Playwright config fix:** Deleted legacy `playwright-unit.config.js` (4 workers, 10s timeout). CI now uses `npm run test:unit` which canonically points to `playwright.unit.config.ts` (2 workers, 15s timeout). One config, no divergence.
+  - **Phase 2 — ESLint covers `src/`:** Added `@typescript-eslint/parser`, `@typescript-eslint/eslint-plugin`, and `eslint-plugin-svelte` to devDependencies. `eslint.config.js` now lints all `.ts` and `.svelte` files under `src/`. Fixed two source violations: renamed unused `event` param to `_event` in `readiness/+server.ts`, and extracted inline `import()` type annotations to top-level `import type` in `next/+server.ts`. Configured `eqeqeq` rule with `{ null: 'ignore' }` to preserve the intentional `value == null` idiom. `npm run lint` exits 0 and covers source.
+  - **Phase 3 — Consolidated CI smoke steps:** Replaced separate "Legacy marker guard" and "Runtime story-selection smoke checks" CI steps with a single `npm test` step. Future additions to the `test` script are automatically included.
+  - **Phase 4 — Claude eval key gate:** Added "Check for Claude API key" preflight step to `narrative-eval` CI job. When `ANTHROPIC_API_KEY` is absent the job now emits an explicit "Skipping Tier 2 narrative eval" notice instead of silently no-oping. Pattern mirrors the `canary` job's `XAI_API_KEY` gate.
+  - **Phase 5 — `auth.ts` unit tests:** Added `tests/unit/auth/sessionCookie.spec.ts` with 13 test cases covering valid round-trips, tampered signatures, expiry rejection, role pass-through, crypto key cache eviction behavior (6+ secrets > `MAX_CRYPTO_CACHE_SIZE`), and `authErrorResponse` shape contract for both 401/403 codes.
+  - **Phase 6 — `builderAuth` middleware unit tests:** Added `tests/unit/middleware/builderAuth.spec.ts` with 8 test cases covering anonymous 401, author/editor pass-through, non-builder role 403, tampered cookie 401, and malformed cookie 401.
+  - **Phase 7 — `builder/normalizers.ts` unit tests:** Added `tests/unit/builder/normalizers.spec.ts` with 17 test cases covering `normalizeLineArray` (via `voiceCeilingLines`), `normalizeDraft` null/partial/malformed input fallbacks, and `normalizeProseFeedback` score clamping, flag coercion, and suggestion defaults.
+  - **Phase 8 — `lessons.ts` / `lessonsCatalog.ts` unit tests:** Added `tests/unit/lessons.spec.ts` with 24 test cases covering catalog completeness (17 lessons, all with non-empty `storyTriggers`), `getLessonById` for valid/edge IDs, `getRandomTrigger` membership, and `detectLessonInScene` keyword matching including case-insensitivity and multi-keyword guard.
+  - **Total new test cases: 62.** Full `npm run test:unit` suite now passes 198 tests.
+
 - **SSR ending URL fix (Issue #26):** Moved URL param parsing on `/ending` from `onMount` into a SvelteKit `+page.ts` load function. Share links now render the correct ending content on first paint — no content-flash, OG crawlers see real data. (`src/routes/ending/+page.ts`, `src/routes/ending/+page.svelte`)
 - **`brace-expansion` vulnerability patched:** Ran `npm audit fix` to update `brace-expansion` transitive dependencies from `<1.1.13` to `>=1.1.13` (3 low-severity advisories resolved). The `cookie@<0.7.0` advisory in `@sveltejs/kit` is an upstream ecosystem blocker — `@sveltejs/kit@2.57.0` (latest) still ships `cookie@^0.6.0`; no safe in-range fix is available.
 
