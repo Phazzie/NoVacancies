@@ -2,6 +2,9 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { loadAiConfig } from '$lib/server/ai/config';
 import { createProviderRegistry, selectProbeProvider } from '$lib/server/ai/providers';
 import { getActiveStoryCartridge } from '$lib/stories';
+import { getImageGenerationDiagnostics, formatImageDiagnosticsSummary } from '$lib/server/ai/diagnostics';
+import { NARRATIVE_CARTRIDGE } from '$lib/server/ai/narrative';
+import { getImagePipeline } from '$lib/server/ai/imagePipeline';
 
 type CheckId =
 	| 'config_valid'
@@ -11,6 +14,7 @@ type CheckId =
 	| 'outage_policy'
 	| 'security_mode'
 	| 'image_generation'
+	| 'image_pipeline_status'
 	| 'connectivity_probe';
 
 interface ReadinessCheck {
@@ -27,6 +31,19 @@ interface ReadinessPayload {
 	summary: string;
 	checks: ReadinessCheck[];
 	activeStory: { id: string; title: string };
+	activeCartridge: {
+		id: string;
+		title: string;
+		version: string;
+	};
+	imageGeneration: {
+		attempts: number;
+		successes: number;
+		failures: number;
+		averageLatencyMs: number | null;
+		topRecentFailureCategories: Array<{ category: string; count: number }>;
+		humanDiagnostics: string[];
+	};
 	updatedAt: string;
 }
 
@@ -44,11 +61,17 @@ function summarize(payload: ReadinessPayload): string {
 }
 
 function buildConfigFailurePayload(errorMessage: string): ReadinessPayload {
+	const imageGeneration = getImageGenerationDiagnostics();
 	return {
 		score: 0,
 		status: 'blocked',
 		summary: 'Blocked by: AI runtime config is invalid.',
 		activeStory: { id: 'unknown', title: 'unknown' },
+		activeCartridge: NARRATIVE_CARTRIDGE,
+		imageGeneration: {
+			...imageGeneration,
+			humanDiagnostics: formatImageDiagnosticsSummary(imageGeneration)
+		},
 		updatedAt: new Date().toISOString(),
 		checks: [
 			{
@@ -148,7 +171,14 @@ function buildPayload(): ReadinessPayload {
 			label: 'Image Generation Mode',
 			ok: !config.enableGrokImages,
 			details: config.enableGrokImages ? 'Dynamic generation' : 'Static defaults',
-			weight: 5
+			weight: 4
+		},
+		{
+			id: 'image_pipeline_status',
+			label: 'Image pipeline instrumentation available',
+			ok: true,
+			details: 'status endpoint active',
+			weight: 1
 		}
 	];
 
@@ -172,12 +202,29 @@ function buildPayload(): ReadinessPayload {
 
 	const score = checks.reduce((sum, check) => sum + (check.ok ? check.weight : 0), 0);
 	const activeStory = getActiveStoryCartridge();
+	const imageGeneration = getImageGenerationDiagnostics();
+
+	const pipeline = getImagePipeline().summary(5);
+	const pipelineCheck = checks.find((check) => check.id === 'image_pipeline_status');
+	if (pipelineCheck) {
+		pipelineCheck.details = `inFlight=${pipeline.inFlight}, cache=${pipeline.cacheEntries}, total=${pipeline.totalRequests}`;
+		if (pipeline.configError) {
+			pipelineCheck.ok = false;
+			pipelineCheck.details = `config_error=${pipeline.configError}`;
+		}
+	}
+
 	const payload: ReadinessPayload = {
 		score,
 		status: deriveReadinessStatus(score, checks),
 		summary: '',
 		checks,
 		activeStory: { id: activeStory.id, title: activeStory.title },
+		activeCartridge: NARRATIVE_CARTRIDGE,
+		imageGeneration: {
+			...imageGeneration,
+			humanDiagnostics: formatImageDiagnosticsSummary(imageGeneration)
+		},
 		updatedAt: new Date().toISOString()
 	};
 	payload.summary = summarize(payload);

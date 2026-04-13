@@ -4,7 +4,7 @@ const host = process.env.E2E_HOST || '127.0.0.1';
 const port = Number(process.env.E2E_PORT || 8080);
 const baseURL = `http://${host}:${port}`;
 const liveGrok = process.env.LIVE_GROK === '1';
-const hasXaiKey = Boolean((process.env.XAI_API_KEY || '').trim());
+const hasXaiKey = Boolean(process.env.XAI_API_KEY?.trim());
 const enableLiveGrok = liveGrok && hasXaiKey;
 const serverCommand = process.env.E2E_SERVER_COMMAND || `npm run dev -- --host ${host} --port ${port}`;
 
@@ -32,11 +32,11 @@ export default defineConfig({
             AI_PROVIDER: process.env.AI_PROVIDER || 'grok',
             ENABLE_GROK_IMAGES: process.env.ENABLE_GROK_IMAGES || '0',
             ENABLE_GROK_TEXT: process.env.ENABLE_GROK_TEXT || '1',
-            ENABLE_PROVIDER_PROBE: process.env.ENABLE_PROVIDER_PROBE || '0',
-            E2E_HOST: host,
-            E2E_PORT: String(port),
-            AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET || 'playwright_auth_secret',
-            XAI_API_KEY: process.env.XAI_API_KEY || ''
-        }
-    }
+			ENABLE_PROVIDER_PROBE: process.env.ENABLE_PROVIDER_PROBE || '0',
+			E2E_HOST: host,
+			E2E_PORT: String(port),
+			AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET || 'playwright_auth_secret',
+			XAI_API_KEY: process.env.XAI_API_KEY || ''
+		}
+	}
 });
