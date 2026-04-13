@@ -43,11 +43,8 @@ jobs:
             - name: Lint
               run: npm run lint
 
-            - name: Legacy marker guard
-              run: node tests/noLegacyProviderMarkers.js
-
-            - name: Runtime story-selection smoke checks
-              run: node tests/storyEngineRuntimeSelection.js
+            - name: Core smoke tests
+              run: npm test
 
             - name: Narrative quality — Tier 1 blocking gates
               run: npm run test:narrative
@@ -65,7 +62,7 @@ jobs:
               run: npx playwright install --with-deps chromium
 
             - name: Unit tests
-              run: npx playwright test --config=playwright-unit.config.js
+              run: npm run test:unit
 
             - name: Build
               run: npm run build
@@ -102,7 +99,19 @@ jobs:
             - name: Create artifacts directory
               run: mkdir -p artifacts
 
+            - name: Check for Claude API key
+              id: check-claude-key
+              run: |
+                  if [ -z "$ANTHROPIC_API_KEY" ]; then
+                    echo "available=false" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "available=true" >> "$GITHUB_OUTPUT"
+                  fi
+              env:
+                  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
             - name: Evaluate golden fixtures
+              if: steps.check-claude-key.outputs.available == 'true'
               uses: anthropics/claude-code-action@v1
               with:
                   prompt: |
@@ -202,6 +211,10 @@ jobs:
 
                       Use weighted averages per category. overallAvg = mean of both category averages.
                       Evaluate each fixture independently. Score what you see, not what you hope is there.
+
+            - name: Skip notice
+              if: steps.check-claude-key.outputs.available == 'false'
+              run: echo "Skipping Tier 2 narrative eval — ANTHROPIC_API_KEY not available"
 
             - name: Upload Tier 2 artifacts
               if: always()

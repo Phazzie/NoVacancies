@@ -184,7 +184,7 @@ function buildPayload(): ReadinessPayload {
 	return payload;
 }
 
-export const GET: RequestHandler = async (event) => {
+export const GET: RequestHandler = async (_event) => {
 	try {
 		let payload = buildPayload();
 
