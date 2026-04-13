@@ -1,6 +1,17 @@
 import { test, expect } from '@playwright/test';
+import { createSignedSessionCookieValue, SESSION_COOKIE_NAME } from '../helpers/sessionCookie.js';
 
-const HAS_XAI_KEY = Boolean((process.env.XAI_API_KEY || 'playwright_fake_key').trim());
+const HAS_XAI_KEY = Boolean(process.env.XAI_API_KEY?.trim());
+const AUTH_SESSION_SECRET = process.env.AUTH_SESSION_SECRET || 'playwright_auth_secret';
+
+async function makeCreatorHeaders() {
+	const cookieValue = await createSignedSessionCookieValue({
+		userId: 'e2e-author',
+		role: 'author',
+		secret: AUTH_SESSION_SECRET
+	});
+	return { Cookie: `${SESSION_COOKIE_NAME}=${cookieValue}` };
+}
 
 async function expectPathname(page, expectedPath) {
 	await expect
@@ -94,7 +105,9 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	});
 
 	test('image endpoint enforces guardrails before provider call', async ({ request }) => {
+		const headers = await makeCreatorHeaders();
 		const blocked = await request.post('/api/image', {
+			headers,
 			data: {
 				prompt: 'Close portrait of Oswaldo face with bare skin'
 			}
@@ -105,12 +118,14 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 	});
 
 	test('image pipeline status and actions respond without provider calls', async ({ request }) => {
-		const statusResponse = await request.get('/api/image');
+		const headers = await makeCreatorHeaders();
+		const statusResponse = await request.get('/api/image', { headers });
 		expect(statusResponse.ok()).toBeTruthy();
 		const statusBody = await statusResponse.json();
 		expect(statusBody.status?.totalRequests).toBeGreaterThanOrEqual(0);
 
 		const createResponse = await request.post('/api/image', {
+			headers,
 			data: { prompt: 'Warm motel neon reflecting on phone screens', action: 'generate' }
 		});
 		expect([200, 422]).toContain(createResponse.status());
@@ -118,6 +133,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		expect(createBody.request?.cacheKey).toBeTruthy();
 		if (createBody.request?.requestId) {
 			const decisionResponse = await request.post('/api/image', {
+				headers,
 				data: { action: 'fallback_to_static', requestId: createBody.request.requestId }
 			});
 			expect(decisionResponse.ok()).toBeTruthy();

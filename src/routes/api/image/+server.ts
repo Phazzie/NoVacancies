@@ -1,6 +1,9 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { asRouteError } from '$lib/server/ai/routeHelpers';
 import { getImagePipeline, type CreatorImageAction } from '$lib/server/ai/imagePipeline';
+import { assertImagePromptGuardrails } from '$lib/server/ai/guardrails';
+import { AiProviderError } from '$lib/server/ai/provider.interface';
+import { authErrorResponse, getSessionUser, isBuilderRole, BUILDER_ROLES } from '$lib/server/auth';
 
 interface ImagePostPayload {
     action?: CreatorImageAction;
@@ -8,10 +11,23 @@ interface ImagePostPayload {
     requestId?: string;
 }
 
-function assertPromptGuardrail(prompt: string): string | null {
-    const lower = prompt.toLowerCase();
-    if (/oswaldo/.test(lower) && /(face|bare skin|shirtless|nude|naked|skin exposed)/.test(lower)) {
-        return 'Image request blocked by safety guardrails. Adjust the prompt and try again.';
+async function requireCreatorSession(event: Parameters<RequestHandler>[0]): Promise<Response | null> {
+    const sessionUser = await getSessionUser(event);
+    if (!sessionUser) {
+        return authErrorResponse({
+            status: 401,
+            code: 'auth_required',
+            message: 'You must be signed in to use image creator tools.',
+            path: event.url.pathname
+        });
+    }
+    if (!isBuilderRole(sessionUser.role)) {
+        return authErrorResponse({
+            status: 403,
+            code: 'insufficient_role',
+            message: `Image creator access requires one of: ${BUILDER_ROLES.join(', ')}.`,
+            path: event.url.pathname
+        });
     }
     return null;
 }
@@ -30,12 +46,18 @@ function normalizeAction(value: unknown): CreatorImageAction {
     return 'generate';
 }
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async (event) => {
+    const authError = await requireCreatorSession(event);
+    if (authError) return authError;
+
     const pipeline = getImagePipeline();
     return json({ status: pipeline.summary() });
 };
 
 export const POST: RequestHandler = async (event) => {
+    const authError = await requireCreatorSession(event);
+    if (authError) return authError;
+
     try {
         const payload = (await event.request.json().catch(() => ({}))) as ImagePostPayload;
         const action = normalizeAction(payload.action);
@@ -59,19 +81,16 @@ export const POST: RequestHandler = async (event) => {
             return json({ error: 'prompt is required' }, { status: 400 });
         }
 
-        const guardrailMessage = assertPromptGuardrail(prompt);
-        if (guardrailMessage) {
-            return json(
-                {
-                    request: {
-                        status: 'failed',
-                        error: { reasonCode: 'guardrail', message: guardrailMessage }
-                    },
-                    error: guardrailMessage,
-                    status: pipeline.summary()
-                },
-                { status: 422 }
-            );
+        try {
+            assertImagePromptGuardrails(prompt);
+        } catch (guardrailError) {
+            if (guardrailError instanceof AiProviderError && guardrailError.code === 'guardrail') {
+                return json(
+                    { error: guardrailError.message, status: pipeline.summary() },
+                    { status: 422 }
+                );
+            }
+            throw guardrailError;
         }
 
         const request = await pipeline.generate(prompt, action === 'regenerate' ? 'regenerate' : 'generate');

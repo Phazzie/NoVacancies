@@ -44,6 +44,12 @@ async function callImageApi(payload: Record<string, unknown>): Promise<ImageApiS
 	});
 	const body = (await response.json().catch(() => ({}))) as ImageApiSuccess;
 	if (!response.ok) {
+		if (response.status === 422) {
+			return {
+				...body,
+				error: body.error || `image request failed (${response.status})`
+			};
+		}
 		throw new Error(body.error || `image request failed (${response.status})`);
 	}
 	return body;

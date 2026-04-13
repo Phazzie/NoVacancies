@@ -192,7 +192,13 @@ export class ImagePipeline {
 		this.requestOrder.unshift(record.requestId);
 		if (this.requestOrder.length > MAX_HISTORY) {
 			const dropped = this.requestOrder.pop();
-			if (dropped) this.requests.delete(dropped);
+			if (dropped) {
+				const droppedRecord = this.requests.get(dropped);
+				if (droppedRecord && this.cache.get(droppedRecord.cacheKey) === dropped) {
+					this.cache.delete(droppedRecord.cacheKey);
+				}
+				this.requests.delete(dropped);
+			}
 		}
 	}
 

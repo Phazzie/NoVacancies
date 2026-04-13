@@ -4,7 +4,7 @@ const host = process.env.E2E_HOST || '127.0.0.1';
 const port = Number(process.env.E2E_PORT || 8080);
 const baseURL = `http://${host}:${port}`;
 const liveGrok = process.env.LIVE_GROK === '1';
-const hasXaiKey = Boolean((process.env.XAI_API_KEY || 'playwright_fake_key').trim());
+const hasXaiKey = Boolean(process.env.XAI_API_KEY?.trim());
 const enableLiveGrok = liveGrok && hasXaiKey;
 const serverCommand = process.env.E2E_SERVER_COMMAND || `npm run dev -- --host ${host} --port ${port}`;
 
@@ -36,7 +36,7 @@ export default defineConfig({
 			E2E_HOST: host,
 			E2E_PORT: String(port),
 			AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET || 'playwright_auth_secret',
-			XAI_API_KEY: process.env.XAI_API_KEY || 'playwright_fake_key'
+			XAI_API_KEY: process.env.XAI_API_KEY || ''
 		}
 	}
 });
