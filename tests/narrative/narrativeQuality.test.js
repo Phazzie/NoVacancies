@@ -250,17 +250,17 @@ function testNarrativePreambleAndVoiceRestoration() {
 	assert(promptSource.includes('The "Incident"'), 'specific memory: The "Incident"');
 	assert(promptSource.includes('Krystal'), 'specific memory: Krystal detail');
 
-	// VOICE CRAFT GUIDELINES
-	assert(promptSource.includes('VOICE'), 'voice craft section: VOICE');
-	assert(promptSource.includes('SENTENCE RHYTHM'), 'voice craft section: SENTENCE RHYTHM');
-	assert(promptSource.includes('DIALOGUE'), 'voice craft section: DIALOGUE');
-	assert(promptSource.includes('SHOW DON\'T TELL'), 'voice craft section: SHOW DON\'T TELL');
-	assert(promptSource.includes('SENSORY GROUNDING'), 'voice craft section: SENSORY GROUNDING');
+	// VOICE CRAFT GUIDELINES (check for ### headers to avoid false positives from other sections)
+	assert(promptSource.includes('### VOICE'), 'voice craft section: ### VOICE');
+	assert(promptSource.includes('### SENTENCE RHYTHM'), 'voice craft section: ### SENTENCE RHYTHM');
+	assert(promptSource.includes('### DIALOGUE'), 'voice craft section: ### DIALOGUE');
+	assert(promptSource.includes('### SHOW DON\'T TELL'), 'voice craft section: ### SHOW DON\'T TELL');
+	assert(promptSource.includes('### SENSORY GROUNDING'), 'voice craft section: ### SENSORY GROUNDING');
 	assert(
-		promptSource.includes('MOTIVE-DRIVEN ANTHROPOMORPHISM'),
-		'voice craft section: MOTIVE-DRIVEN ANTHROPOMORPHISM'
+		promptSource.includes('### MOTIVE-DRIVEN ANTHROPOMORPHISM'),
+		'voice craft section: ### MOTIVE-DRIVEN ANTHROPOMORPHISM'
 	);
-	assert(promptSource.includes('FORBIDDEN PHRASING'), 'voice craft section: FORBIDDEN PHRASING');
+	assert(promptSource.includes('### FORBIDDEN PHRASING'), 'voice craft section: ### FORBIDDEN PHRASING');
 
 	// FORBIDDEN PHRASES: Explicit exclusions
 	assert(promptSource.includes('the lesson is'), 'forbidden phrase: the lesson is');
@@ -295,6 +295,50 @@ function testVoiceCeilingExamplesRestored() {
 	assert(
 		promptSource.includes('gratitude was never in stock'),
 		'voice ceiling: like gratitude was never in stock'
+	);
+}
+
+function testVoiceCeilingLinesShared() {
+	suite('Voice Ceiling Lines Shared Constant');
+
+	const promptSource = readSource('src/lib/stories/no-vacancies/prompts.ts');
+	const indexSource = readSource('src/lib/stories/no-vacancies/index.ts');
+
+	assert(promptSource !== null, 'prompts.ts exists');
+	assert(indexSource !== null, 'index.ts exists');
+
+	// Verify shared constant is exported from prompts.ts
+	assert(
+		promptSource.includes('export const VOICE_CEILING_LINES'),
+		'VOICE_CEILING_LINES exported from prompts.ts'
+	);
+
+	// Verify all 10 lines are in the constant
+	const lines = [
+		'He will ride five miles for strangers and five inches for nobody in this room.',
+		'The bill got paid, but respect is still in collections.',
+		'The motel clock blinks 6:47 like it is judging her math.',
+		'Trina wakes up hourly for snack cakes and leaves confetti made of wrappers.',
+		'Forty dollars from a catfish turns into smokes and solo DoorDash in under an hour.',
+		'Sydney fronts the referral money; Trina hits six hundred and forgets who opened the door.',
+		'Two days later, Trina returns broke and loud, like gratitude was never in stock.',
+		'Every favor in this room is a loan with hidden interest.',
+		'When she sets one boundary, everyone acts like she started a war.',
+		'She keeps the room alive and still gets treated like an interruption.'
+	];
+
+	for (const line of lines) {
+		assert(promptSource.includes(line), `voice ceiling line in constant: "${line.substring(0, 40)}..."`);
+	}
+
+	// Verify index.ts imports and uses the shared constant
+	assert(
+		indexSource.includes('VOICE_CEILING_LINES'),
+		'index.ts imports VOICE_CEILING_LINES from prompts'
+	);
+	assert(
+		indexSource.includes('voiceCeilingLines: VOICE_CEILING_LINES'),
+		'index.ts uses shared VOICE_CEILING_LINES constant (not duplicate array)'
 	);
 }
 
@@ -363,6 +407,7 @@ testStarterKitIsolation();
 testBuilderSurfaces();
 testNarrativePreambleAndVoiceRestoration();
 testVoiceCeilingExamplesRestored();
+testVoiceCeilingLinesShared();
 testTranslationMapsUpgradedToVoiceCeiling();
 
 const report = {

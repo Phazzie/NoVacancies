@@ -2,6 +2,19 @@ import { EndingTypes, ImageKeys, type NarrativeContext } from '$lib/contracts';
 import { lessons } from '$lib/narrative/lessonsCatalog';
 import { formatLessonsForPrompt, formatNarrativeContextSection } from '$lib/narrative/promptFormatting';
 
+export const VOICE_CEILING_LINES = Object.freeze([
+	'He will ride five miles for strangers and five inches for nobody in this room.',
+	'The bill got paid, but respect is still in collections.',
+	'The motel clock blinks 6:47 like it is judging her math.',
+	'Trina wakes up hourly for snack cakes and leaves confetti made of wrappers.',
+	'Forty dollars from a catfish turns into smokes and solo DoorDash in under an hour.',
+	'Sydney fronts the referral money; Trina hits six hundred and forgets who opened the door.',
+	'Two days later, Trina returns broke and loud, like gratitude was never in stock.',
+	'Every favor in this room is a loan with hidden interest.',
+	'When she sets one boundary, everyone acts like she started a war.',
+	'She keeps the room alive and still gets treated like an interruption.'
+]);
+
 function buildEndingGuidance(
 	narrativeContext: NarrativeContext,
 	suggestedEnding: string | null
@@ -226,16 +239,7 @@ Sydney doesn't just "pay bills." She manages:
 - Trina eats her saved food, asks "Why didn't you get more?"
 
 ## VOICE CEILING EXAMPLES
-- "He will ride five miles for strangers and five inches for nobody in this room."
-- "The bill got paid, but respect is still in collections."
-- "The motel clock blinks 6:47 like it is judging her math."
-- "Trina wakes up hourly for snack cakes and leaves confetti made of wrappers."
-- "Forty dollars from a catfish turns into smokes and solo DoorDash in under an hour."
-- "Sydney fronts the referral money; Trina hits six hundred and forgets who opened the door."
-- "Two days later, Trina returns broke and loud, like gratitude was never in stock."
-- "Every favor in this room is a loan with hidden interest."
-- "When she sets one boundary, everyone acts like she started a war."
-- "She keeps the room alive and still gets treated like an interruption."
+${VOICE_CEILING_LINES.map((line) => `- "${line}"`).join('\n')}
 
 ## 17 LESSONS TO WEAVE IN
 Work them in naturally through situation, never lecture:
