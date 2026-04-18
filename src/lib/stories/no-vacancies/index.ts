@@ -11,7 +11,8 @@ import {
 	getContinuePromptFromContext,
 	getOpeningPrompt,
 	getRecoveryPrompt,
-	SYSTEM_PROMPT
+	SYSTEM_PROMPT,
+	VOICE_CEILING_LINES
 } from '$lib/stories/no-vacancies/prompts';
 
 const imagePaths: Record<string, string> = {
@@ -64,10 +65,7 @@ function createEmptyDraft() {
 		setting: 'A daily-rate motel room at dawn, rent due by 11 AM, with 3-5 phones glowing in the dark.',
 		aestheticStatement:
 			'Motive-driven anthropomorphism: every line behaves, nothing explains itself, consequences are felt before they are named.',
-		voiceCeilingLines: [
-			'He will ride five miles for strangers and five inches for nobody in this room.',
-			'The bill got paid, but respect is still in collections.'
-		],
+		voiceCeilingLines: VOICE_CEILING_LINES,
 		characters: [
 			{
 				name: 'Sydney',
@@ -182,10 +180,7 @@ export const noVacanciesCartridge: StoryDefinition = {
 	voice: {
 		aestheticStatement:
 			'Motive-driven anthropomorphism. Make every line behave. Give objects, rooms, and silence motives. Nothing explains itself.',
-		voiceCeilingLines: [
-			'He will ride five miles for strangers and five inches for nobody in this room.',
-			'The bill got paid, but respect is still in collections.'
-		],
+		voiceCeilingLines: VOICE_CEILING_LINES,
 		behaviorSeeds: [
 			{
 				incident:

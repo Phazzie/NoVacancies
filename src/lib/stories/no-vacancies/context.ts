@@ -12,23 +12,23 @@ type ThreadKey =
 	| 'dexTriangulation';
 
 export const OSWALDO_CONFLICT_TRANSLATIONS: Record<string, string> = Object.freeze({
-	'-2': "He's doing things before being asked. The gestures have audition energy.",
+	'-2': "He's weirdly helpful today, like he wants credit for doing the bare minimum without being asked.",
 	'-1': "He's not fighting, but every answer has an attitude tucked inside it.",
-	'0': "Oswaldo hasn't been challenged yet. The resentment waits underneath like a dog that has not decided whether to bark.",
+	'0': "Oswaldo hasn't been challenged. The resentment is still underground.",
 	'1': 'Every question turns into a dodge. He acts accused before anyone accuses him.',
-	'2': "Things with Oswaldo do not argue anymore. They just collide and wait to see who apologizes first."
+	'2': "Things with Oswaldo are actively hostile. He's in full deflection mode."
 });
 
 export const TRINA_TENSION_TRANSLATIONS: Record<string, string> = Object.freeze({
-	'0': "Trina moves through the room like furniture someone else paid for.",
-	'1': 'The wrappers pile up in places wrappers go when nobody thinks cleanup is their job.',
-	'2': "Trina takes without asking. Not because she's bold. Because the question never occurs to her.",
-	'3': "Something has to give with Trina. The room already picked what. It's waiting on Sydney to notice."
+	'0': "Trina's just furniture. Annoying furniture, but furniture.",
+	'1': "The snack cake wrappers are piling up. The entitlement is starting to show. She wakes up every hour on the hour to eat a snack cake and throws the wrapper on the floor.",
+	'2': "Trina's taking and taking and doesn't even see it as taking. She catfishes a guy on Facebook Dating for forty dollars, buys smokes, orders DoorDash for herself, and calls that survival.",
+	'3': "Something has to happen with Trina. The math doesn't work anymore. Sydney fronts Trina the referral money, Trina hits six hundred at the casino, vanishes without a thank-you, then comes back broke two days later."
 });
 
 export const MONEY_TRANSLATIONS: Record<string, string> = Object.freeze({
 	true: 'The room is paid. One less fire to put out.',
-	false: 'Still eighteen short. The clock does not care.'
+	false: 'The eighteen-dollar gap is still open, and the clock keeps moving like it gets paid to panic her.'
 });
 
 export const CAR_TRANSLATIONS: Record<string, string> = Object.freeze({
@@ -37,26 +37,26 @@ export const CAR_TRANSLATIONS: Record<string, string> = Object.freeze({
 });
 
 export const SYDNEY_REALIZATION_TRANSLATIONS: Record<string, string> = Object.freeze({
-	'0': "Oswaldo cannot help. That's what Sydney tells herself. The story holds until she stops repeating it.",
-	'1': "The 'cannot' is starting to look like 'will not' if she squints. She is not squinting yet. Almost.",
-	'2': "He rides five miles for strangers. He cannot walk five feet for her. The pattern does not explain itself. It does not have to.",
-	'3': 'He helps everyone but her. Not by accident. Not because he forgot. He chose this distribution and keeps choosing it.'
+	'0': "She thinks Oswaldo can't help. He's just not built for this.",
+	'1': "She's starting to see it's not 'can't.' It's 'won't.'",
+	'2': "He helps other people. He rides his bike five miles for other people. So why not her?",
+	'3': "He helps everyone except her. On purpose. That's not neglect. That's a choice."
 });
 
 export const OSWALDO_AWARENESS_TRANSLATIONS: Record<string, string> = Object.freeze({
 	'0': 'He treats rent money like weather. It happens around him, not because of him.',
-	'1': "He gets flashes of what she's carrying, then slides back into convenience before the flash costs him anything.",
-	'2': 'He can name what she does now. The naming sits where the helping should be.',
-	'3': 'He sees her labor as labor, not mood. The behavior changed. She did not have to ask, manage, or explain this time.'
+	'1': "He gets flashes that she's carrying this place, then slides back into convenience.",
+	'2': "He can name what she does now, but he still acts like naming it is the same as helping.",
+	'3': "He finally sees her labor as labor, not mood, and he changes behavior without being managed."
 });
 
 export const EXHAUSTION_TRANSLATIONS: Record<string, string> = Object.freeze({
 	'0': "She's awake, alert, and has not spent herself yet. The day is still borrowing at zero percent.",
-	'1': "She's steady enough to run the board, but it costs her to look this functional.",
+	'1': "She is steady enough to run the board, but only because she's forcing it.",
 	'2': 'Her fuse is shorter and her patience now costs interest.',
 	'3': "Small disrespect lands big. She can still perform, but the seams show when nobody's trying to see them.",
-	'4': "Every interaction costs more than it should. Her body is negotiating terms she cannot afford.",
-	'5': "Her body clocked out three hours ago. Survival mode is running the shift now and does not take requests."
+	'4': "Sydney is running on fumes. Every interaction costs more than it should.",
+	'5': "Her body clocks out before her responsibilities do. Survival mode takes over the whole room."
 });
 
 export const DEX_TRIANGULATION_TRANSLATIONS: Record<string, string> = Object.freeze({
