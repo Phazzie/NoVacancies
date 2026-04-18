@@ -668,17 +668,6 @@ padding: 8px 12px;
 	color: var(--paper-200);
 }
 
-.pressure-pill {
-	padding: 4px 10px;
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.08);
-	color: var(--amber-400);
-	font-size: 0.72rem;
-	font-weight: 800;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-}
-
 .arc-track {
 	height: 8px;
 	border-radius: 999px;

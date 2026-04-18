@@ -32,13 +32,6 @@
 		return 'Endgame Drift';
 	}
 
-	function getPressureLabel(count: number): string {
-		if (count <= 3) return 'Tense';
-		if (count <= 7) return 'Heating Up';
-		if (count <= 11) return 'Unstable';
-		return 'No Clean Exit';
-	}
-
 	function getArcProgress(count: number): number {
 		return Math.max(8, Math.min(100, Math.round((count / 12) * 100)));
 	}
@@ -118,7 +111,7 @@
 			<div class="loading-pulse" aria-hidden="true"></div>
 			<p class="loading-label">Live Story Feed</p>
 			<h2 class="loading-title">Play</h2>
-			<p class="loading-copy">Loading the next pressure point...</p>
+			<p class="loading-copy">Loading the next scene...</p>
 		{/if}
 	</section>
 {:else}
@@ -131,7 +124,7 @@
 			<div>
 				<p class="card-kicker">Live run</p>
 				<h2 class="story-route-title">Play</h2>
-				<p class="story-route-tagline">Quiet control. Rising pressure.</p>
+				<p class="story-route-tagline">Quiet control. Stay with the story.</p>
 			</div>
 			<div class="play-utility-row">
 				<button class="btn btn-secondary btn-sm" on:click={restartRun} disabled={isProcessing}>
@@ -154,7 +147,6 @@
 			<div class="hero-progress">
 				<div class="hero-progress-head">
 					<p class="story-arc-label">{getArcLabel(sceneCount)}</p>
-					<p class="pressure-pill">{getPressureLabel(sceneCount)}</p>
 				</div>
 				<div
 					class="arc-track"
@@ -200,7 +192,7 @@
 			{:else}
 				<section class="choices-panel">
 					<div class="choices-head">
-						<p class="card-kicker">Choose the next pressure point</p>
+						<p class="card-kicker">Choose the next move</p>
 						<p class="choice-legend">Quick keys: 1 / 2 / 3</p>
 					</div>
 					<div class="choices-list">
