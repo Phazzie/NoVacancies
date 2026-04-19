@@ -7,7 +7,12 @@ import svelteParser from 'svelte-eslint-parser';
 export default [
     // Legacy JS test files
     {
-        files: ['tests/e2e/**/*.js', 'tests/noLegacyProviderMarkers.js'],
+        files: [
+            'tests/e2e/**/*.js',
+            'tests/noLegacyProviderMarkers.js',
+            'tests/storyEngineRuntimeSelection.js',
+            'tests/narrative/**/*.js'
+        ],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
