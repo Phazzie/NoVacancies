@@ -106,7 +106,7 @@ test.describe('normalizeDraft — partial / malformed input', () => {
         expect(typeof result.systemPrompt).toBe('string');
     });
 
-    test('replaces scenes/characters with fallback when it is a string instead of an array', () => {
+    test('replaces characters/mechanics with fallback when they are strings instead of arrays', () => {
         const malformed = { characters: 'not-an-array', mechanics: 'also-not-an-array' };
         const result = normalizeDraft(malformed, 'A premise');
 
