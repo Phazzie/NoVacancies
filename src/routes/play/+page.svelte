@@ -130,9 +130,6 @@
 			<div class="scene-badge-row">
 				<p class="scene-badge">Scene {sceneCount}</p>
 				<p class="scene-badge scene-badge-accent" data-testid="mode-pill">AI Mode</p>
-				{#if scene.mood}
-					<p class="scene-badge scene-badge-muted">Mood {scene.mood}</p>
-				{/if}
 			</div>
 		</section>
 
