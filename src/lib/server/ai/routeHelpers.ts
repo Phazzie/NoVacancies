@@ -105,6 +105,23 @@ function mapErrorStatus(error: unknown, fallbackStatus = 500): number {
 	}
 }
 
+function getRouteErrorMetadata(error: unknown): {
+	retryAfterSeconds?: number;
+	requestDurationMs?: number;
+} {
+	const typed = error as { retryAfterSeconds?: unknown; requestDurationMs?: unknown };
+	return {
+		retryAfterSeconds:
+			typeof typed.retryAfterSeconds === 'number' && Number.isFinite(typed.retryAfterSeconds)
+				? typed.retryAfterSeconds
+				: undefined,
+		requestDurationMs:
+			typeof typed.requestDurationMs === 'number' && Number.isFinite(typed.requestDurationMs)
+				? typed.requestDurationMs
+				: undefined
+	};
+}
+
 function deriveRouteErrorCode(
 	error: unknown,
 	message: string,
@@ -127,11 +144,13 @@ export function asRouteError(event: RequestEvent, error: unknown, status = 500) 
 	const message = sanitizeForErrorMessage(error);
 	const resolvedStatus = mapErrorStatus(error, status);
 	const code = deriveRouteErrorCode(error, message, resolvedStatus);
+	const metadata = getRouteErrorMetadata(error);
 	emitAiServerTelemetry('route_error', {
 		route: event.url.pathname,
 		error: message,
 		status: resolvedStatus,
-		code
+		code,
+		...metadata
 	});
-	return json({ error: message, code, status: resolvedStatus }, { status: resolvedStatus });
+	return json({ error: message, code, status: resolvedStatus, ...metadata }, { status: resolvedStatus });
 }

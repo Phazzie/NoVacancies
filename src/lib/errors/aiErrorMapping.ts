@@ -7,6 +7,8 @@ export type UserFacingAiErrorCode = AiErrorCode | RouteAiErrorCode;
 export interface AiErrorMappingInput {
 	code?: string | null;
 	status?: number | null;
+	retryAfterSeconds?: number | null;
+	requestDurationMs?: number | null;
 	message?: string | null;
 }
 
@@ -42,7 +44,35 @@ function deriveErrorCode(input: AiErrorMappingInput): UserFacingAiErrorCode {
 	return 'unknown';
 }
 
+function formatDurationSeconds(ms: number): number {
+	if (!Number.isFinite(ms) || ms <= 0) return 0;
+	return Math.max(1, Math.round(ms / 1000));
+}
+
+function formatRetryDelay(seconds: number): string {
+	if (!Number.isFinite(seconds) || seconds <= 0) return 'a moment';
+	if (seconds < 60) return `${Math.ceil(seconds)} seconds`;
+	const minutes = Math.ceil(seconds / 60);
+	return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+}
+
 export function mapAiErrorToUserMessage(input: AiErrorMappingInput): string {
 	const code = deriveErrorCode(input);
+	if (code === 'rate_limit' && typeof input.retryAfterSeconds === 'number') {
+		return `AI is rate-limited right now. Try again in ${formatRetryDelay(input.retryAfterSeconds)}.`;
+	}
+	if (code === 'timeout' && typeof input.requestDurationMs === 'number') {
+		return `AI request timed out after ${formatDurationSeconds(input.requestDurationMs)}s. Please try again.`;
+	}
+	if (code === 'provider_down' && typeof input.status === 'number') {
+		return `AI provider is unavailable right now (HTTP ${input.status}). Please try again soon.`;
+	}
+	if ((code === 'auth' || code === 'invalid_response') && typeof input.status === 'number') {
+		const base =
+			code === 'auth'
+				? 'AI authentication failed. Check the server API key configuration.'
+				: 'AI returned an invalid response. Please try again.';
+		return `${base} (HTTP ${input.status})`;
+	}
 	return CODE_TO_USER_MESSAGE[code] ?? CODE_TO_USER_MESSAGE.unknown;
 }
