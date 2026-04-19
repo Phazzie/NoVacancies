@@ -313,3 +313,18 @@
 
 **Insight:** The Grok provider was casting AI-returned `storyThreadUpdates` directly to `Partial<StoryThreads>` with no field-level type checking. A malformed AI response (e.g., `"exhaustionLevel": "very tired"`) would propagate silently into the runtime and corrupt narrative thread values.
 **Lesson:** Any AI-supplied object that will be merged into game state must be sanitized through a typed filter: copy only known keys, validate the value type for each field (number/boolean/string[]), and return `null` if nothing valid remains. Never trust a raw `as Partial<T>` cast on externally-sourced data. This guard belongs at the parse/normalize boundary, not in game runtime code.
+
+## 57. Security-Critical Cookie Logic Requires Dedicated Unit Tests Before Merge
+
+**Insight:** `auth.ts` contained HMAC-SHA256 session cookie signing, signature verification, expiry enforcement, role encoding, and a bounded crypto key cache — all security-critical paths — with zero dedicated unit tests. The module was tested only indirectly through integration flows, meaning a regression in HMAC comparison or cache eviction would not be caught by the test suite.
+**Lesson:** Any module that signs or verifies cryptographic tokens must have dedicated unit tests for: (1) valid round-trips, (2) tampered-signature rejection, (3) expiry rejection, (4) cache eviction under load. These are non-negotiable gates before merge, per the Invariant-to-Test Rule.
+
+## 58. Two Playwright Configs for the Same Test Suite Create Silent Divergence
+
+**Insight:** `playwright-unit.config.js` (legacy, 4 workers, 10s timeout, explicit `headless: true`) and `playwright.unit.config.ts` (canonical, 2 workers, 15s timeout) co-existed in the repo. CI used the legacy file; `npm run test:unit` used the canonical one. No test failure would reveal the divergence until a test relied on timing or concurrency behavior.
+**Lesson:** There must be exactly one canonical config per test tier. Delete the legacy file and make CI invoke the npm script, not the config file directly. If you find two configs for the same suite, treat it as a bug, not a preference.
+
+## 59. ESLint Must Cover Production Source Files, Not Only Tests
+
+**Insight:** `npm run lint` only linted test files. TypeScript source under `src/` was type-checked by `svelte-check` but never linted for style or correctness rules. This meant issues like loose equality operators (`==` instead of `===`), unused variables, and inline `import()` type annotations in source code were invisible to the lint gate.
+**Lesson:** Add `src/**/*.{ts,svelte}` to the ESLint file globs in the same pass as tests. Pair with `@typescript-eslint/parser` and `eslint-plugin-svelte` so that TypeScript and Svelte syntax are parsed correctly. The `eqeqeq` rule should use `{ null: 'ignore' }` to preserve the intentional `value == null` null-coalescing idiom without forcing verbose `=== null || === undefined` everywhere.
