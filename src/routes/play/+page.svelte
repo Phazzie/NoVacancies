@@ -25,23 +25,6 @@
 				: null;
 	});
 
-	function getArcLabel(count: number): string {
-		if (count <= 3) return 'Opening Pressure';
-		if (count <= 7) return 'Rising Pressure';
-		if (count <= 11) return 'Consequence Phase';
-		return 'Endgame Drift';
-	}
-
-	function getPressureLabel(count: number): string {
-		if (count <= 3) return 'Tense';
-		if (count <= 7) return 'Heating Up';
-		if (count <= 11) return 'Unstable';
-		return 'No Clean Exit';
-	}
-
-	function getArcProgress(count: number): number {
-		return Math.max(8, Math.min(100, Math.round((count / 12) * 100)));
-	}
 
 	async function triggerChoiceByIndex(index: number): Promise<void> {
 		if (!scene || isProcessing || index < 0 || index >= scene.choices.length) {
@@ -151,29 +134,12 @@
 					<p class="scene-badge scene-badge-muted">Mood {scene.mood}</p>
 				{/if}
 			</div>
-			<div class="hero-progress">
-				<div class="hero-progress-head">
-					<p class="story-arc-label">{getArcLabel(sceneCount)}</p>
-					<p class="pressure-pill">{getPressureLabel(sceneCount)}</p>
-				</div>
-				<div
-					class="arc-track"
-					role="progressbar"
-					aria-label="Narrative arc progress"
-					aria-valuemin="0"
-					aria-valuemax="100"
-					aria-valuenow={getArcProgress(sceneCount)}
-				>
-					<div class="arc-fill" style={`width: ${getArcProgress(sceneCount)}%`}></div>
-				</div>
-			</div>
 		</section>
 
 		<section class="story-body">
 			<div class="story-meta-row">
 				<p class="story-meta-chip">Turn Active</p>
 				<p class="story-meta-chip">Scene {sceneCount}</p>
-				<p class="story-meta-chip">{getArcLabel(sceneCount)}</p>
 			</div>
 
 			<div class="scene-text">{scene.sceneText}</div>
