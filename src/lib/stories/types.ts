@@ -39,7 +39,7 @@ export interface ComboStateLine {
 
 export interface StoryVoiceDef {
 	aestheticStatement: string;
-	voiceCeilingLines: string[];
+	voiceCeilingLines: readonly string[];
 	behaviorSeeds?: BehaviorSeed[];
 	comboStateLines?: ComboStateLine[];
 }
@@ -118,7 +118,7 @@ export interface BuilderStoryDraft {
 	premise: string;
 	setting: string;
 	aestheticStatement: string;
-	voiceCeilingLines: string[];
+	voiceCeilingLines: readonly string[];
 	characters: BuilderStoryCharacterDraft[];
 	mechanics: BuilderStoryMechanicDraft[];
 	openingPrompt: string;

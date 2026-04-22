@@ -152,7 +152,6 @@ export class ImagePipeline {
 					enableGrokText: true,
 					enableGrokImages: false,
 					enableProviderProbe: false,
-					aiAuthBypass: false,
 					outageMode: 'hard_fail',
 					xaiApiKey: '',
 					grokTextModel: 'grok-4-1-fast-reasoning',

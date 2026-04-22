@@ -9,8 +9,8 @@ export function extractJsonObject(text: string): string {
 	});
 }
 
-function normalizeLineArray(value: unknown, fallback: string[]): string[] {
-	if (!Array.isArray(value)) return fallback;
+function normalizeLineArray(value: unknown, fallback: readonly string[]): string[] {
+	if (!Array.isArray(value)) return Array.from(fallback);
 	return value.filter((line): line is string => typeof line === 'string' && line.trim().length > 0);
 }
 
