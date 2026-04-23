@@ -29,7 +29,7 @@
     "node": "22.x"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.1",
+    "@playwright/test": "^1.58.2",
     "@rollup/rollup-linux-x64-gnu": "^4.57.1",
     "@sveltejs/adapter-vercel": "^6.3.2",
     "@sveltejs/kit": "^2.48.4",
