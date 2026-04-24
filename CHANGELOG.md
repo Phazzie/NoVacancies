@@ -4,6 +4,8 @@
 
 ### Added / Changed
 
+- **AI error specificity hardening:** Captured safe provider diagnostics (`retryAfterSeconds`, `requestDurationMs`) in Grok transport errors, propagated them through route and client error objects, and upgraded user-facing AI error messaging to show specific rate-limit/timeout/provider status context without exposing sensitive provider payloads (`src/lib/server/ai/providers/grok/transport.ts`, `src/lib/server/ai/provider.interface.ts`, `src/lib/server/ai/routeHelpers.ts`, `src/lib/services/storyService.ts`, `src/lib/errors/aiErrorMapping.ts`, `src/lib/game/store.ts`, `tests/unit/grok/transport.spec.ts`, `tests/unit/errors/aiErrorMapping.spec.ts`, `tests/unit/routeHelpers.spec.ts`).
+
 - **CI & Test Coverage Remediation (2026-04-13):**
   - **Phase 1 — Playwright config fix:** Deleted legacy `playwright-unit.config.js` (4 workers, 10s timeout). CI now uses `npm run test:unit` which canonically points to `playwright.unit.config.ts` (2 workers, 15s timeout). One config, no divergence.
   - **Phase 2 — ESLint covers `src/`:** Added `@typescript-eslint/parser`, `@typescript-eslint/eslint-plugin`, and `eslint-plugin-svelte` to devDependencies. `eslint.config.js` now lints all `.ts` and `.svelte` files under `src/`. Fixed two source violations: renamed unused `event` param to `_event` in `readiness/+server.ts`, and extracted inline `import()` type annotations to top-level `import type` in `next/+server.ts`. Configured `eqeqeq` rule with `{ null: 'ignore' }` to preserve the intentional `value == null` idiom. `npm run lint` exits 0 and covers source.

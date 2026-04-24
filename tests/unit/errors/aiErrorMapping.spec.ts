@@ -3,13 +3,13 @@ import { mapAiErrorToUserMessage } from '../../../src/lib/errors/aiErrorMapping'
 
 test.describe('aiErrorMapping', () => {
 	test('maps provider error codes to stable user messages', () => {
-		expect(mapAiErrorToUserMessage({ code: 'auth', status: 401, message: 'Unauthorized' })).toBe(
+		expect(mapAiErrorToUserMessage({ code: 'auth', message: 'Unauthorized' })).toBe(
 			'AI authentication failed. Check the server API key configuration.'
 		);
-		expect(
-			mapAiErrorToUserMessage({ code: 'rate_limit', status: 429, message: 'Too many requests' })
-		).toBe('AI is rate-limited right now. Wait a moment and try again.');
-		expect(mapAiErrorToUserMessage({ code: 'provider_down', status: 503, message: 'Down' })).toBe(
+		expect(mapAiErrorToUserMessage({ code: 'rate_limit', message: 'Too many requests' })).toBe(
+			'AI is rate-limited right now. Wait a moment and try again.'
+		);
+		expect(mapAiErrorToUserMessage({ code: 'provider_down', message: 'Down' })).toBe(
 			'AI provider is unavailable right now. Please try again in a minute.'
 		);
 	});
@@ -32,6 +32,26 @@ test.describe('aiErrorMapping', () => {
 	test('falls back to unknown for unclassified values', () => {
 		expect(mapAiErrorToUserMessage({ code: 'not_real', status: 418, message: 'weird' })).toBe(
 			'Something went wrong while loading AI.'
+		);
+	});
+
+	test('maps specific safe diagnostics when metadata is available', () => {
+		expect(
+			mapAiErrorToUserMessage({
+				code: 'rate_limit',
+				status: 429,
+				retryAfterSeconds: 170
+			})
+		).toBe('AI is rate-limited right now. Try again in 3 minutes.');
+		expect(
+			mapAiErrorToUserMessage({
+				code: 'timeout',
+				status: 504,
+				requestDurationMs: 65123
+			})
+		).toBe('AI request timed out after 65s. Please try again.');
+		expect(mapAiErrorToUserMessage({ code: 'provider_down', status: 503 })).toBe(
+			'AI provider is unavailable right now (HTTP 503). Please try again soon.'
 		);
 	});
 });

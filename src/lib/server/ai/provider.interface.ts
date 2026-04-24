@@ -69,13 +69,23 @@ export class AiProviderError extends Error {
 	readonly code: AiErrorCode;
 	readonly retryable: boolean;
 	readonly status?: number;
+	readonly retryAfterSeconds?: number;
+	readonly requestDurationMs?: number;
 
-	constructor(message: string, options: { code: AiErrorCode; retryable: boolean; status?: number }) {
+	constructor(message: string, options: {
+		code: AiErrorCode;
+		retryable: boolean;
+		status?: number;
+		retryAfterSeconds?: number;
+		requestDurationMs?: number;
+	}) {
 		super(message);
 		this.name = 'AiProviderError';
 		this.code = options.code;
 		this.retryable = options.retryable;
 		this.status = options.status;
+		this.retryAfterSeconds = options.retryAfterSeconds;
+		this.requestDurationMs = options.requestDurationMs;
 	}
 }
 
