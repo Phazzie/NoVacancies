@@ -33,7 +33,6 @@
    - Show visual arc progress meter
    - Label current arc stage: "Opening Pressure", "Rising Pressure", "Consequence Phase", "Endgame Drift" (matches `getArcLabel` in `+page.svelte`)
    - Calculate arc stage from scene count (0-3: Opening Pressure, 4-7: Rising Pressure, 8-11: Consequence Phase, 12+: Endgame Drift)
-   - Display pressure pill alongside arc label, derived from `sceneCount` via `getPressureLabel` (0-3: "Tense", 4-7: "Heating Up", 8-11: "Unstable", 12+: "No Clean Exit")
 
 5. **Display Mood Indicator**
    - When `mood` field present on scene: display mood as a separate badge/chip (neutral, tense, hopeful, dark, triumphant)
