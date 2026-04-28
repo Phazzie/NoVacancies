@@ -24,6 +24,14 @@ function formatCapturedOutput(stdout, stderr) {
 	return sections.length ? `\n${sections.join('\n\n')}` : '';
 }
 
+function extractCookiePair(setCookieHeader) {
+	const firstSegment = String(setCookieHeader || '')
+		.split(';')
+		.map((segment) => segment.trim())
+		.find(Boolean);
+	return firstSegment || '';
+}
+
 /**
  * Resolve the npm executable to use for spawning child processes.
  * When invoked via `npm test`, npm sets npm_execpath to the actual npm script
@@ -208,6 +216,58 @@ async function runScenario({
 		if (expectStoryId === 'starter-kit') {
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
+
+		const anonymousBuilder = await fetch(`http://${HOST}:${port}/builder`);
+		assert.equal(anonymousBuilder.status, 401, `${label}: anonymous /builder should be 401`);
+
+		const invalidRoleLogin = await fetch(`http://${HOST}:${port}/api/auth/login`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ userId: 'story-smoke-viewer', role: 'viewer' })
+		});
+		assert.equal(invalidRoleLogin.status, 400, `${label}: invalid role login should fail`);
+
+		const validLogin = await fetch(`http://${HOST}:${port}/api/auth/login`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ userId: 'story-smoke-author', role: 'author' })
+		});
+		assert.equal(validLogin.status, 200, `${label}: valid login should succeed`);
+		const loginSetCookie = validLogin.headers.get('set-cookie');
+		assert.match(
+			String(loginSetCookie || ''),
+			/HttpOnly/i,
+			`${label}: login must issue HttpOnly session cookie`
+		);
+		assert.match(String(loginSetCookie || ''), /SameSite=Lax/i, `${label}: login must set SameSite=Lax`);
+		assert.match(String(loginSetCookie || ''), /Path=\//i, `${label}: login must set Path=/`);
+		assert.match(String(loginSetCookie || ''), /Max-Age=43200/i, `${label}: login must set 12h max-age`);
+		const authCookie = extractCookiePair(loginSetCookie);
+		assert.match(authCookie, /^nv_session=/, `${label}: login should return nv_session cookie`);
+
+		const authorizedBuilder = await fetch(`http://${HOST}:${port}/builder`, {
+			headers: {
+				cookie: authCookie
+			}
+		});
+		assert.equal(authorizedBuilder.status, 200, `${label}: signed-in author should access /builder`);
+
+		const logoutResponse = await fetch(`http://${HOST}:${port}/api/auth/logout`, {
+			method: 'POST',
+			headers: {
+				cookie: authCookie
+			}
+		});
+		assert.equal(logoutResponse.status, 200, `${label}: logout should succeed`);
+		const logoutSetCookie = logoutResponse.headers.get('set-cookie');
+		assert.match(String(logoutSetCookie || ''), /Max-Age=0/i, `${label}: logout should clear cookie`);
+
+		const clearedBuilder = await fetch(`http://${HOST}:${port}/builder`, {
+			headers: {
+				cookie: extractCookiePair(logoutSetCookie)
+			}
+		});
+		assert.equal(clearedBuilder.status, 401, `${label}: cleared session should return /builder to 401`);
 
 		const sessionCookie = await createSignedSessionCookieValue({
 			userId: 'story-smoke-author',

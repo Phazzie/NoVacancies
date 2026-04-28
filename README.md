@@ -90,9 +90,29 @@ To add a new story cartridge:
 Builder surfaces:
 
 - Route: `/builder`
+- Operator auth APIs: `POST /api/auth/login`, `POST /api/auth/logout`
 - Draft generation API: `/api/builder/generate-draft`
 - Prose evaluation API: `/api/builder/evaluate-prose`
 - Builder implementation: `src/routes/builder/+page.svelte`, `src/lib/server/ai/builder.ts`, `src/lib/builder/store.ts`
+
+Operator login steps (local/dev):
+
+1. Start the app (`npm run dev`) with `AUTH_SESSION_SECRET` set.
+2. Log in as a builder-capable role (`author` or `editor`):
+
+```bash
+curl -i -X POST http://127.0.0.1:5173/api/auth/login \
+  -H 'content-type: application/json' \
+  -d '{"userId":"operator-demo","role":"author"}'
+```
+
+3. Copy the returned `Set-Cookie: nv_session=...` header value and send it as `Cookie` when calling `/builder` or `/api/builder/*`.
+4. Clear the session when done:
+
+```bash
+curl -i -X POST http://127.0.0.1:5173/api/auth/logout \
+  -H 'Cookie: nv_session=<paste-cookie-value>'
+```
 
 ## Build + Preview
 
