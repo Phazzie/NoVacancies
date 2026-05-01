@@ -97,21 +97,28 @@ Builder surfaces:
 
 Operator login steps (local/dev):
 
-1. Start the app (`npm run dev`) with `AUTH_SESSION_SECRET` set.
-2. Log in as a builder-capable role (`author` or `editor`):
+1. Start the app (`npm run dev`) with `AUTH_SESSION_SECRET` and `DEMO_AUTH_ENABLED=1` set.
+2. Log in as a builder-capable role (`author` or `editor`), storing cookies in a jar:
 
 ```bash
-curl -i -X POST http://127.0.0.1:5173/api/auth/login \
+curl -X POST http://127.0.0.1:5173/api/auth/login \
   -H 'content-type: application/json' \
-  -d '{"userId":"operator-demo","role":"author"}'
+  -d '{"userId":"operator-demo","role":"author"}' \
+  -c /tmp/nv.cookies
 ```
 
-3. Copy the returned `Set-Cookie: nv_session=...` header value and send it as `Cookie` when calling `/builder` or `/api/builder/*`.
+3. Call `/builder` or `/api/builder/*` endpoints with the stored session:
+
+```bash
+curl http://127.0.0.1:5173/builder \
+  -b /tmp/nv.cookies
+```
+
 4. Clear the session when done:
 
 ```bash
-curl -i -X POST http://127.0.0.1:5173/api/auth/logout \
-  -H 'Cookie: nv_session=<paste-cookie-value>'
+curl -X POST http://127.0.0.1:5173/api/auth/logout \
+  -b /tmp/nv.cookies
 ```
 
 ## Build + Preview

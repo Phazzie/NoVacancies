@@ -6,15 +6,24 @@ import {
 	SESSION_MAX_AGE_SECONDS,
 	createSignedSessionCookieValue,
 	isBuilderRole,
-	getAuthSessionSecret
+	getAuthSessionSecret,
+	useSecureCookies,
+	isDemoAuthEnabled
 } from '$lib/server/auth';
 
-function useSecureCookies(url: URL): boolean {
-	if (url.protocol === 'https:') return true;
-	return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV === 'production';
-}
-
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
+	if (!isDemoAuthEnabled()) {
+		return json(
+			{
+				error: {
+					code: 'demo_auth_disabled',
+					message: 'Demo authentication is not enabled. Set DEMO_AUTH_ENABLED=1 to use this endpoint.'
+				}
+			},
+			{ status: 403 }
+		);
+	}
+
 	const payload = (await request.json().catch(() => ({}))) as {
 		userId?: string;
 		role?: string;
