@@ -1,6 +1,10 @@
 import { EndingTypes, ImageKeys, type NarrativeContext } from '$lib/contracts';
 import { lessons } from '$lib/narrative/lessonsCatalog';
 import { formatLessonsForPrompt, formatNarrativeContextSection } from '$lib/narrative/promptFormatting';
+import {
+	formatBehaviorSeedsForPrompt,
+	formatComboStateLinesForPrompt
+} from '$lib/stories/no-vacancies/voice';
 
 export const VOICE_CEILING_LINES = Object.freeze([
 	'He will ride five miles for strangers and five inches for nobody in this room.',
@@ -242,12 +246,10 @@ Sydney doesn't just "pay bills." She manages:
 ${VOICE_CEILING_LINES.map((line) => `- "${line}"`).join('\n')}
 
 ## BEHAVIOR SEEDS (enacted patterns — surface through incident; do not state the pattern directly)
-- Oswaldo: Rides five miles for Dex's smokes, then asks Sydney to DoorDash him water because he is "too sore" to walk to the machine. → Selectively allocates effort based on who validates him, not who needs him.
-- Dex: Listens like a friend, then her private complaint comes back from somebody else with different punctuation. → Concern is the entry fee; betrayal is the operating model.
+${formatBehaviorSeedsForPrompt()}
 
 ## COMBO STATE LINES (use when state conditions are met — do not force)
-- When exhaustion is high and the room is still unpaid: "She is too tired to be diplomatic and too broke to be gentle."
-- When Oswaldo conflict is high and awareness is still low: "He feels accused before he feels responsible."
+${formatComboStateLinesForPrompt()}
 
 ## 17 LESSONS TO WEAVE IN
 Work them in naturally through situation, never lecture:

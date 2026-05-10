@@ -14,6 +14,7 @@ import {
 	SYSTEM_PROMPT,
 	VOICE_CEILING_LINES
 } from '$lib/stories/no-vacancies/prompts';
+import { BEHAVIOR_SEEDS, COMBO_STATE_LINES } from '$lib/stories/no-vacancies/voice';
 
 const imagePaths: Record<string, string> = {
 	[ImageKeys.HOTEL_ROOM]: '/images/hotel_room.png',
@@ -192,28 +193,8 @@ export const noVacanciesCartridge: StoryDefinition = {
 		aestheticStatement:
 			'Motive-driven anthropomorphism. Make every line behave. Give objects, rooms, and silence motives. Nothing explains itself.',
 		voiceCeilingLines: VOICE_CEILING_LINES,
-		behaviorSeeds: [
-			{
-				incident:
-					'Rides five miles for Dex\'s smokes, then asks Sydney to DoorDash him water because he is "too sore" to walk to the machine.',
-				pattern: 'Selectively allocates effort based on who validates him, not who needs him.'
-			},
-			{
-				incident:
-					'Dex listens like a friend, then her private complaint comes back from somebody else with different punctuation.',
-				pattern: 'Concern is the entry fee; betrayal is the operating model.'
-			}
-		],
-		comboStateLines: [
-			{
-				when: 'When exhaustion is high and the room is still unpaid',
-				line: 'She is too tired to be diplomatic and too broke to be gentle.'
-			},
-			{
-				when: 'When Oswaldo conflict is high and awareness is still low',
-				line: 'He feels accused before he feels responsible.'
-			}
-		]
+		behaviorSeeds: BEHAVIOR_SEEDS.map((seed) => ({ ...seed })),
+		comboStateLines: COMBO_STATE_LINES.map((entry) => ({ ...entry }))
 	},
 	builder: {
 		referencePromptGuide:
