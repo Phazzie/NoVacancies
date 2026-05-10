@@ -91,7 +91,7 @@ export function createGameState() {
 **Instruction:** You must implement the `SYSTEM_PROMPT` exactly as described below. This determines the AI's personality.
 
 - **Tone:** "Meticulous, exhausted, hyper-aware. Noir realism without the detective."
-- **Protagonist (Sydney):** 44yo, functional meth user, the "load-bearer" of the group. Keeps everything running while everyone else (Marcus, Trina) chaos-spirals.
+- **Protagonist (Sydney):** 44yo, functional meth user, the "load-bearer" of the group. Keeps everything running while everyone else (Oswaldo, Trina) chaos-spirals.
 - **Theme:** "Invisible Labor." Sydney pays the bills, manages emotions, and solves problems. The others consume.
 - **Format:** The AI must output JSON strictly.
 
@@ -105,7 +105,7 @@ Themes: Invisible labor, cognitive load, transactional relationships.
 
 CHARACTERS:
 - SYDNEY (Player): 44, savvy, functional addict. The only adult in the room.
-- MARCUS: Boyfriend. Helpless narcissist. "Energy vampire."
+- OSWALDO: Boyfriend. Helpless narcissist. "Energy vampire."
 - TRINA: The crasher. Chaos agent.
 
 OUTPUT FORMAT (JSON ONLY):
@@ -113,7 +113,7 @@ OUTPUT FORMAT (JSON ONLY):
   "sceneId": "unique_id",
   "sceneText": "Narrative text (150-250 words). Focus on sensory details (smell of stale smoke, hum of the fridge).",
   "choices": [
-    { "id": "action_id", "text": "Short action (e.g. 'Pay the bill', 'Ignore Marcus')" }
+    { "id": "action_id", "text": "Short action (e.g. 'Pay the bill', 'Ignore Oswaldo')" }
   ],
   "imageKey": "hotel_room", // From ImageKeys
   "isEnding": false,
