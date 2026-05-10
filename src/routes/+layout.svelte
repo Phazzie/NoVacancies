@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import '../app.css';
 	import { registerPwaServiceWorker } from '$lib/client/pwa';
 	import { getSafeActiveStoryCartridge } from '$lib/stories';
 	import { selectStoryPresentation } from '$lib/stories/selectors';
+	import { initPosthog, capturePageview, identifyUser } from '$lib/client/analytics/posthog';
+	import { PUBLIC_POSTHOG_API_KEY } from '$env/static/public';
 	import type { LayoutData } from './$types';
 
 	export let data: LayoutData;
@@ -22,9 +25,31 @@
 		storyBriefItems: ['Check Story Selection in settings to resolve cartridge configuration.']
 	});
 
+	// Track the last pathname we sent a pageview for to avoid double-firing on initial load.
+	let lastTrackedPath = '';
+
 	onMount(() => {
 		registerPwaServiceWorker();
+
+		// Initialise PostHog. No-op when PUBLIC_POSTHOG_API_KEY is absent.
+		initPosthog(PUBLIC_POSTHOG_API_KEY);
+
+		// Capture the initial pageview.
+		lastTrackedPath = $page.url.pathname;
+		capturePageview($page.url.pathname);
+
+		// If a session user is known at load time, identify them in PostHog so
+		// events are attributed correctly from the first interaction.
+		if (data.sessionUser) {
+			identifyUser(data.sessionUser.userId, { role: data.sessionUser.role });
+		}
 	});
+
+	// Capture subsequent client-side navigations as pageviews.
+	$: if (browser && $page.url.pathname !== lastTrackedPath) {
+		lastTrackedPath = $page.url.pathname;
+		capturePageview($page.url.pathname);
+	}
 </script>
 
 <svelte:head>
