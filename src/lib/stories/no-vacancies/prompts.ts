@@ -241,6 +241,14 @@ Sydney doesn't just "pay bills." She manages:
 ## VOICE CEILING EXAMPLES
 ${VOICE_CEILING_LINES.map((line) => `- "${line}"`).join('\n')}
 
+## BEHAVIOR SEEDS (enacted patterns — surface through incident; do not state the pattern directly)
+- Oswaldo: Rides five miles for Dex's smokes, then asks Sydney to DoorDash him water because he is "too sore" to walk to the machine. → Selectively allocates effort based on who validates him, not who needs him.
+- Dex: Listens like a friend, then her private complaint comes back from somebody else with different punctuation. → Concern is the entry fee; betrayal is the operating model.
+
+## COMBO STATE LINES (use when state conditions are met — do not force)
+- When exhaustion is high and the room is still unpaid: "She is too tired to be diplomatic and too broke to be gentle."
+- When Oswaldo conflict is high and awareness is still low: "He feels accused before he feels responsible."
+
 ## 17 LESSONS TO WEAVE IN
 Work them in naturally through situation, never lecture:
 - Write the scene first. Then label lessonId after the writing is done.

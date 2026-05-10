@@ -18,6 +18,8 @@ export interface AiConfig {
 	requestTimeoutMs: number;
 	maxRetries: number;
 	retryBackoffMs: number[];
+	builderTemperature: number;
+	builderMaxTokens: number;
 }
 
 function parseBoolean(value: string | undefined, fallback: boolean): boolean {
@@ -31,6 +33,13 @@ function parseBoolean(value: string | undefined, fallback: boolean): boolean {
 function parseIntInRange(value: string | undefined, fallback: number, min: number, max: number): number {
 	if (typeof value !== 'string' || value.trim().length === 0) return fallback;
 	const parsed = Number.parseInt(value, 10);
+	if (!Number.isFinite(parsed)) return fallback;
+	return Math.min(max, Math.max(min, parsed));
+}
+
+function parseFloatInRange(value: string | undefined, fallback: number, min: number, max: number): number {
+	if (typeof value !== 'string' || value.trim().length === 0) return fallback;
+	const parsed = Number.parseFloat(value);
 	if (!Number.isFinite(parsed)) return fallback;
 	return Math.min(max, Math.max(min, parsed));
 }

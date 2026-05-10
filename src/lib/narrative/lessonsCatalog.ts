@@ -41,7 +41,7 @@ export const lessons: Lesson[] = [
         insight:
             "It's not the lack of applause that hurts. It's that they genuinely don't see the load.",
         emotionalStakes: [
-            'Feeling invisible in your own contribution',
+            'The work that disappears into the result, noticed only when absent',
             "The gap between what you know you're doing and what they perceive",
             'Being gaslit by incomprehension'
         ],
@@ -77,7 +77,7 @@ export const lessons: Lesson[] = [
         insight:
             'Your attention, energy, explanation, and patience ARE the dynamic. Without you supplying them, it dies.',
         emotionalStakes: [
-            "Realizing you're the entire engine",
+            "You are the engine. The machine does not know the difference between you and the fuel.",
             "The terrifying question: 'What happens if I stop?'",
             'The exhaustion of being the only source'
         ],
@@ -96,7 +96,7 @@ export const lessons: Lesson[] = [
         insight: 'Are you valued because of what you produce, or because you exist?',
         emotionalStakes: [
             'The fear of being replaceable if you stop producing',
-            'Wondering if anyone would miss YOU vs. miss your function',
+            'The gap between missing a person and missing a utility service',
             'The exhaustion of earning your place daily'
         ],
         storyTriggers: [
@@ -198,7 +198,7 @@ export const lessons: Lesson[] = [
         id: 11,
         title: 'See It AND Act Accordingly',
         quote: "It's more than that. I think we want people to see that and act accordingly. Like... if you know I'm breaking my back to make this money, don't loan your buddy $50 so he can buy drugs the day before rent is due.",
-        insight: "It's not enough to acknowledge the work. You have to change your behavior.",
+        insight: "Words about what they see do not change who does the work.",
         emotionalStakes: [
             'The gap between words and actions',
             'Recognition without change is just manipulation',
@@ -251,10 +251,10 @@ export const lessons: Lesson[] = [
         id: 14,
         title: 'The System Only Responds to Load Distribution',
         quote: "The system doesn't care about explanations. It only responds to load distribution.",
-        insight: "Explanations don't matter. Only who carries what.",
+        insight: "Load distribution is the only language the system speaks. Everything else is noise.",
         emotionalStakes: [
             'The futility of communication',
-            'Realizing talk is cheap',
+            'Words as currency that inflates and loses value each time they aren\'t backed by action',
             'The clarity of just looking at who does what'
         ],
         storyTriggers: [
@@ -269,7 +269,7 @@ export const lessons: Lesson[] = [
         title: 'Infrastructure Gets Blamed',
         quote: "When infrastructure works, it's invisible. When it fails, everyone notices.",
         insight:
-            "When you're infrastructure, you're blamed for failures but not credited for prevention.",
+            "Blamed when one thing breaks. Invisible when ninety-nine things hold.",
         emotionalStakes: [
             'The unfairness of being blamed for the one thing that broke',
             "No credit for the 100 things that didn't break",
@@ -310,7 +310,7 @@ export const lessons: Lesson[] = [
             "If my presence doesn't change how you act, plan, or sacrifice, then what am I to you?",
         emotionalStakes: [
             'The devastating clarity of this question',
-            'Realizing you might not like the answer',
+            'The trap of the question you already know the answer to',
             'The beginning of real change or real leaving'
         ],
         storyTriggers: [
@@ -319,6 +319,177 @@ export const lessons: Lesson[] = [
             "She can't unsee it now"
         ],
         unconventionalAngle: "The question you're afraid to ask because you already know the answer"
+    }
+
+    {
+        id: 18,
+        title: 'The Emotional Accountant',
+        quote: "You track every favor, every loan, every 'you'll pay me back.' They don't know there's a ledger.",
+        insight: "The ledger exists. Only one of you is keeping it.",
+        emotionalStakes: [
+            'The weight of tracking what no one else bothers to track',
+            'The exhaustion of being the only one who remembers',
+            'The moment you stop keeping score and everything tips over'
+        ],
+        storyTriggers: [
+            "Sydney runs the numbers in her head: $40 owed, $65 due, $12 in the account",
+            "Trina says 'you know I'm good for it' for the fourth time this week",
+            "Sydney stops counting and the math gets worse"
+        ],
+        unconventionalAngle: "Your memory is not a virtue. It's a burden you chose to carry for people who chose not to."
+    },
+    {
+        id: 19,
+        title: 'The Cover Story',
+        quote: "When you make someone sound better than they are, you're not protecting them. You're doing unpaid PR.",
+        insight: "Every excuse you make for them is a sentence you wrote for their reputation and signed with your credibility.",
+        emotionalStakes: [
+            'The slow erosion of your own credibility through borrowed goodwill',
+            'The moment you realize you believe your own cover story',
+            'The cost of defending someone who would not defend you'
+        ],
+        storyTriggers: [
+            "Sydney explains to the front desk why Oswaldo missed rent drop-off",
+            "She catches herself making his excuses to Trina before he can",
+            "Dex asks why she covers for him and she doesn't have an answer"
+        ],
+        unconventionalAngle: "You are not protecting him. You are protecting the version of him you need to believe in."
+    },
+    {
+        id: 20,
+        title: 'Competence as Silence',
+        quote: "You got so good at handling it that you erased the evidence. Now there's no crisis. Which means, to them, there's no problem.",
+        insight: "Prevention looks like nothing happened. Which means you did nothing. Which means there was nothing to do.",
+        emotionalStakes: [
+            'The paradox of skill making effort invisible',
+            'The anger of being dismissed precisely because you succeeded',
+            'No one saves you because no one sees you drowning'
+        ],
+        storyTriggers: [
+            "Sydney solves a problem before anyone else woke up",
+            "Oswaldo says 'see, it worked out' — because she made it work out",
+            "She lets one thing fail just to see if anyone notices"
+        ],
+        unconventionalAngle: "The only way to make the problem visible is to stop being the solution."
+    },
+    {
+        id: 21,
+        title: 'The Pity Trap',
+        quote: "When you're the one who has it together, any moment you show need gets read as either performance or failure.",
+        insight: "Pity and contempt live next door. Ask for help once and you either don't mean it or you've collapsed.",
+        emotionalStakes: [
+            'The isolation of competence — no one believes you need help',
+            'The double bind: either you are fine or you have failed',
+            'The loneliness of asking and being disbelieved'
+        ],
+        storyTriggers: [
+            "Sydney says she's not okay and nobody adjusts their plans",
+            "Oswaldo: 'You always land on your feet, I'm not worried about you'",
+            "She stops saying she needs help because it doesn't change anything"
+        ],
+        unconventionalAngle: "Your resilience is the cage. The better you are at surviving, the less anyone believes you need rescue."
+    },
+    {
+        id: 22,
+        title: 'The Witness Problem',
+        quote: "You need someone to see the work. But explaining the work is more work. And the explaining gets mistaken for complaining.",
+        insight: "The request for acknowledgment gets heard as a demand. The demand gets heard as ingratitude.",
+        emotionalStakes: [
+            'The exhaustion of narrating your own labor to people who benefit from it',
+            'Being labeled difficult for describing what is actually difficult',
+            'The silence you choose when talking makes it worse'
+        ],
+        storyTriggers: [
+            "Sydney starts to explain why she's tired and Oswaldo sighs",
+            "Trina: 'You always make such a big deal'",
+            "Sydney goes quiet because explaining costs more than absorbing"
+        ],
+        unconventionalAngle: "The work is invisible because making it visible costs you. So you keep it invisible. So it stays invisible."
+    },
+    {
+        id: 23,
+        title: 'The Energy Ledger',
+        quote: "You can give time without attention. You can give attention without care. They have been withdrawing from all three columns.",
+        insight: "Time, attention, and care are not the same resource. They have been spending all three and replenishing none.",
+        emotionalStakes: [
+            'The depletion that happens below the level of any single ask',
+            'The slow drain of being present for people who are absent for you',
+            'The moment you notice you are empty and cannot point to where it went'
+        ],
+        storyTriggers: [
+            "Sydney is physically in the room but already somewhere else",
+            "She realizes she has not had a full night of her own thoughts in weeks",
+            "Oswaldo asks what she's thinking and she says 'nothing'"
+        ],
+        unconventionalAngle: "You didn't lose it all at once. You gave it away in increments small enough that each one seemed fine."
+    },
+    {
+        id: 24,
+        title: 'Strategic Incompetence',
+        quote: "The fastest way to stop being asked to do something is to do it badly the first time. They learned this. You never did.",
+        insight: "Your high standards are the reason you got the job and the reason you can't quit it.",
+        emotionalStakes: [
+            'The trap of your own competence — too good to be allowed to stop',
+            'The resentment of watching others opt out through failure',
+            'The exhaustion of the person who cannot do things badly'
+        ],
+        storyTriggers: [
+            "Oswaldo tried once and blamed the tools",
+            "Sydney watches him get out of things by being unreliable",
+            "She considers doing the task badly on purpose, then can't"
+        ],
+        unconventionalAngle: "You are not more responsible. You are less able to tolerate the consequences of being bad at things."
+    },
+    {
+        id: 25,
+        title: 'The Debt Amnesia',
+        quote: "There is a specific type of person who remembers every favor they gave and forgets every favor they got. You are the other type.",
+        insight: "Your generosity is real. So is their amnesia. Neither fact cancels the other.",
+        emotionalStakes: [
+            'The anger of giving and watching it disappear without acknowledgment',
+            'The self-doubt of wondering if you imagined the giving',
+            'The clarity of seeing the asymmetry plainly and still not knowing what to do with it'
+        ],
+        storyTriggers: [
+            "Trina asks for something Sydney already gave her once before",
+            "Dex mentions a favor Sydney did for him like it was a coincidence",
+            "Sydney stops saying 'remember when I...' because no one does"
+        ],
+        unconventionalAngle: "Their amnesia is not a medical condition. It's a policy."
+    },
+    {
+        id: 26,
+        title: "The Room's Economy",
+        quote: "You are not in a relationship. You are in a household. A household has suppliers and consumers.",
+        insight: "The exchange rate in this room has never been equal. The question is whether you've named that or just absorbed it.",
+        emotionalStakes: [
+            'The clarity of seeing the transaction for what it is',
+            'The discomfort of naming something that everyone pretends is love',
+            'The specific loneliness of being the only one who knows the actual numbers'
+        ],
+        storyTriggers: [
+            "Sydney calculates: $65 rent, $40 food, $20 phone bills, $0 from anyone else",
+            "Oswaldo says 'what's mine is yours' — she has never seen his money",
+            "She does the math out loud just once and the room goes quiet"
+        ],
+        unconventionalAngle: "Call it what it is. Not because naming it changes it. Because you deserve to know what you are carrying."
+    },
+    {
+        id: 27,
+        title: 'The Loyalty Tariff',
+        quote: "Staying proves you're loyal. Leaving proves you were always going to leave. They've built a logic where you can't win.",
+        insight: "The system is designed so that any choice you make confirms what they already believe about you.",
+        emotionalStakes: [
+            'The trap of a frame where staying costs and leaving costs more',
+            'The exhaustion of being legible only as loyalty or betrayal',
+            'The moment you see the trap and are still inside it'
+        ],
+        storyTriggers: [
+            "Sydney thinks about leaving and immediately imagines Oswaldo's version of why",
+            "Trina: 'She's always threatening to leave but she never does'",
+            "Sydney realizes that the story they will tell about her is already written"
+        ],
+        unconventionalAngle: "You are not choosing between leaving and staying. You are choosing which story they get to tell about you."
     }
 ];
 
@@ -363,6 +534,18 @@ export function detectLessonInScene(sceneText: string): number | null {
     if (text.includes('risk') && text.includes('reduce')) return 16;
     if (text.includes("won't") && text.includes("can't")) return 13;
     if (text.includes('let it fail') || text.includes('let things break')) return 12;
+
+    // Lessons 18-27
+    if (text.includes("there's a ledger") || text.includes('keeping score') && text.includes('money')) return 18;
+    if (text.includes('cover story') || text.includes('making excuses for him')) return 19;
+    if (text.includes('no crisis') || text.includes('see it worked out')) return 20;
+    if (text.includes("always land on your feet") || text.includes("you'll figure it out") && text.includes("always")) return 21;
+    if (text.includes('making it worse') && text.includes('explain') || text.includes('big deal') && text.includes('complaining')) return 22;
+    if (text.includes('already somewhere else') || text.includes('what are you thinking') && text.includes("nothing")) return 23;
+    if (text.includes('did it badly') || text.includes('strategic') && text.includes("competence")) return 24;
+    if (text.includes("remember when") && (text.includes("trina") || text.includes("dex")) || text.includes("debt amnesia")) return 25;
+    if (text.includes("what's mine is yours") || text.includes("supplier") && text.includes("consumer")) return 26;
+    if (text.includes('always going to leave') || text.includes("loyalty tariff") || text.includes("story they will tell")) return 27;
 
     return null;
 }

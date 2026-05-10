@@ -4,9 +4,6 @@ import type { Lesson } from '$lib/narrative/lessonsCatalog';
 export function formatLessonsForPrompt(lessons: Lesson[]): string {
 	return lessons
 		.map((lesson) => {
-			const stakes = Array.isArray(lesson.emotionalStakes)
-				? lesson.emotionalStakes.slice(0, 2).join(' | ')
-				: '';
 			const triggers = Array.isArray(lesson.storyTriggers)
 				? lesson.storyTriggers.slice(0, 2).join(' | ')
 				: '';
@@ -15,7 +12,6 @@ export function formatLessonsForPrompt(lessons: Lesson[]): string {
 			return `${lesson.id}. ${lesson.title}
    Quote: "${lesson.quote}"
    Core Insight: ${lesson.insight}
-   Emotional Stakes: ${stakes}
    Common Triggers: ${triggers}
    Unconventional Angle: ${unconventionalAngle}`;
 		})
