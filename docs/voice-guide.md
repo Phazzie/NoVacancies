@@ -1,3 +1,5 @@
+# No Vacancies — Voice Guide
+
 i dont want you to change anything. i want you to go through the repo and find any document having to do with writing style or philosophy or narrative quality. any of those or anything related to writing. then i want you to give me a comprehensive, extremely thorough recap of each one. i also want you to briefly mention any info from each document that you're leaving out. i am worried you aren't going to give me youre full effort on this one...so what i want you to do is write me a prompt to give back to you that will get at least 90% effort out of you
 
 
