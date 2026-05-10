@@ -28,7 +28,9 @@ export default [
             'prefer-const': 'error',
             'no-var': 'error',
             'eqeqeq': ['error', 'always'],
-            'no-undef': 'error'
+            'no-undef': 'error',
+            'no-throw-literal': 'error',
+            'no-redeclare': 'error'
         }
     },
     // TypeScript source files
