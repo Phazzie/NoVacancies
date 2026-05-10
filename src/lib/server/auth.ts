@@ -1,8 +1,9 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 
 export const BUILDER_ROLES = ['author', 'editor'] as const;
 export const SESSION_COOKIE_NAME = 'nv_session';
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 const encoder = new TextEncoder();
 // Keep this small and bounded: normal runtime uses one active secret, but rotation overlap
@@ -169,4 +170,14 @@ export function getAuthSessionSecret(): string | undefined {
 
 export async function getSessionUser(event: RequestEvent): Promise<SessionUser | null> {
 	return parseSessionCookie(event.cookies.get(SESSION_COOKIE_NAME), getAuthSessionSecret());
+}
+
+export function useSecureCookies(url: URL): boolean {
+	if (url.protocol === 'https:') return true;
+	return !dev;
+}
+
+export function isDemoAuthEnabled(): boolean {
+	const runtimeProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
+	return runtimeProcess.process?.env?.DEMO_AUTH_ENABLED === '1';
 }
