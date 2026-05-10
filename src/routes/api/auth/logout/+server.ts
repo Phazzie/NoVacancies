@@ -1,15 +1,8 @@
-import { json, type RequestHandler } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+import { SESSION_COOKIE_NAME } from '$lib/server/auth';
 
-import { SESSION_COOKIE_NAME, useSecureCookies } from '$lib/server/auth';
-
-export const POST: RequestHandler = async ({ cookies, url }) => {
-	cookies.set(SESSION_COOKIE_NAME, '', {
-		httpOnly: true,
-		secure: useSecureCookies(url),
-		sameSite: 'lax',
-		path: '/',
-		maxAge: 0
-	});
-
-	return json({ ok: true });
+export const POST: RequestHandler = async ({ cookies }) => {
+	cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
+	redirect(302, '/login');
 };

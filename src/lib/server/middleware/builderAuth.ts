@@ -1,10 +1,28 @@
-import type { Handle } from '@sveltejs/kit';
+import { redirect, type Handle } from '@sveltejs/kit';
 import { authErrorResponse, BUILDER_ROLES, getSessionUser, isBuilderRole } from '$lib/server/auth';
 import { emitAiServerTelemetry } from '$lib/server/ai/telemetry';
 
 function isBuilderProtectedRoute(path: string): boolean {
 	if (path === '/builder' || path.startsWith('/builder/')) return true;
 	return path.startsWith('/api/builder/');
+}
+
+/**
+ * Returns true when the request is an XHR / API call that expects a JSON response.
+ * These requests should receive structured JSON error bodies (401/403) rather than a
+ * redirect to the login page.
+ */
+function expectsJsonResponse(event: Parameters<Handle>[0]['event']): boolean {
+	// Requests to /api/* are always JSON consumers.
+	if (event.url.pathname.startsWith('/api/')) return true;
+	// Explicit content-type negotiation.
+	const accept = event.request.headers.get('accept') ?? '';
+	if (accept.includes('application/json')) return true;
+	// Conventional XHR sentinel.
+	if (event.request.headers.get('x-requested-with') === 'XMLHttpRequest') return true;
+	// SvelteKit's own data-fetching requests include this header.
+	if (event.request.headers.get('x-sveltekit-action') !== null) return true;
+	return false;
 }
 
 function emitBuilderAccessDenied(
@@ -29,6 +47,14 @@ export const builderAuth: Handle = async ({ event, resolve }) => {
 	if (isBuilderProtectedRoute(path)) {
 		if (!sessionUser) {
 			emitBuilderAccessDenied(path, 'auth_required', null);
+
+			// For browser navigation (accepts HTML), redirect to the login page so the
+			// user sees a friendly form instead of a raw JSON error.
+			if (!expectsJsonResponse(event)) {
+				const loginUrl = `/login?next=${encodeURIComponent(path)}`;
+				redirect(302, loginUrl);
+			}
+
 			return authErrorResponse({
 				status: 401,
 				code: 'auth_required',
