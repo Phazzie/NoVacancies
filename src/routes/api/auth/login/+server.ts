@@ -11,6 +11,20 @@ import {
 	isDemoAuthEnabled
 } from '$lib/server/auth';
 
+/**
+ * Demo login endpoint.
+ *
+ * SECURITY: This endpoint MUST NOT trust any identity supplied by the client. The
+ * server is the sole source of truth for `userId` — even in demo mode. A previous
+ * iteration of this handler accepted a `userId` from the request body and embedded
+ * it directly into the signed session cookie, which allowed any client to claim any
+ * identity (including impersonating other demo users) by simply changing the body
+ * payload. We now ignore any caller-supplied `userId` entirely and mint a fresh
+ * server-generated identifier via `crypto.randomUUID()`.
+ *
+ * The endpoint is additionally gated behind `DEMO_AUTH_ENABLED=1`, so in production
+ * (where that flag is unset) the route returns 403 before reading the body at all.
+ */
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	if (!isDemoAuthEnabled()) {
 		return json(
@@ -24,17 +38,13 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 		);
 	}
 
+	// Only `role` is read from the body. Any client-supplied `userId` is intentionally
+	// ignored — see the SECURITY note above.
 	const payload = (await request.json().catch(() => ({}))) as {
-		userId?: string;
 		role?: string;
 	};
 
-	const userId = typeof payload.userId === 'string' ? payload.userId.trim() : '';
 	const role = typeof payload.role === 'string' ? payload.role.trim() : '';
-
-	if (!userId) {
-		return json({ error: { code: 'invalid_user', message: 'userId is required.' } }, { status: 400 });
-	}
 
 	if (!isBuilderRole(role)) {
 		return json(
@@ -55,6 +65,9 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 			{ status: 503 }
 		);
 	}
+
+	// Server-side identity generation. Never derive userId from caller input.
+	const userId = crypto.randomUUID();
 
 	const value = await createSignedSessionCookieValue({ userId, role }, secret);
 	cookies.set(SESSION_COOKIE_NAME, value, {

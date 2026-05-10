@@ -92,7 +92,9 @@ function constantTimeEquals(a: string, b: string): boolean {
 function isValidSessionEnvelope(payload: SessionEnvelope, nowSeconds: number): payload is Required<SessionEnvelope> {
 	return (
 		typeof payload.userId === 'string' &&
+		payload.userId.length > 0 &&
 		typeof payload.role === 'string' &&
+		payload.role.length > 0 &&
 		typeof payload.iat === 'number' &&
 		typeof payload.exp === 'number' &&
 		payload.iat > 0 &&
@@ -117,12 +119,29 @@ export async function createSignedSessionCookieValue(
 	return `${encodedPayload}.${signature}`;
 }
 
+/**
+ * Parse and verify a signed session cookie.
+ *
+ * SECURITY: A non-null return value is the ONLY trustworthy signal that a request
+ * carries a valid, server-issued identity. The HMAC-SHA256 signature is verified
+ * against the configured `AUTH_SESSION_SECRET` using a constant-time comparison
+ * before any field of the payload is consumed. If the secret is unset, every
+ * cookie is treated as unauthenticated — we never accept an unverified envelope.
+ *
+ * Callers (e.g. `getSessionUser` and the `builderAuth` middleware) must treat a
+ * `null` return as "no authenticated session" and refuse to fall back to any
+ * client-supplied identity hint (headers, body fields, query params, etc.).
+ */
 export async function parseSessionCookie(
 	rawCookie: string | undefined,
 	secret: string | undefined
 ): Promise<SessionUser | null> {
 	if (!rawCookie || !secret) return null;
-	const [encodedPayload, signature] = rawCookie.split('.');
+	// A well-formed cookie has exactly two `.`-separated segments: payload.signature.
+	// Reject anything else outright to keep the verification path unambiguous.
+	const segments = rawCookie.split('.');
+	if (segments.length !== 2) return null;
+	const [encodedPayload, signature] = segments;
 	if (!encodedPayload || !signature) return null;
 
 	try {
@@ -168,6 +187,13 @@ export function getAuthSessionSecret(): string | undefined {
 	return runtimeProcess.process?.env?.AUTH_SESSION_SECRET;
 }
 
+/**
+ * Resolve the authenticated session user for the current request, if any.
+ *
+ * This is the single entry point protected routes should use to learn who the
+ * caller is. It delegates to `parseSessionCookie`, which enforces HMAC signature
+ * verification, so any non-null result is a server-issued identity.
+ */
 export async function getSessionUser(event: RequestEvent): Promise<SessionUser | null> {
 	return parseSessionCookie(event.cookies.get(SESSION_COOKIE_NAME), getAuthSessionSecret());
 }
