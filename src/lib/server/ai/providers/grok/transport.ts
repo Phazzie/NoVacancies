@@ -15,9 +15,26 @@ function mapStatusToCode(status: number): 'auth' | 'rate_limit' | 'provider_down
 	return 'provider_down';
 }
 
+function parseRetryAfterSeconds(headerValue: string | null): number | undefined {
+	if (!headerValue) return undefined;
+	const asNumber = Number(headerValue);
+	if (Number.isFinite(asNumber) && asNumber >= 0) {
+		return Math.floor(asNumber);
+	}
+
+	const asDate = Date.parse(headerValue);
+	if (!Number.isNaN(asDate)) {
+		const deltaMs = asDate - Date.now();
+		return deltaMs > 0 ? Math.ceil(deltaMs / 1000) : 0;
+	}
+
+	return undefined;
+}
+
 export async function executeJsonRequest<T>(options: ProviderRequestOptions): Promise<T> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), options.requestTimeoutMs);
+	const started = Date.now();
 
 	try {
 		const response = await options.fetchImpl(options.url, {
@@ -31,10 +48,17 @@ export async function executeJsonRequest<T>(options: ProviderRequestOptions): Pr
 		});
 
 		if (!response.ok) {
+			const requestDurationMs = Date.now() - started;
+			const retryAfterSeconds =
+				response.status === 429
+					? parseRetryAfterSeconds(response.headers?.get?.('retry-after') ?? null)
+					: undefined;
 			throw new AiProviderError(`xAI ${options.requestType} request failed (${response.status})`, {
 				code: mapStatusToCode(response.status),
 				retryable: isRetryableStatus(response.status),
-				status: response.status
+				status: response.status,
+				retryAfterSeconds,
+				requestDurationMs
 			});
 		}
 
@@ -44,7 +68,8 @@ export async function executeJsonRequest<T>(options: ProviderRequestOptions): Pr
 			throw new AiProviderError(`xAI ${options.requestType} request timed out`, {
 				code: 'timeout',
 				retryable: true,
-				status: 504
+				status: 504,
+				requestDurationMs: Date.now() - started
 			});
 		}
 		if (error instanceof AiProviderError) {
@@ -52,7 +77,8 @@ export async function executeJsonRequest<T>(options: ProviderRequestOptions): Pr
 		}
 		throw new AiProviderError(`xAI ${options.requestType} request failed`, {
 			code: 'unknown',
-			retryable: false
+			retryable: false,
+			requestDurationMs: Date.now() - started
 		});
 	} finally {
 		clearTimeout(timeout);

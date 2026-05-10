@@ -2,13 +2,21 @@ import { expect, test } from '@playwright/test';
 import { executeJsonRequest } from '../../../src/lib/server/ai/providers/grok/transport';
 import { AiProviderError } from '../../../src/lib/server/ai/provider.interface';
 
-function makeFetch(status: number, body: unknown = {}): typeof fetch {
-    return async () =>
-        ({
-            ok: status >= 200 && status < 300,
-            status,
-            json: async () => body
-        }) as Response;
+function makeFetch(
+	status: number,
+	body: unknown = {},
+	headers: Record<string, string> = {}
+): typeof fetch {
+	const headerMap = new Map(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
+	return async () =>
+		({
+			ok: status >= 200 && status < 300,
+			status,
+			headers: {
+				get: (name: string) => headerMap.get(name.toLowerCase()) ?? null
+			},
+			json: async () => body
+		}) as Response;
 }
 
 function makeThrowingFetch(error: Error): typeof fetch {
@@ -56,15 +64,19 @@ test.describe('executeJsonRequest (transport)', () => {
         });
     });
 
-    test('throws AiProviderError with code:rate_limit and retryable:true on 429', async () => {
-        await expect(
-            executeJsonRequest({ ...BASE_OPTIONS, fetchImpl: makeFetch(429) })
-        ).rejects.toMatchObject({
-            name: 'AiProviderError',
-            code: 'rate_limit',
-            retryable: true
-        });
-    });
+	test('throws AiProviderError with code:rate_limit and retryable:true on 429', async () => {
+		await expect(
+			executeJsonRequest({
+				...BASE_OPTIONS,
+				fetchImpl: makeFetch(429, {}, { 'retry-after': '180' })
+			})
+		).rejects.toMatchObject({
+			name: 'AiProviderError',
+			code: 'rate_limit',
+			retryable: true,
+			retryAfterSeconds: 180
+		});
+	});
 
     test('throws AiProviderError with code:provider_down and retryable:true on 503', async () => {
         await expect(
@@ -76,22 +88,23 @@ test.describe('executeJsonRequest (transport)', () => {
         });
     });
 
-    test('throws AiProviderError with code:timeout and retryable:true on AbortError', async () => {
-        const abortError = Object.assign(new Error('The operation was aborted'), {
-            name: 'AbortError'
-        });
+	test('throws AiProviderError with code:timeout and retryable:true on AbortError', async () => {
+		const abortError = Object.assign(new Error('The operation was aborted'), {
+			name: 'AbortError'
+		});
         await expect(
             executeJsonRequest({
                 ...BASE_OPTIONS,
                 fetchImpl: makeThrowingFetch(abortError)
             })
-        ).rejects.toMatchObject({
-            name: 'AiProviderError',
-            code: 'timeout',
-            retryable: true,
-            status: 504
-        });
-    });
+		).rejects.toMatchObject({
+			name: 'AiProviderError',
+			code: 'timeout',
+			retryable: true,
+			status: 504,
+			requestDurationMs: expect.any(Number)
+		});
+	});
 
     test('throws AiProviderError with code:unknown and retryable:false on generic network error', async () => {
         const networkError = new Error('socket hang up');

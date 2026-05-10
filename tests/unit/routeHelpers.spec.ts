@@ -51,14 +51,24 @@ test.describe('routeHelpers', () => {
             new AiProviderError('Rate limited', {
                 code: 'rate_limit',
                 retryable: true,
-                status: 429
+                status: 429,
+                retryAfterSeconds: 120,
+                requestDurationMs: 3800
             })
         );
-        const payload = (await response.json()) as { error: string; code: string; status: number };
+        const payload = (await response.json()) as {
+            error: string;
+            code: string;
+            status: number;
+            retryAfterSeconds?: number;
+            requestDurationMs?: number;
+        };
 
         expect(response.status).toBe(429);
         expect(payload.code).toBe('rate_limit');
         expect(payload.status).toBe(429);
+        expect(payload.retryAfterSeconds).toBe(120);
+        expect(payload.requestDurationMs).toBe(3800);
         expect(sink.records[0]?.stage).toBe('route_error');
         expect(sink.records[0]?.payload.route).toBe('/api/story/next');
         expect(sink.records[0]?.payload.code).toBe('rate_limit');

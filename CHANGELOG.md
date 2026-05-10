@@ -4,6 +4,8 @@
 
 ### Added / Changed
 
+- **AI error specificity hardening:** Captured safe provider diagnostics (`retryAfterSeconds`, `requestDurationMs`) in Grok transport errors, propagated them through route and client error objects, and upgraded user-facing AI error messaging to show specific rate-limit/timeout/provider status context without exposing sensitive provider payloads (`src/lib/server/ai/providers/grok/transport.ts`, `src/lib/server/ai/provider.interface.ts`, `src/lib/server/ai/routeHelpers.ts`, `src/lib/services/storyService.ts`, `src/lib/errors/aiErrorMapping.ts`, `src/lib/game/store.ts`, `tests/unit/grok/transport.spec.ts`, `tests/unit/errors/aiErrorMapping.spec.ts`, `tests/unit/routeHelpers.spec.ts`).
+
 - **Builder Session Auth Routes + Smoke Coverage (2026-04-25):** Added `POST /api/auth/login` and `POST /api/auth/logout` SvelteKit routes that issue/clear signed `nv_session` cookies via `createSignedSessionCookieValue`, with explicit cookie attributes (`httpOnly`, `secure`, `sameSite`, `path`, `maxAge`). Expanded runtime smoke coverage to prove `/builder` transitions from anonymous `401` to authorized `200` with a valid builder-role session and returns to `401` after logout. Updated `README.md` with operator login/logout steps for local runs.
 - **CI & Test Coverage Remediation (2026-04-13):**
   - **Phase 1 — Playwright config fix:** Deleted legacy `playwright-unit.config.js` (4 workers, 10s timeout). CI now uses `npm run test:unit` which canonically points to `playwright.unit.config.ts` (2 workers, 15s timeout). One config, no divergence.

@@ -28,12 +28,16 @@ export interface ApiStoryServiceConfig {
 export interface ApiStoryServiceError {
 	code: string;
 	status?: number;
+	retryAfterSeconds?: number;
+	requestDurationMs?: number;
 	message: string;
 }
 
 function toApiStoryServiceError(input: {
 	code?: unknown;
 	status?: unknown;
+	retryAfterSeconds?: unknown;
+	requestDurationMs?: unknown;
 	message?: unknown;
 }): ApiStoryServiceError {
 	const message =
@@ -41,8 +45,16 @@ function toApiStoryServiceError(input: {
 			? input.message
 			: 'request failed';
 	const status = typeof input.status === 'number' ? input.status : undefined;
+	const retryAfterSeconds =
+		typeof input.retryAfterSeconds === 'number' && Number.isFinite(input.retryAfterSeconds)
+			? input.retryAfterSeconds
+			: undefined;
+	const requestDurationMs =
+		typeof input.requestDurationMs === 'number' && Number.isFinite(input.requestDurationMs)
+			? input.requestDurationMs
+			: undefined;
 	const code = typeof input.code === 'string' && input.code.trim() ? input.code : 'unknown';
-	return { code, status, message };
+	return { code, status, retryAfterSeconds, requestDurationMs, message };
 }
 
 function ensureSceneShape(candidate: unknown, endpoint: string): Scene {
@@ -102,6 +114,8 @@ async function postJson<TResponse>(
 				? toApiStoryServiceError({
 						code: (body as { code?: unknown }).code,
 						status: (body as { status?: unknown }).status ?? response.status,
+						retryAfterSeconds: (body as { retryAfterSeconds?: unknown }).retryAfterSeconds,
+						requestDurationMs: (body as { requestDurationMs?: unknown }).requestDurationMs,
 						message: (body as { error?: unknown }).error
 					})
 				: toApiStoryServiceError({

@@ -35,11 +35,25 @@ let runtime: GameRuntime | null = null;
 function mapUserFacingError(error: unknown): string {
 	const typed =
 		error && typeof error === 'object'
-			? (error as { code?: unknown; status?: unknown; message?: unknown })
+			? (error as {
+					code?: unknown;
+					status?: unknown;
+					retryAfterSeconds?: unknown;
+					requestDurationMs?: unknown;
+					message?: unknown;
+				})
 			: {};
 	return mapAiErrorToUserMessage({
 		code: typeof typed.code === 'string' ? typed.code : undefined,
 		status: typeof typed.status === 'number' ? typed.status : undefined,
+		retryAfterSeconds:
+			typeof typed.retryAfterSeconds === 'number' && Number.isFinite(typed.retryAfterSeconds)
+				? typed.retryAfterSeconds
+				: undefined,
+		requestDurationMs:
+			typeof typed.requestDurationMs === 'number' && Number.isFinite(typed.requestDurationMs)
+				? typed.requestDurationMs
+				: undefined,
 		message:
 			typeof typed.message === 'string'
 				? typed.message
