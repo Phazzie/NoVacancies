@@ -76,7 +76,7 @@ export function createGameState() {
         storyThreads: {
             oswaldoConflict: 0,
             trinaTension: 0,
-            marcusDependency: 0
+            oswaldoDependency: 0
         },
         inventory: [],
         unlockedEndings: []
