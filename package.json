@@ -1,7 +1,7 @@
 {
-  "name": "sydney-story",
+  "name": "no-vacancies",
   "version": "1.0.0",
-  "description": "No Vacancies - A choose-your-own-adventure PWA about invisible labor and load-bearing",
+  "description": "A choose-your-own-adventure story engine about becoming infrastructure",
   "type": "module",
   "scripts": {
     "test": "node tests/noLegacyProviderMarkers.js && node tests/storyEngineRuntimeSelection.js",
@@ -23,8 +23,8 @@
     "game",
     "interactive-fiction"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Phazzie",
+  "license": "MIT",
   "engines": {
     "node": "22.x"
   },
