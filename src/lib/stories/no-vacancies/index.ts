@@ -32,14 +32,13 @@ const imagePaths: Record<string, string> = {
 };
 
 const pregeneratedImagePool: string[] = [
-	'/images/ChatGPT Image Feb 7, 2026, 03_33_36 AM.png',
-	'/images/ChatGPT Image Feb 7, 2026, 03_33_55 AM.png',
-	'/images/ChatGPT Image Feb 7, 2026, 03_34_02 AM.png',
-	'/images/ChatGPT Image Feb 7, 2026, 03_34_07 AM.png',
-	'/images/ChatGPT Image Feb 7, 2026, 03_34_13 AM.png',
-	'/images/ChatGPT Image Feb 7, 2026, 03_34_20 AM.png',
+	'/images/chatgpt_image_feb_7_2026_03_33_36_am.png',
+	'/images/chatgpt_image_feb_7_2026_03_33_55_am.png',
+	'/images/chatgpt_image_feb_7_2026_03_34_02_am.png',
+	'/images/chatgpt_image_feb_7_2026_03_34_07_am.png',
+	'/images/chatgpt_image_feb_7_2026_03_34_13_am.png',
+	'/images/chatgpt_image_feb_7_2026_03_34_20_am.png',
 	'/images/car_memory.png',
-	'/images/convenience_store.png',
 	'/images/empty_room.png',
 	'/images/hotel_room.png',
 	'/images/motel_exterior.png',
