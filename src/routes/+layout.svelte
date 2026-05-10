@@ -5,6 +5,9 @@
 	import { registerPwaServiceWorker } from '$lib/client/pwa';
 	import { getSafeActiveStoryCartridge } from '$lib/stories';
 	import { selectStoryPresentation } from '$lib/stories/selectors';
+	import type { LayoutData } from './$types';
+
+	export let data: LayoutData;
 
 	const activeStory = getSafeActiveStoryCartridge();
 	const shellStoryTitle = activeStory?.title ?? 'Story Configuration Blocked';
@@ -86,6 +89,13 @@
 					<span>Debug</span>
 				</a>
 			{/if}
+			{#if data.sessionUser}
+				<form method="POST" action="/api/auth/logout" class="sign-out-form">
+					<button type="submit" class="sign-out-btn" title="Signed in as {data.sessionUser.role}">
+						Sign out
+					</button>
+				</form>
+			{/if}
 		</nav>
 	</header>
 
@@ -93,3 +103,27 @@
 		<slot />
 	</main>
 </div>
+
+<style>
+	.sign-out-form {
+		display: contents;
+	}
+
+	.sign-out-btn {
+		background: none;
+		border: 1px solid currentColor;
+		border-radius: 3px;
+		color: inherit;
+		cursor: pointer;
+		font-family: inherit;
+		font-size: 0.75rem;
+		letter-spacing: 0.04em;
+		opacity: 0.55;
+		padding: 0.2em 0.6em;
+		transition: opacity 0.15s;
+	}
+
+	.sign-out-btn:hover {
+		opacity: 1;
+	}
+</style>
