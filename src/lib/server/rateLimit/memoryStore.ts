@@ -1,50 +1,39 @@
-import type { RateLimitDecision, RateLimitOptions, RateLimitStore } from './types';
+/**
+ * In-memory rate-limit store.
+ *
+ * Uses a plain Map — no external deps required.  Suitable for local
+ * development and single-instance deployments; not shared across
+ * serverless replicas (use RedisRateLimitStore in production).
+ *
+ * Stale entries are pruned lazily on `reset` or on the next `increment`
+ * call for the same key once its window has expired.
+ */
+import type { RateLimitStore, RateLimitEntry } from './store';
 
-type CounterEntry = {
+interface WindowEntry {
 	count: number;
-	resetAt: number;
-};
-
-const GC_THRESHOLD = 500;
+	resetAt: number; // epoch ms
+}
 
 export class MemoryRateLimitStore implements RateLimitStore {
-	private readonly counters = new Map<string, CounterEntry>();
+	private readonly map = new Map<string, WindowEntry>();
 
-	constructor(private readonly options: RateLimitOptions) {}
+	async increment(key: string, windowMs: number): Promise<RateLimitEntry> {
+		const now = Date.now();
+		const existing = this.map.get(key);
 
-	consume(key: string, now = Date.now()): RateLimitDecision {
-		const current = this.counters.get(key);
-
-		if (!current || now >= current.resetAt) {
-			// Lazy GC: only when the map is large enough to be worth sweeping.
-			if (this.counters.size >= GC_THRESHOLD) {
-				for (const [k, entry] of this.counters) {
-					if (now >= entry.resetAt) {
-						this.counters.delete(k);
-					}
-				}
-			}
-			this.counters.set(key, {
-				count: 1,
-				resetAt: now + this.options.windowMs
-			});
-			return {
-				allowed: true,
-				retryAfterSeconds: Math.ceil(this.options.windowMs / 1000)
-			};
+		if (!existing || now >= existing.resetAt) {
+			// Start a new window.
+			const entry: WindowEntry = { count: 1, resetAt: now + windowMs };
+			this.map.set(key, entry);
+			return { count: 1, resetAt: entry.resetAt };
 		}
 
-		if (current.count >= this.options.maxRequests) {
-			return {
-				allowed: false,
-				retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000))
-			};
-		}
+		existing.count += 1;
+		return { count: existing.count, resetAt: existing.resetAt };
+	}
 
-		current.count += 1;
-		return {
-			allowed: true,
-			retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000))
-		};
+	async reset(key: string): Promise<void> {
+		this.map.delete(key);
 	}
 }
