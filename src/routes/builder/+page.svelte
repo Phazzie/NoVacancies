@@ -3,6 +3,7 @@
 	import { getSafeActiveStoryCartridge } from '$lib/stories';
 	import { starterKitCartridge } from '$lib/stories/starter-kit';
 	import { loadBuilderDraft, saveBuilderDraft } from '$lib/builder/store';
+	import BranchMap, { type BranchMapNode } from '$lib/components/builder/BranchMap.svelte';
 	import type {
 		BuilderDraftEvaluation,
 		BuilderDraftFinding,
@@ -31,6 +32,8 @@
 	let draftSignature = '';
 	let changedSinceQa = false;
 	let findingCounts = { blocker: 0, warning: 0, info: 0 };
+	let activeNodeId: string | null = 'root:story';
+	let branchMapCollapsed = false;
 
 	onMount(() => {
 		draft = loadBuilderDraft(draftScope, fallbackDraft);
@@ -49,6 +52,145 @@
 	};
 	$: draftSignature = computeDraftSignature(draft);
 	$: changedSinceQa = lastQaDraftSignature !== null && lastQaDraftSignature !== draftSignature;
+	$: branchMapNodes = buildBranchMapNodes(draft);
+
+	function buildBranchMapNodes(value: BuilderStoryDraft): BranchMapNode[] {
+		// Derive a structural branch map from the flat builder draft. The
+		// builder doesn't yet edit scene-level nodes/choices, so the map
+		// visualises the draft's compositional tree:
+		//   root → top-level sections → items → leaves
+		// Leaf prose fields (prompts, voice lines, voice-map lines) are flagged
+		// as "endings" because they're the terminal authored prose. Section
+		// nodes whose item array is empty surface as dead ends, which is what
+		// authors need to know about during structuring.
+		const nodes: BranchMapNode[] = [];
+		const rootChoices: { targetId: string }[] = [];
+
+		const pushSection = (id: string, title: string, items: { id: string; title: string; isEnding?: boolean; choices?: { targetId: string }[] }[]) => {
+			rootChoices.push({ targetId: id });
+			nodes.push({
+				id,
+				title,
+				choices: items.map((item) => ({ targetId: item.id }))
+			});
+			for (const item of items) {
+				nodes.push({
+					id: item.id,
+					title: item.title,
+					choices: item.choices ?? [],
+					isEnding: item.isEnding
+				});
+			}
+		};
+
+		// Root: the story itself.
+		const rootTitle = (value.title && value.title.trim()) || 'Untitled story';
+		nodes.push({ id: 'root:story', title: rootTitle, choices: rootChoices });
+
+		// Section: Identity (setting + aesthetic statement). Both are endings.
+		pushSection('section:identity', 'Identity', [
+			{ id: 'field:setting', title: 'Setting', isEnding: true },
+			{ id: 'field:aestheticStatement', title: 'Aesthetic statement', isEnding: true }
+		]);
+
+		// Section: Voice ceiling lines.
+		pushSection(
+			'section:voice',
+			'Voice ceiling',
+			(value.voiceCeilingLines ?? []).map((_, index) => ({
+				id: `field:voice:${index}`,
+				title: `Voice ceiling ${index + 1}`,
+				isEnding: true
+			}))
+		);
+
+		// Section: Characters.
+		pushSection(
+			'section:characters',
+			'Characters',
+			(value.characters ?? []).map((character, index) => ({
+				id: `field:character:${index}`,
+				title: character.name?.trim() || `Character ${index + 1}`,
+				isEnding: true
+			}))
+		);
+
+		// Section: Mechanics — each mechanic fans out to its voiceMap lines.
+		const mechanicItems = (value.mechanics ?? []).map((mechanic, mechanicIndex) => {
+			const voiceMap = mechanic.voiceMap ?? [];
+			const childIds = voiceMap.map((_, lineIndex) => `field:mechanic:${mechanicIndex}:${lineIndex}`);
+			return {
+				mechanicIndex,
+				mechanic,
+				childIds
+			};
+		});
+
+		rootChoices.push({ targetId: 'section:mechanics' });
+		nodes.push({
+			id: 'section:mechanics',
+			title: 'Mechanics',
+			choices: mechanicItems.map((item) => ({ targetId: `field:mechanic:${item.mechanicIndex}:label` }))
+		});
+
+		for (const item of mechanicItems) {
+			nodes.push({
+				id: `field:mechanic:${item.mechanicIndex}:label`,
+				title: item.mechanic.label?.trim() || item.mechanic.key || `Mechanic ${item.mechanicIndex + 1}`,
+				choices: item.childIds.map((childId) => ({ targetId: childId }))
+			});
+			(item.mechanic.voiceMap ?? []).forEach((line, lineIndex) => {
+				nodes.push({
+					id: `field:mechanic:${item.mechanicIndex}:${lineIndex}`,
+					title: `${line.value || '?'} → ${(line.line ?? '').slice(0, 24) || 'empty line'}`,
+					choices: [],
+					isEnding: true
+				});
+			});
+		}
+
+		// Section: Prompts.
+		pushSection('section:prompts', 'Prompts', [
+			{ id: 'field:openingPrompt', title: 'Opening prompt', isEnding: true },
+			{ id: 'field:systemPrompt', title: 'System prompt', isEnding: true }
+		]);
+
+		return nodes;
+	}
+
+	function fieldKeyForNode(nodeId: string): string | null {
+		// Map branch-map node ids back onto the existing fieldAnchorId scheme.
+		if (nodeId === 'root:story') return 'title';
+		if (nodeId === 'section:identity') return 'setting';
+		if (nodeId === 'section:voice') return 'voice:0';
+		if (nodeId === 'section:characters') return 'character:0';
+		if (nodeId === 'section:mechanics') return 'mechanic:0:label';
+		if (nodeId === 'section:prompts') return 'openingPrompt';
+		if (nodeId.startsWith('field:')) return nodeId.slice('field:'.length);
+		return null;
+	}
+
+	function handleBranchMapSelect(event: CustomEvent<{ nodeId: string }>): void {
+		const { nodeId } = event.detail;
+		activeNodeId = nodeId;
+		const fieldKey = fieldKeyForNode(nodeId);
+		if (!fieldKey) return;
+		if (typeof document === 'undefined') return;
+		const anchor = document.getElementById(fieldAnchorId(fieldKey));
+		if (!anchor) return;
+		anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		if (
+			anchor instanceof HTMLInputElement ||
+			anchor instanceof HTMLTextAreaElement ||
+			anchor instanceof HTMLSelectElement
+		) {
+			anchor.focus({ preventScroll: true });
+		}
+	}
+
+	function toggleBranchMap(): void {
+		branchMapCollapsed = !branchMapCollapsed;
+	}
 
 	async function generateDraft(): Promise<void> {
 		generateState = 'loading';
@@ -523,6 +665,30 @@
 		</div>
 
 		<aside class="builder-rail" aria-label="Builder audit rail">
+			<div class="builder-rail-card builder-rail-branch-map">
+				<div class="builder-rail-branch-map-head">
+					<h3>Branch map</h3>
+					<button
+						type="button"
+						class="btn btn-ghost btn-sm"
+						aria-expanded={!branchMapCollapsed}
+						aria-controls="builder-branch-map-panel"
+						on:click={toggleBranchMap}
+					>
+						{branchMapCollapsed ? 'Show' : 'Hide'}
+					</button>
+				</div>
+				{#if !branchMapCollapsed}
+					<div id="builder-branch-map-panel" data-testid="builder-branch-map">
+						<BranchMap
+							nodes={branchMapNodes}
+							{activeNodeId}
+							title="Story structure"
+							on:selectNode={handleBranchMapSelect}
+						/>
+					</div>
+				{/if}
+			</div>
 			<div class="builder-rail-card">
 				<h3>Gold medal bar</h3>
 				<p class="builder-rail-copy">
@@ -561,3 +727,21 @@
 		</aside>
 	</div>
 </section>
+
+<style>
+	.builder-rail-branch-map {
+		padding: 0.75rem;
+	}
+
+	.builder-rail-branch-map-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.1rem 0.25rem 0.5rem;
+	}
+
+	.builder-rail-branch-map-head h3 {
+		margin: 0;
+	}
+</style>
