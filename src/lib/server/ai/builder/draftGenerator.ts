@@ -62,7 +62,12 @@ Generate the first draft now.`;
 			draft: normalizeDraft(parsed, trimmedPremise),
 			source: 'ai'
 		};
-	} catch {
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		console.error(
+			'[draftGenerator:generateDraftFromPremise] error — returning fallback draft:',
+			message
+		);
 		return {
 			draft: createFallbackDraft(trimmedPremise),
 			source: 'fallback'
@@ -142,7 +147,11 @@ Remix the draft now. Return JSON only.`;
 	try {
 		const raw = await callBuilderModel(systemPrompt, userPrompt);
 		const parsed = JSON.parse(extractJsonObject(raw));
-		const normalized = normalizeDraft(parsed, currentDraft.premise);
+		// Pass an empty premise as the fallback: in a remix the premise MUST change
+		// to reflect the new lesson. If Grok omits `premise`, surface that as an
+		// empty field (visible to the author) rather than silently preserving the
+		// old, lesson-mismatched premise.
+		const normalized = normalizeDraft(parsed, '');
 		// Force-preserve the author-crafted fields regardless of what the model
 		// returned. Grok occasionally rephrases them despite the prompt rules.
 		const merged: BuilderStoryDraft = {
@@ -158,7 +167,12 @@ Remix the draft now. Return JSON only.`;
 			source: 'ai',
 			lesson
 		};
-	} catch {
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		console.error(
+			'[draftGenerator:remixDraft] error — returning current draft as fallback:',
+			message
+		);
 		return {
 			draft: currentDraft,
 			source: 'fallback',

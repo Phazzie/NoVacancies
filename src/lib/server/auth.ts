@@ -1,5 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { dev } from '$app/environment';
+import { env } from '$env/dynamic/private';
 
 export const BUILDER_ROLES = ['author', 'editor'] as const;
 export const SESSION_COOKIE_NAME = 'nv_session';
@@ -10,10 +11,20 @@ const encoder = new TextEncoder();
 // can require validating a few signatures at once. Four entries comfortably covers common
 // rollover windows (current + prior keys) without allowing unbounded growth.
 const MAX_CRYPTO_CACHE_SIZE = 4;
+// The cache is keyed on a SHA-256 fingerprint of the secret rather than the raw secret
+// string, so the plaintext secret never lives as a Map key in memory.
 const cryptoKeyCache = new Map<string, CryptoKey>();
 
+async function secretFingerprint(secret: string): Promise<string> {
+	const buf = await crypto.subtle.digest('SHA-256', encoder.encode(secret));
+	return Array.from(new Uint8Array(buf))
+		.map((b) => b.toString(16).padStart(2, '0'))
+		.join('');
+}
+
 async function getOrImportKey(secret: string): Promise<CryptoKey> {
-	const cached = cryptoKeyCache.get(secret);
+	const fingerprint = await secretFingerprint(secret);
+	const cached = cryptoKeyCache.get(fingerprint);
 	if (cached) return cached;
 	const key = await crypto.subtle.importKey(
 		'raw',
@@ -24,12 +35,12 @@ async function getOrImportKey(secret: string): Promise<CryptoKey> {
 	);
 	if (cryptoKeyCache.size >= MAX_CRYPTO_CACHE_SIZE) {
 		// Map iteration order is insertion order; evict the first inserted key (FIFO).
-		const firstInsertedSecret = cryptoKeyCache.keys().next().value;
-		if (firstInsertedSecret) {
-			cryptoKeyCache.delete(firstInsertedSecret);
+		const firstInsertedFingerprint = cryptoKeyCache.keys().next().value;
+		if (firstInsertedFingerprint) {
+			cryptoKeyCache.delete(firstInsertedFingerprint);
 		}
 	}
-	cryptoKeyCache.set(secret, key);
+	cryptoKeyCache.set(fingerprint, key);
 	return key;
 }
 
@@ -183,8 +194,11 @@ export function authErrorResponse({ status, code, message, path }: AuthErrorOpti
 }
 
 export function getAuthSessionSecret(): string | undefined {
-	const runtimeProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
-	return runtimeProcess.process?.env?.AUTH_SESSION_SECRET;
+	// Use SvelteKit's `$env/dynamic/private`, which is the only env accessor that
+	// resolves correctly across all adapters — including edge runtimes
+	// (Cloudflare Workers, Vercel Edge) where `globalThis.process` is undefined.
+	const value = env.AUTH_SESSION_SECRET;
+	return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
 /**
@@ -204,6 +218,7 @@ export function useSecureCookies(url: URL): boolean {
 }
 
 export function isDemoAuthEnabled(): boolean {
-	const runtimeProcess = globalThis as { process?: { env?: Record<string, string | undefined> } };
-	return runtimeProcess.process?.env?.DEMO_AUTH_ENABLED === '1';
+	// Use SvelteKit's `$env/dynamic/private` so this works in edge runtimes where
+	// `globalThis.process` is undefined.
+	return env.DEMO_AUTH_ENABLED === '1';
 }
