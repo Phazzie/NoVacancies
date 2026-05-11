@@ -21,6 +21,28 @@
 		newValue: string;
 	}
 
+	/**
+	 * One sub-field that differs between the old and new version of the same
+	 * identity-matched object inside an array (e.g. a character with the same
+	 * `name` whose `description` was rewritten).
+	 */
+	export interface ModifiedSubFieldDiff {
+		field: string;
+		oldValue: string;
+		newValue: string;
+	}
+
+	/**
+	 * An object inside an array whose identity key (`name` for characters,
+	 * `key`/`label` for mechanics) matched between snapshots but whose other
+	 * sub-fields changed. Listed alongside `added` / `removed` in ArrayDiffEntry
+	 * so the UI can render "modified" alongside delete + add for true renames.
+	 */
+	export interface ModifiedArrayItem {
+		identity: string;
+		changes: ModifiedSubFieldDiff[];
+	}
+
 	export interface ArrayDiffEntry {
 		field: string;
 		kind: 'array';
@@ -28,6 +50,7 @@
 		newCount: number;
 		added: string[];
 		removed: string[];
+		modified: ModifiedArrayItem[];
 	}
 
 	export type DiffEntry = StringDiffEntry | ArrayDiffEntry;
@@ -70,6 +93,29 @@
 	let saveError = '';
 
 	let selectedId: string | null = snapshotId;
+
+	// Track which long-string diffs the author has chosen to expand. Keyed by a
+	// stable per-field-per-side identifier ("setting:was" / "setting:now" for
+	// top-level strings, "characters:Sydney:description:now" for modified-array
+	// sub-fields). Using a Set rather than a Map keeps the toggle logic trivial.
+	let expandedFields: Set<string> = new Set();
+
+	function isExpanded(key: string): boolean {
+		return expandedFields.has(key);
+	}
+
+	function toggleExpanded(key: string): void {
+		// Reassign the Set reference so Svelte's reactivity picks up the change —
+		// in-place `.add()` / `.delete()` mutate the same reference and won't
+		// trigger a re-render.
+		const next = new Set(expandedFields);
+		if (next.has(key)) {
+			next.delete(key);
+		} else {
+			next.add(key);
+		}
+		expandedFields = next;
+	}
 
 	$: if (snapshotId !== selectedId) {
 		selectedId = snapshotId;
@@ -207,6 +253,74 @@
 		}
 	}
 
+	/**
+	 * Pull the stable identity for an object inside an array, used to match an
+	 * item in `oldArr` with its counterpart in `newArr` for sub-field diffing.
+	 * - characters: `name`
+	 * - mechanics:  `key` (fallback to `label`)
+	 * Returns null when no identity is available (string arrays, unknown shapes).
+	 */
+	function identityFor(item: unknown, fieldKey: string): string | null {
+		if (!item || typeof item !== 'object') return null;
+		const typed = item as Record<string, unknown>;
+		if (fieldKey === 'characters' && typeof typed.name === 'string' && typed.name.trim()) {
+			return typed.name.trim();
+		}
+		if (fieldKey === 'mechanics') {
+			if (typeof typed.key === 'string' && typed.key.trim()) return typed.key.trim();
+			if (typeof typed.label === 'string' && typed.label.trim()) return typed.label.trim();
+		}
+		return null;
+	}
+
+	/**
+	 * Diff two object-identity-matched array items and return the sub-fields
+	 * that changed. For characters: name / role / description. For mechanics:
+	 * key / label, and a coarse stringified voiceMap diff when the maps differ.
+	 */
+	function diffSubFields(
+		fieldKey: string,
+		oldItem: Record<string, unknown>,
+		newItem: Record<string, unknown>
+	): ModifiedSubFieldDiff[] {
+		const changes: ModifiedSubFieldDiff[] = [];
+		const stringSubFields =
+			fieldKey === 'characters'
+				? ['name', 'role', 'description']
+				: fieldKey === 'mechanics'
+					? ['key', 'label']
+					: [];
+		for (const sub of stringSubFields) {
+			const oldVal = typeof oldItem[sub] === 'string' ? (oldItem[sub] as string) : '';
+			const newVal = typeof newItem[sub] === 'string' ? (newItem[sub] as string) : '';
+			if (oldVal !== newVal) {
+				changes.push({ field: sub, oldValue: oldVal, newValue: newVal });
+			}
+		}
+		if (fieldKey === 'mechanics') {
+			// Compare voiceMap as a stable JSON blob so any per-entry change shows
+			// up as a single sub-field diff. Authors who want per-entry granularity
+			// can click into the field directly; this just signals "the voice map
+			// for this mechanic was edited".
+			let oldVm = '';
+			let newVm = '';
+			try {
+				oldVm = JSON.stringify(oldItem.voiceMap ?? []);
+			} catch {
+				oldVm = '';
+			}
+			try {
+				newVm = JSON.stringify(newItem.voiceMap ?? []);
+			} catch {
+				newVm = '';
+			}
+			if (oldVm !== newVm) {
+				changes.push({ field: 'voiceMap', oldValue: oldVm, newValue: newVm });
+			}
+		}
+		return changes;
+	}
+
 	function computeDiff(
 		oldDraft: BuilderStoryDraft,
 		newDraft: BuilderStoryDraft
@@ -238,33 +352,93 @@
 			const newArr = Array.isArray(newDraft[field])
 				? (newDraft[field] as unknown as readonly unknown[])
 				: [];
-			const oldSigs = oldArr.map((item) => arraySignature(item, String(field)));
-			const newSigs = newArr.map((item) => arraySignature(item, String(field)));
-			const oldSigSet = new Set(oldSigs);
-			const newSigSet = new Set(newSigs);
+
+			const fieldKey = String(field);
+
+			// Build identity → item index maps for both sides. Items without an
+			// identity (e.g. voiceCeilingLines strings, malformed objects) fall
+			// through to the legacy signature-based added/removed path.
+			const oldIdentityToIndex = new Map<string, number>();
+			oldArr.forEach((item, index) => {
+				const identity = identityFor(item, fieldKey);
+				if (identity && !oldIdentityToIndex.has(identity)) {
+					oldIdentityToIndex.set(identity, index);
+				}
+			});
+			const newIdentityToIndex = new Map<string, number>();
+			newArr.forEach((item, index) => {
+				const identity = identityFor(item, fieldKey);
+				if (identity && !newIdentityToIndex.has(identity)) {
+					newIdentityToIndex.set(identity, index);
+				}
+			});
+
+			// Indices already explained by identity matching are excluded from the
+			// signature-based added/removed pass so a renamed sub-field doesn't
+			// show up as both "modified" and "added/removed".
+			const explainedOldIndices = new Set<number>();
+			const explainedNewIndices = new Set<number>();
+			const modified: ModifiedArrayItem[] = [];
+
+			for (const [identity, oldIndex] of oldIdentityToIndex) {
+				const newIndex = newIdentityToIndex.get(identity);
+				if (newIndex === undefined) continue;
+				const oldItem = oldArr[oldIndex] as Record<string, unknown>;
+				const newItem = newArr[newIndex] as Record<string, unknown>;
+				const changes = diffSubFields(fieldKey, oldItem, newItem);
+				explainedOldIndices.add(oldIndex);
+				explainedNewIndices.add(newIndex);
+				if (changes.length > 0) {
+					modified.push({ identity, changes });
+				}
+			}
+
+			// Signature-based added/removed for the remaining items. The signature
+			// set is built only from items whose identity didn't match, so a pure
+			// description rewrite (same name) won't pollute add/remove counts.
+			const oldRemainingSigs = oldArr
+				.map((item, index) =>
+					explainedOldIndices.has(index) ? null : arraySignature(item, fieldKey)
+				);
+			const newRemainingSigs = newArr
+				.map((item, index) =>
+					explainedNewIndices.has(index) ? null : arraySignature(item, fieldKey)
+				);
+			const oldSigSet = new Set(oldRemainingSigs.filter((s): s is string => s !== null));
+			const newSigSet = new Set(newRemainingSigs.filter((s): s is string => s !== null));
 
 			const added: string[] = [];
 			const removed: string[] = [];
 			newArr.forEach((item, index) => {
-				if (!oldSigSet.has(newSigs[index])) {
-					added.push(describeArrayItem(item, String(field)));
+				if (explainedNewIndices.has(index)) return;
+				const sig = newRemainingSigs[index];
+				if (sig !== null && !oldSigSet.has(sig)) {
+					added.push(describeArrayItem(item, fieldKey));
 				}
 			});
 			oldArr.forEach((item, index) => {
-				if (!newSigSet.has(oldSigs[index])) {
-					removed.push(describeArrayItem(item, String(field)));
+				if (explainedOldIndices.has(index)) return;
+				const sig = oldRemainingSigs[index];
+				if (sig !== null && !newSigSet.has(sig)) {
+					removed.push(describeArrayItem(item, fieldKey));
 				}
 			});
 
 			const countChanged = oldArr.length !== newArr.length;
-			if (countChanged || added.length > 0 || removed.length > 0) {
+			if (
+				countChanged ||
+				added.length > 0 ||
+				removed.length > 0 ||
+				modified.length > 0
+			) {
 				entries.push({
-					field: String(field),
+					field: fieldKey,
 					kind: 'array',
 					oldCount: oldArr.length,
 					newCount: newArr.length,
 					added,
-					removed
+					removed,
+					modified
 				});
 			}
 		}
@@ -364,17 +538,114 @@
 							<div class="diff-string">
 								<p class="diff-old">
 									<span class="diff-old-label">Was</span>
-									<span class="diff-old-text">{truncate(entry.oldValue) || '(empty)'}</span>
+									{#if entry.oldValue.length > TRUNCATE_AT}
+										{#if isExpanded(`${entry.field}:was`)}
+											<span class="diff-old-text diff-text-block">
+												<pre class="diff-text-pre">{entry.oldValue || '(empty)'}</pre>
+												<button
+													type="button"
+													class="diff-expand-toggle"
+													on:click={() => toggleExpanded(`${entry.field}:was`)}
+													data-testid={`diff-collapse-${entry.field}-was`}
+												>collapse ↑</button>
+											</span>
+										{:else}
+											<span class="diff-old-text">
+												{truncate(entry.oldValue) || '(empty)'}
+												<button
+													type="button"
+													class="diff-expand-toggle"
+													on:click={() => toggleExpanded(`${entry.field}:was`)}
+													data-testid={`diff-expand-${entry.field}-was`}
+												>expand ↓</button>
+											</span>
+										{/if}
+									{:else}
+										<span class="diff-old-text">{entry.oldValue || '(empty)'}</span>
+									{/if}
 								</p>
 								<p class="diff-new">
 									<span class="diff-new-label">Now</span>
-									<span class="diff-new-text">{truncate(entry.newValue) || '(empty)'}</span>
+									{#if entry.newValue.length > TRUNCATE_AT}
+										{#if isExpanded(`${entry.field}:now`)}
+											<span class="diff-new-text diff-text-block">
+												<pre class="diff-text-pre">{entry.newValue || '(empty)'}</pre>
+												<button
+													type="button"
+													class="diff-expand-toggle"
+													on:click={() => toggleExpanded(`${entry.field}:now`)}
+													data-testid={`diff-collapse-${entry.field}-now`}
+												>collapse ↑</button>
+											</span>
+										{:else}
+											<span class="diff-new-text">
+												{truncate(entry.newValue) || '(empty)'}
+												<button
+													type="button"
+													class="diff-expand-toggle"
+													on:click={() => toggleExpanded(`${entry.field}:now`)}
+													data-testid={`diff-expand-${entry.field}-now`}
+												>expand ↓</button>
+											</span>
+										{/if}
+									{:else}
+										<span class="diff-new-text">{entry.newValue || '(empty)'}</span>
+									{/if}
 								</p>
 							</div>
 						{:else}
 							<p class="diff-count">
 								{entry.oldCount} item{entry.oldCount === 1 ? '' : 's'} → {entry.newCount} item{entry.newCount === 1 ? '' : 's'}
 							</p>
+							{#if entry.modified.length > 0}
+								<div class="diff-array-block diff-modified">
+									<p class="diff-array-label">Modified</p>
+									<ul>
+										{#each entry.modified as item, modIndex (modIndex)}
+											<li class="diff-modified-item">
+												<p class="diff-modified-identity">{entry.field} › {item.identity}</p>
+												<ul class="diff-modified-changes">
+													{#each item.changes as change, changeIndex (changeIndex)}
+														{@const expandKey = `${entry.field}:${item.identity}:${change.field}`}
+														{@const tooLong = change.oldValue.length > TRUNCATE_AT || change.newValue.length > TRUNCATE_AT}
+														<li class="diff-modified-change">
+															<span class="diff-modified-sub-label">{change.field}</span>:
+															{#if tooLong && isExpanded(expandKey)}
+																<span class="diff-text-block">
+																	<span class="diff-old-label">Was</span>
+																	<pre class="diff-text-pre">{change.oldValue || '(empty)'}</pre>
+																	<span class="diff-new-label">Now</span>
+																	<pre class="diff-text-pre">{change.newValue || '(empty)'}</pre>
+																	<button
+																		type="button"
+																		class="diff-expand-toggle"
+																		on:click={() => toggleExpanded(expandKey)}
+																		data-testid={`diff-collapse-${entry.field}-${item.identity}-${change.field}`}
+																	>collapse ↑</button>
+																</span>
+															{:else}
+																<span class="diff-modified-inline">
+																	<span class="diff-old-text">"{truncate(change.oldValue) || '(empty)'}"</span>
+																	<span class="diff-arrow">→</span>
+																	<span class="diff-new-text">"{truncate(change.newValue) || '(empty)'}"</span>
+																	{#if tooLong}
+																		<button
+																			type="button"
+																			class="diff-expand-toggle"
+																			on:click={() => toggleExpanded(expandKey)}
+																			data-testid={`diff-expand-${entry.field}-${item.identity}-${change.field}`}
+																		>expand ↓</button>
+																	{/if}
+																</span>
+															{/if}
+														</li>
+													{/each}
+												</ul>
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
 							{#if entry.added.length > 0}
 								<div class="diff-array-block diff-added">
 									<p class="diff-array-label">Added</p>
@@ -665,5 +936,99 @@
 	.diff-array-block.diff-removed li {
 		color: var(--diff-text-dim);
 		text-decoration: line-through;
+	}
+
+	.diff-array-block.diff-modified {
+		border-left: 2px solid var(--diff-accent);
+	}
+
+	.diff-array-block.diff-modified .diff-array-label {
+		color: var(--diff-accent);
+	}
+
+	.diff-modified-item {
+		display: grid;
+		gap: 0.25rem;
+		padding: 0.35rem 0;
+	}
+
+	.diff-modified-identity {
+		margin: 0;
+		font-size: 0.84rem;
+		font-weight: 600;
+		color: var(--diff-text);
+	}
+
+	.diff-modified-changes {
+		list-style: none;
+		margin: 0;
+		padding: 0 0 0 0.75rem;
+		display: grid;
+		gap: 0.2rem;
+	}
+
+	.diff-modified-change {
+		font-size: 0.82rem;
+		color: var(--diff-text);
+		line-height: 1.4;
+	}
+
+	.diff-modified-sub-label {
+		font-family: var(--font-mono, monospace);
+		font-size: 0.74rem;
+		color: var(--diff-text-dim);
+	}
+
+	.diff-modified-inline {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.diff-arrow {
+		color: var(--diff-text-dim);
+		font-weight: 700;
+	}
+
+	.diff-expand-toggle {
+		appearance: none;
+		border: 1px solid var(--diff-card-border-strong);
+		background: rgba(247, 241, 232, 0.04);
+		color: var(--diff-text-dim);
+		font: inherit;
+		font-size: 0.72rem;
+		padding: 0.1rem 0.4rem;
+		margin-left: 0.35rem;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: background 120ms ease-out, color 120ms ease-out;
+	}
+
+	.diff-expand-toggle:hover {
+		background: rgba(247, 241, 232, 0.08);
+		color: var(--diff-text);
+	}
+
+	.diff-text-block {
+		display: grid;
+		gap: 0.25rem;
+		margin-top: 0.2rem;
+	}
+
+	.diff-text-pre {
+		margin: 0;
+		max-height: 300px;
+		overflow-y: auto;
+		padding: 0.5rem 0.65rem;
+		border: 1px solid var(--diff-card-border-strong);
+		border-radius: 8px;
+		background: rgba(9, 7, 7, 0.7);
+		color: var(--diff-text);
+		font-family: var(--font-mono, monospace);
+		font-size: 0.8rem;
+		line-height: 1.45;
+		white-space: pre-wrap;
+		word-break: break-word;
 	}
 </style>

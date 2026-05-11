@@ -84,7 +84,14 @@
 	}
 
 	onMount(() => {
-		draft = loadBuilderDraft(draftScope, fallbackDraft);
+		// Defensively re-create a fresh empty draft each mount and merge any
+		// persisted fields over it. If the BuilderStoryDraft schema added a new
+		// field since this author last saved, the localStorage payload will be
+		// missing it — the spread guarantees every field has a safe default so
+		// the form never binds to `undefined`.
+		const freshDraft = starterKitCartridge.builder.createEmptyDraft();
+		const saved = loadBuilderDraft(draftScope, freshDraft);
+		draft = { ...freshDraft, ...saved };
 		premise = draft.premise;
 		builderReady = true;
 	});
@@ -386,8 +393,23 @@
 		};
 	}
 
+	function canonicalize(val: unknown): string {
+		if (val === null || typeof val !== 'object') return JSON.stringify(val);
+		if (Array.isArray(val)) return '[' + val.map(canonicalize).join(',') + ']';
+		const sorted = Object.keys(val as object)
+			.sort()
+			.map(
+				(k) => JSON.stringify(k) + ':' + canonicalize((val as Record<string, unknown>)[k])
+			);
+		return '{' + sorted.join(',') + '}';
+	}
+
 	function computeDraftSignature(value: BuilderStoryDraft): string {
-		return JSON.stringify(value, Object.keys(value).sort());
+		// Use a deep, key-sorted canonical stringify so two drafts with the same
+		// content but different key insertion order produce the same signature.
+		// (Passing a string[] as JSON.stringify's second arg is a property allow-
+		// list, not a sort key, so the previous implementation was a no-op.)
+		return canonicalize(value);
 	}
 
 	function downloadDraftJson(): void {
