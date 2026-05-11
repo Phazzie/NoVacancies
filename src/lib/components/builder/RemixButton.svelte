@@ -45,6 +45,11 @@
 			? alternativeLessons.find((lesson) => lesson.id === selectedLessonId) ?? null
 			: null;
 
+	// Guard remix on having meaningful draft content. The empty/starter draft
+	// has no real premise to remix against, so kicking off a remix from there
+	// produces noise instead of a useful rewrite.
+	$: hasDraftContent = Boolean(draft?.premise && draft.premise.trim().length >= 20);
+
 	function startConfirmation(): void {
 		if (selectedLesson) {
 			viewState = 'confirming';
@@ -124,11 +129,16 @@
 				type="button"
 				class="remix-button"
 				on:click={startConfirmation}
-				disabled={!selectedLesson}
+				disabled={!selectedLesson || !hasDraftContent}
 				data-testid="remix-start"
 			>
 				Remix with this lesson
 			</button>
+			{#if !hasDraftContent}
+				<p class="remix-empty" data-testid="remix-empty-guard">
+					Generate a draft first before remixing.
+				</p>
+			{/if}
 		{/if}
 
 		{#if viewState === 'confirming' && selectedLesson}

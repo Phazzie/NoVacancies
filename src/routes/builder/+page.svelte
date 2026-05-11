@@ -63,6 +63,10 @@
 		draftQa = null;
 		draftQaState = 'idle';
 		lastQaDraftSignature = null;
+		// Per-field AI feedback was graded against the previous draft. After a
+		// remix the prose has changed, so the old scores and suggestions are
+		// stale — clear them so the UI doesn't show outdated guidance.
+		feedback = {};
 		lastDraftSource = 'ai';
 		statusMessage = 'Draft remixed against a different lesson. Re-run QA to grade the remix.';
 	}
@@ -73,7 +77,10 @@
 		builderReady = true;
 	});
 
-	$: saveBuilderDraft(draftScope, draft);
+	// Gate the reactive save on builderReady so the empty fallback draft cannot
+	// overwrite the author's persisted work before onMount has had a chance to
+	// hydrate `draft` from localStorage.
+	$: if (builderReady) saveBuilderDraft(draftScope, draft);
 
 	$: readinessLabel = draftQa?.evaluation.readiness ?? 'not-run';
 	$: groupedFindings = groupFindings(draftQa?.evaluation.findings ?? []);
