@@ -4,6 +4,8 @@
 	import { starterKitCartridge } from '$lib/stories/starter-kit';
 	import { loadBuilderDraft, saveBuilderDraft } from '$lib/builder/store';
 	import BranchMap, { type BranchMapNode } from '$lib/components/builder/BranchMap.svelte';
+	import AlignmentScore from '$lib/components/builder/AlignmentScore.svelte';
+	import { lessons } from '$lib/narrative/lessonsCatalog';
 	import type {
 		BuilderDraftEvaluation,
 		BuilderDraftFinding,
@@ -34,6 +36,7 @@
 	let findingCounts = { blocker: 0, warning: 0, info: 0 };
 	let activeNodeId: string | null = 'root:story';
 	let branchMapCollapsed = false;
+	let alignmentLessonId: string = lessons[0] ? String(lessons[0].id) : '';
 
 	onMount(() => {
 		draft = loadBuilderDraft(draftScope, fallbackDraft);
@@ -689,6 +692,17 @@
 					</div>
 				{/if}
 			</div>
+			<div class="builder-rail-card builder-rail-alignment" data-testid="builder-alignment">
+				<label class="builder-rail-alignment-picker" for="builder-alignment-lesson">
+					<span>Lesson to align against</span>
+					<select id="builder-alignment-lesson" class="builder-input" bind:value={alignmentLessonId}>
+						{#each lessons as lesson (lesson.id)}
+							<option value={String(lesson.id)}>#{lesson.id} — {lesson.title}</option>
+						{/each}
+					</select>
+				</label>
+				<AlignmentScore {draft} lessonId={alignmentLessonId} />
+			</div>
 			<div class="builder-rail-card">
 				<h3>Gold medal bar</h3>
 				<p class="builder-rail-copy">
@@ -743,5 +757,26 @@
 
 	.builder-rail-branch-map-head h3 {
 		margin: 0;
+	}
+
+	.builder-rail-alignment {
+		display: grid;
+		gap: 0.75rem;
+		padding: 0.75rem;
+	}
+
+	.builder-rail-alignment-picker {
+		display: grid;
+		gap: 0.35rem;
+		font-size: 0.78rem;
+		color: var(--text-300, #b8aa9d);
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+
+	.builder-rail-alignment-picker select {
+		text-transform: none;
+		letter-spacing: normal;
+		font-size: 0.9rem;
 	}
 </style>
