@@ -2,7 +2,15 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { callBuilderModel } from '$lib/server/ai/builder/modelClient';
 import { extractJsonObject } from '$lib/server/ai/builder/normalizers';
 import { emitAiServerTelemetry } from '$lib/server/ai/telemetry';
-import type { BuilderStoryDraft } from '$lib/stories/types';
+import {
+	assertDraftWithinLimits,
+	delimitedField,
+	MAX_SYSTEM_PROMPT_LENGTH,
+	MAX_VOICE_CEILING_LINE_LENGTH,
+	PayloadLimitError,
+	PROMPT_INJECTION_NOTE
+} from '$lib/server/ai/builder/payloadGuards';
+import { isBuilderStoryDraft, type BuilderStoryDraft } from '$lib/stories/types';
 
 export interface VoiceLineEvaluation {
 	moment: string;
@@ -98,10 +106,18 @@ function buildVoicePrompts(draft: BuilderStoryDraft): {
 } {
 	const momentsList = SYDNEY_MOMENTS.map((moment, index) => `${index + 1}. ${moment}`).join('\n');
 	const voiceLines = (draft.voiceCeilingLines ?? [])
-		.map((line, index) => `${index + 1}. ${line}`)
+		.map((line, index) =>
+			delimitedField(
+				`DRAFT_VOICE_CEILING_LINE_${index + 1}`,
+				line,
+				MAX_VOICE_CEILING_LINE_LENGTH
+			)
+		)
 		.join('\n');
 
-	const systemPrompt = `You are a voice consistency evaluator for the story protagonist "Sydney" — a gig worker who has become infrastructure. She is so embedded in the platforms that she cannot see it clearly.
+	const systemPrompt = `${PROMPT_INJECTION_NOTE}
+
+You are a voice consistency evaluator for the story protagonist "Sydney" — a gig worker who has become infrastructure. She is so embedded in the platforms that she cannot see it clearly.
 
 Sydney's voice ceiling:
 - Tired but still hustling.
@@ -147,13 +163,13 @@ No prose outside the JSON. No markdown fencing. Exactly 5 entries in lines, in t
 	const userPrompt = `Draft voice constraints to evaluate.
 
 System prompt:
-${draft.systemPrompt?.trim() || '(empty)'}
+${delimitedField('DRAFT_SYSTEM_PROMPT', draft.systemPrompt?.trim(), MAX_SYSTEM_PROMPT_LENGTH)}
 
 Voice ceiling lines:
 ${voiceLines || '(none)'}
 
 Aesthetic statement:
-${draft.aestheticStatement?.trim() || '(empty)'}
+${delimitedField('DRAFT_AESTHETIC_STATEMENT', draft.aestheticStatement?.trim(), 2000)}
 
 Moments (generate one Sydney line per moment, in order):
 ${momentsList}
@@ -201,16 +217,32 @@ function fallbackEvaluation(draft: BuilderStoryDraft): VoiceEvaluationResult {
 }
 
 export const POST: RequestHandler = async ({ request, locals, url }) => {
-	const payload = (await request.json().catch(() => ({}))) as {
-		draft?: BuilderStoryDraft;
-	};
-	const draft = payload.draft && typeof payload.draft === 'object' ? payload.draft : null;
-
-	if (!draft) {
+	if (!locals.sessionUser) {
 		return json(
-			{ error: 'Missing builder draft in request body.', code: 'invalid_request' },
+			{ error: 'No session user; sign in before evaluating voice.', code: 'no_session' },
+			{ status: 401 }
+		);
+	}
+
+	const payload = (await request.json().catch(() => ({}))) as {
+		draft?: unknown;
+	};
+	const draft = payload.draft;
+
+	if (!isBuilderStoryDraft(draft)) {
+		return json(
+			{ error: 'Missing or invalid builder draft in request body.', code: 'invalid_request' },
 			{ status: 400 }
 		);
+	}
+
+	try {
+		assertDraftWithinLimits(draft);
+	} catch (error) {
+		if (error instanceof PayloadLimitError) {
+			return json({ error: error.message, code: error.code }, { status: error.status });
+		}
+		throw error;
 	}
 
 	const { systemPrompt, userPrompt } = buildVoicePrompts(draft);

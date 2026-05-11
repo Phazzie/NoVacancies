@@ -3,7 +3,16 @@ import { callBuilderModel } from '$lib/server/ai/builder/modelClient';
 import { extractJsonObject } from '$lib/server/ai/builder/normalizers';
 import { getLessonById, type Lesson } from '$lib/narrative/lessonsCatalog';
 import { emitAiServerTelemetry } from '$lib/server/ai/telemetry';
-import type { BuilderStoryDraft } from '$lib/stories/types';
+import {
+	assertDraftWithinLimits,
+	delimitedField,
+	MAX_PREMISE_LENGTH,
+	MAX_SYSTEM_PROMPT_LENGTH,
+	MAX_VOICE_CEILING_LINE_LENGTH,
+	PayloadLimitError,
+	PROMPT_INJECTION_NOTE
+} from '$lib/server/ai/builder/payloadGuards';
+import { isBuilderStoryDraft, type BuilderStoryDraft } from '$lib/stories/types';
 
 export interface AlignmentGap {
 	field: string;
@@ -95,7 +104,11 @@ function summarizeDraft(draft: BuilderStoryDraft): string {
 			const name = character?.name?.trim() || `Character ${index + 1}`;
 			const role = character?.role?.trim() || 'role';
 			const description = character?.description?.trim() || '(no description)';
-			return `- ${name} (${role}): ${description}`;
+			return delimitedField(
+				`DRAFT_CHARACTER_${index + 1}`,
+				`${name} (${role}): ${description}`,
+				1000
+			);
 		})
 		.join('\n');
 
@@ -106,24 +119,34 @@ function summarizeDraft(draft: BuilderStoryDraft): string {
 			const voiceLines = (mechanic?.voiceMap ?? [])
 				.map((entry) => `    [${entry?.value ?? '?'}] ${entry?.line ?? ''}`)
 				.join('\n');
-			return `- ${key} (${label})\n${voiceLines || '    (no voice map lines)'}`;
+			return delimitedField(
+				`DRAFT_MECHANIC_${index + 1}`,
+				`${key} (${label})\n${voiceLines || '    (no voice map lines)'}`,
+				1500
+			);
 		})
 		.join('\n');
 
 	const voiceLines = (draft.voiceCeilingLines ?? [])
-		.map((line, index) => `${index + 1}. ${line}`)
+		.map((line, index) =>
+			delimitedField(
+				`DRAFT_VOICE_CEILING_LINE_${index + 1}`,
+				line,
+				MAX_VOICE_CEILING_LINE_LENGTH
+			)
+		)
 		.join('\n');
 
 	return [
-		`Title: ${draft.title || '(untitled)'}`,
-		`Premise: ${draft.premise || '(empty)'}`,
-		`Setting: ${draft.setting || '(empty)'}`,
-		`Aesthetic statement: ${draft.aestheticStatement || '(empty)'}`,
+		delimitedField('DRAFT_TITLE', draft.title, 500),
+		delimitedField('DRAFT_PREMISE', draft.premise, MAX_PREMISE_LENGTH),
+		delimitedField('DRAFT_SETTING', draft.setting, 2000),
+		delimitedField('DRAFT_AESTHETIC_STATEMENT', draft.aestheticStatement, 2000),
 		`Voice ceiling lines:\n${voiceLines || '(none)'}`,
 		`Characters:\n${characterSummary || '(none)'}`,
 		`Mechanics:\n${mechanicSummary || '(none)'}`,
-		`Opening prompt: ${draft.openingPrompt || '(empty)'}`,
-		`System prompt: ${draft.systemPrompt || '(empty)'}`
+		delimitedField('DRAFT_OPENING_PROMPT', draft.openingPrompt, 4000),
+		delimitedField('DRAFT_SYSTEM_PROMPT', draft.systemPrompt, MAX_SYSTEM_PROMPT_LENGTH)
 	].join('\n\n');
 }
 
@@ -132,7 +155,9 @@ function buildAlignmentPrompts(lesson: Lesson, draft: BuilderStoryDraft): {
 	userPrompt: string;
 } {
 	const allowedFields = Array.from(KNOWN_FIELDS).join(', ');
-	const systemPrompt = `You are an editorial alignment evaluator. Given a story builder draft and a target lesson, score how well the draft's fields will surface that lesson when the story is played.
+	const systemPrompt = `${PROMPT_INJECTION_NOTE}
+
+You are an editorial alignment evaluator. Given a story builder draft and a target lesson, score how well the draft's fields will surface that lesson when the story is played.
 
 Scoring rubric (1-10):
 - 10: Every load-bearing field directly invokes the lesson's storyTriggers, emotionalStakes, and unconventionalAngle without explaining them.
@@ -238,16 +263,23 @@ function fallbackAlignment(lesson: Lesson, draft: BuilderStoryDraft): AlignmentR
 }
 
 export const POST: RequestHandler = async ({ request, locals, url }) => {
+	if (!locals.sessionUser) {
+		return json(
+			{ error: 'No session user; sign in before running alignment.', code: 'no_session' },
+			{ status: 401 }
+		);
+	}
+
 	const payload = (await request.json().catch(() => ({}))) as {
-		draft?: BuilderStoryDraft;
+		draft?: unknown;
 		lessonId?: unknown;
 	};
-	const draft = payload.draft && typeof payload.draft === 'object' ? payload.draft : null;
+	const draft = payload.draft;
 	const lessonId = coerceLessonId(payload.lessonId);
 
-	if (!draft) {
+	if (!isBuilderStoryDraft(draft)) {
 		return json(
-			{ error: 'Missing builder draft in request body.', code: 'invalid_request' },
+			{ error: 'Missing or invalid builder draft in request body.', code: 'invalid_request' },
 			{ status: 400 }
 		);
 	}
@@ -256,6 +288,15 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 			{ error: 'Missing or invalid lessonId in request body.', code: 'invalid_request' },
 			{ status: 400 }
 		);
+	}
+
+	try {
+		assertDraftWithinLimits(draft);
+	} catch (error) {
+		if (error instanceof PayloadLimitError) {
+			return json({ error: error.message, code: error.code }, { status: error.status });
+		}
+		throw error;
 	}
 
 	const lesson = getLessonById(lessonId);

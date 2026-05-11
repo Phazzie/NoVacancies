@@ -1,7 +1,11 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { remixDraft } from '$lib/server/ai/builder/draftGenerator';
 import { emitAiServerTelemetry } from '$lib/server/ai/telemetry';
-import type { BuilderStoryDraft } from '$lib/stories/types';
+import {
+	assertDraftWithinLimits,
+	PayloadLimitError
+} from '$lib/server/ai/builder/payloadGuards';
+import { isBuilderStoryDraft, type BuilderStoryDraft } from '$lib/stories/types';
 
 interface RemixRequestPayload {
 	draft?: BuilderStoryDraft;
@@ -9,23 +13,14 @@ interface RemixRequestPayload {
 	draftId?: string;
 }
 
-function isBuilderStoryDraft(value: unknown): value is BuilderStoryDraft {
-	if (!value || typeof value !== 'object') return false;
-	const draft = value as Partial<BuilderStoryDraft>;
-	return (
-		typeof draft.title === 'string' &&
-		typeof draft.premise === 'string' &&
-		typeof draft.setting === 'string' &&
-		typeof draft.aestheticStatement === 'string' &&
-		Array.isArray(draft.voiceCeilingLines) &&
-		Array.isArray(draft.characters) &&
-		Array.isArray(draft.mechanics) &&
-		typeof draft.openingPrompt === 'string' &&
-		typeof draft.systemPrompt === 'string'
-	);
-}
-
 export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.sessionUser) {
+		return json(
+			{ error: 'No session user; sign in before remixing drafts.', code: 'no_session' },
+			{ status: 401 }
+		);
+	}
+
 	const payload = (await request.json().catch(() => ({}))) as RemixRequestPayload;
 	const draft = payload.draft;
 	const newLessonId =
@@ -42,6 +37,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 	if (newLessonId === null) {
 		return json({ error: 'newLessonId must be a number.' }, { status: 400 });
+	}
+
+	try {
+		assertDraftWithinLimits(draft);
+	} catch (error) {
+		if (error instanceof PayloadLimitError) {
+			return json({ error: error.message, code: error.code }, { status: error.status });
+		}
+		throw error;
 	}
 
 	try {

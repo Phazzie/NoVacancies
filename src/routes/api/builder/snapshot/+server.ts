@@ -12,42 +12,32 @@
  */
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getSupabaseClient } from '$lib/server/db/supabase';
-import type { BuilderStoryDraft } from '$lib/stories/types';
+import { isBuilderStoryDraft } from '$lib/stories/types';
 
 export interface SnapshotCreateResponse {
 	id: string;
 	created_at: string;
 }
 
-function isDraft(value: unknown): value is BuilderStoryDraft {
-	if (!value || typeof value !== 'object') return false;
-	const typed = value as Partial<BuilderStoryDraft>;
-	return (
-		typeof typed.title === 'string' &&
-		typeof typed.premise === 'string' &&
-		Array.isArray(typed.characters) &&
-		Array.isArray(typed.mechanics)
-	);
-}
-
 export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.sessionUser) {
+		return json(
+			{ error: 'No session user; sign in before saving snapshots.', code: 'no_session' },
+			{ status: 401 }
+		);
+	}
+
 	const payload = (await request.json().catch(() => ({}))) as { draft?: unknown };
 	const draft = payload.draft;
 
-	if (!isDraft(draft)) {
+	if (!isBuilderStoryDraft(draft)) {
 		return json(
 			{ error: 'Missing or invalid builder draft in request body.', code: 'invalid_request' },
 			{ status: 400 }
 		);
 	}
 
-	const userId = locals.sessionUser?.userId;
-	if (!userId) {
-		return json(
-			{ error: 'No session user; sign in before saving snapshots.', code: 'no_session' },
-			{ status: 401 }
-		);
-	}
+	const userId = locals.sessionUser.userId;
 
 	const client = getSupabaseClient();
 	if (!client) {
