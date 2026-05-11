@@ -94,6 +94,11 @@
 	// hydrate `draft` from localStorage.
 	$: if (builderReady) saveBuilderDraft(draftScope, draft);
 
+	// A first draft has been generated when the AI/fallback generate-draft
+	// endpoint has returned successfully (or a remix replaced the draft). Used
+	// to gate rail cards that need a draft to be useful so first-time authors
+	// aren't confronted with empty-state noise.
+	$: hasGeneratedDraft = lastDraftSource !== null;
 	$: readinessLabel = draftQa?.evaluation.readiness ?? 'not-run';
 	$: groupedFindings = groupFindings(draftQa?.evaluation.findings ?? []);
 	$: findingCounts = {
@@ -262,8 +267,8 @@
 			draftQaState = 'idle';
 			statusMessage =
 				payload.source === 'ai'
-					? 'Draft generated with Grok. Edit freely.'
-					: 'Draft generated with fallback scaffolding. Grok was unavailable, so this is a structural starter.';
+					? 'Draft generated with AI. Edit freely.'
+					: 'Draft generated with fallback scaffolding. AI was unavailable, so this is a structural starter.';
 			generateState = 'ready';
 			lastQaDraftSignature = null;
 		} catch (error) {
@@ -399,23 +404,13 @@
 <section class="builder-page">
 	<header class="builder-hero">
 		<div class="builder-hero-copy">
-			<p class="card-kicker">Story engine authoring</p>
-			<h1>Builder</h1>
-			<p class="builder-copy">
-				Start from a premise, get a drafted story definition, then tighten the prose-bearing fields
-				until they behave under pressure. Gold standard = publishable without manual rescue.
-			</p>
-			<div class="builder-chip-row" aria-live="polite">
-				<span class="builder-chip builder-chip-strong">Readiness: {readinessLabel}</span>
-				{#if lastDraftSource}
-					<span class="builder-chip builder-chip-soft">
-						Source: {lastDraftSource === 'ai' ? 'Grok draft' : 'Fallback draft'}
-					</span>
-				{/if}
-				<span class="builder-chip {changedSinceQa ? 'builder-chip-warn' : 'builder-chip-soft'}">
-					{changedSinceQa ? 'Changes since last QA' : 'QA reflects current draft'}
-				</span>
-			</div>
+			<p class="card-kicker">Builder</p>
+			<h1>Create a No Vacancies story</h1>
+			<ol class="builder-steps">
+				<li>Write a one-sentence premise below.</li>
+				<li>Click Generate Draft — the AI builds your story shape.</li>
+				<li>Run Draft QA. Fix any blockers. Repeat until it passes.</li>
+			</ol>
 		</div>
 		<div class="builder-status-card" aria-live="polite">
 			<p class="card-kicker">Draft status</p>
@@ -468,6 +463,7 @@
 						<h2>Premise</h2>
 					</div>
 				</div>
+				<p class="field-hint">One sentence describing your protagonist's situation. This drives the whole story.</p>
 				<label class="builder-field" for={fieldAnchorId('premise')}>
 					<span class="sr-only">Story premise</span>
 					<textarea
@@ -489,7 +485,7 @@
 							<h2>Readiness: {draftQa.evaluation.readiness}</h2>
 						</div>
 						<p class="builder-source-pill">
-							Source: {draftQa.source === 'ai' ? 'Grok evaluator' : 'Fallback rubric'}
+							Source: {draftQa.source === 'ai' ? 'AI graded' : 'Estimated (AI unavailable)'}
 						</p>
 					</div>
 					<p class="builder-status-line">
@@ -533,15 +529,18 @@
 				<div class="builder-panel">
 					<p class="card-kicker">Core identity</p>
 					<label class="builder-field" for={fieldAnchorId('title')}>
-						<span>Story Title</span>
+						<span>Title</span>
+						<small class="field-hint">The name of your story. You can change this anytime.</small>
 						<input id={fieldAnchorId('title')} class="builder-input" bind:value={draft.title} />
 					</label>
 					<label class="builder-field" for={fieldAnchorId('setting')}>
 						<span>Setting</span>
+						<small class="field-hint">Where and when this happens. Be specific — a motel, a city, a season.</small>
 						<textarea id={fieldAnchorId('setting')} class="builder-textarea" rows="3" bind:value={draft.setting}></textarea>
 					</label>
 					<label class="builder-field" for={fieldAnchorId('aestheticStatement')}>
 						<span>Aesthetic Statement</span>
+						<small class="field-hint">One sentence describing the tone. Example: "A neon-soaked night shift where every favor has a price."</small>
 						<textarea
 							id={fieldAnchorId('aestheticStatement')}
 							class="builder-textarea"
@@ -568,6 +567,7 @@
 							<h2>Lines that prove the tone</h2>
 						</div>
 					</div>
+					<p class="field-hint">Three example lines that prove your protagonist's voice. The AI grades all generated output against these.</p>
 					{#each draft.voiceCeilingLines as line, index}
 						<label class="builder-field" for={fieldAnchorId(`voice:${index}`)}>
 							<span>Voice ceiling {index + 1}</span>
@@ -648,10 +648,12 @@
 						<div class="builder-card">
 							<label class="builder-field">
 								<span>Mechanic key</span>
+								<small class="field-hint">Internal identifier, no spaces. Example: phone_count</small>
 								<input class="builder-input" bind:value={draft.mechanics[mechanicIndex].key} />
 							</label>
 							<label class="builder-field" for={fieldAnchorId(`mechanic:${mechanicIndex}:label`)}>
 								<span>Mechanic label</span>
+								<small class="field-hint">Display name shown to readers. Example: "Phones Charging"</small>
 								<input
 									id={fieldAnchorId(`mechanic:${mechanicIndex}:label`)}
 									class="builder-input"
@@ -661,14 +663,15 @@
 							{#each mechanic.voiceMap as entry, lineIndex}
 								<div class="builder-mechanic-line">
 									<label class="builder-field">
-										<span>Value</span>
+										<span>State</span>
+										<small class="field-hint">A number or word representing this state level</small>
 										<input
 											class="builder-input"
 											bind:value={draft.mechanics[mechanicIndex].voiceMap[lineIndex].value}
 										/>
 									</label>
 									<label class="builder-field builder-grow" for={fieldAnchorId(mechanicFeedbackKey(mechanicIndex, lineIndex))}>
-										<span>Voice line</span>
+										<span>What your protagonist says/does</span>
 										<textarea
 											id={fieldAnchorId(mechanicFeedbackKey(mechanicIndex, lineIndex))}
 											class="builder-textarea"
@@ -702,6 +705,7 @@
 					<p class="card-kicker">Prompts</p>
 					<label class="builder-field" for={fieldAnchorId('openingPrompt')}>
 						<span>Opening Prompt</span>
+						<small class="field-hint">The scene-setting text shown to the AI at story start. 1–3 paragraphs.</small>
 						<textarea id={fieldAnchorId('openingPrompt')} class="builder-textarea" rows="5" bind:value={draft.openingPrompt}></textarea>
 					</label>
 				</div>
@@ -709,6 +713,7 @@
 					<p class="card-kicker">System prompt</p>
 					<label class="builder-field" for={fieldAnchorId('systemPrompt')}>
 						<span>System Prompt</span>
+						<small class="field-hint">Persistent AI instructions for every turn: voice rules, formatting, what to avoid.</small>
 						<textarea id={fieldAnchorId('systemPrompt')} class="builder-textarea" rows="8" bind:value={draft.systemPrompt}></textarea>
 					</label>
 				</div>
@@ -748,30 +753,56 @@
 					<span>Lesson to align against</span>
 					<select id="builder-alignment-lesson" class="builder-input" bind:value={alignmentLessonId}>
 						{#each lessons as lesson (lesson.id)}
-							<option value={String(lesson.id)}>#{lesson.id} — {lesson.title}</option>
+							<option value={String(lesson.id)} title={lesson.quote}>
+								#{lesson.id} — {lesson.title}
+							</option>
 						{/each}
 					</select>
 				</label>
-				<AlignmentScore {draft} lessonId={alignmentLessonId} />
+				{#if hasGeneratedDraft}
+					<AlignmentScore {draft} lessonId={alignmentLessonId} />
+				{:else}
+					<div class="panel-locked" data-testid="builder-alignment-locked">
+						Generate a draft first to check lesson alignment.
+					</div>
+				{/if}
 			</div>
 			<div class="builder-rail-card builder-rail-voice" data-testid="builder-voice-evaluator">
-				<VoiceEvaluator {draft} />
+				{#if hasGeneratedDraft}
+					<VoiceEvaluator {draft} />
+				{:else}
+					<div class="panel-locked" data-testid="builder-voice-evaluator-locked">
+						Generate a draft first to test your protagonist's voice.
+					</div>
+				{/if}
 			</div>
 			<div class="builder-rail-card builder-rail-diff" data-testid="builder-draft-diff">
-				<DraftDiff
-					currentDraft={draft}
-					{snapshotId}
-					on:snapshotSelected={handleSnapshotSelected}
-					on:snapshotSaved={handleSnapshotSaved}
-				/>
+				{#if hasGeneratedDraft}
+					<DraftDiff
+						currentDraft={draft}
+						{snapshotId}
+						on:snapshotSelected={handleSnapshotSelected}
+						on:snapshotSaved={handleSnapshotSaved}
+					/>
+				{:else}
+					<div class="panel-locked" data-testid="builder-draft-diff-locked">
+						Save a snapshot before you regenerate to see what changed.
+					</div>
+				{/if}
 			</div>
-			<div class="builder-rail-card builder-rail-remix" data-testid="builder-remix">
-				<RemixButton
-					{draft}
-					currentLessonId={Number(alignmentLessonId) || 0}
-					on:remixed={handleRemixed}
-				/>
-			</div>
+			{#if hasGeneratedDraft}
+				<div class="builder-rail-card builder-rail-remix" data-testid="builder-remix">
+					<RemixButton
+						{draft}
+						currentLessonId={Number(alignmentLessonId) || 0}
+						on:remixed={handleRemixed}
+					/>
+				</div>
+			{:else}
+				<div class="builder-rail-card builder-rail-remix" data-testid="builder-remix-locked">
+					<div class="panel-locked">Available after your first draft.</div>
+				</div>
+			{/if}
 			<div class="builder-rail-card">
 				<h3>Gold medal bar</h3>
 				<p class="builder-rail-copy">
@@ -863,5 +894,41 @@
 
 	.builder-rail-remix {
 		padding: 0.75rem;
+	}
+
+	.builder-steps {
+		margin: 0.5rem 0 0;
+		padding-left: 1.25rem;
+		display: grid;
+		gap: 0.35rem;
+		color: var(--text-200, #d8ccbe);
+		line-height: 1.45;
+	}
+
+	.builder-steps li {
+		font-size: 1rem;
+	}
+
+	.field-hint {
+		display: block;
+		margin: 0.15rem 0 0.35rem;
+		font-size: 0.78rem;
+		line-height: 1.4;
+		color: var(--text-300, #b8aa9d);
+		font-weight: 400;
+		text-transform: none;
+		letter-spacing: normal;
+	}
+
+	.panel-locked {
+		opacity: 0.55;
+		pointer-events: none;
+		padding: 1rem;
+		border: 1px dashed var(--line-strong, rgba(247, 241, 232, 0.22));
+		border-radius: 12px;
+		text-align: center;
+		font-size: 0.85rem;
+		color: var(--text-300, #b8aa9d);
+		background: rgba(247, 241, 232, 0.02);
 	}
 </style>

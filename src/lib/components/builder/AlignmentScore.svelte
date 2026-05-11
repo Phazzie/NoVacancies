@@ -78,7 +78,7 @@
 <section class="alignment-score" aria-label={title}>
 	<header class="alignment-head">
 		<div>
-			<p class="alignment-kicker">Authoring signal</p>
+			<p class="alignment-kicker">Lesson check</p>
 			<h3>{title}</h3>
 		</div>
 		<button
@@ -101,7 +101,7 @@
 			Run a check to score how well the current draft surfaces the selected lesson.
 		</p>
 	{:else if viewState === 'loading'}
-		<p class="alignment-empty" aria-live="polite">Grading draft against lesson…</p>
+		<p class="alignment-empty" aria-live="polite">AI is grading the draft against the lesson…</p>
 	{:else if viewState === 'error'}
 		<p class="alignment-error" role="alert">{errorMessage}</p>
 	{:else if viewState === 'ready' && result}
@@ -112,7 +112,7 @@
 				{/if}
 				{#if resultSource}
 					<p class="alignment-source">
-						Source: {resultSource === 'ai' ? 'Grok evaluator' : 'Heuristic fallback'}
+						Source: {resultSource === 'ai' ? 'AI graded' : 'Estimated (AI unavailable)'}
 					</p>
 				{/if}
 			</div>
