@@ -22,7 +22,9 @@
 	import type { BuilderStoryDraft } from '$lib/stories/types';
 
 	export let draft: BuilderStoryDraft;
-	export let title: string = "What would Sydney do?";
+	export let title: string = 'Voice test';
+
+	$: protagonistName = draft.characters?.[0]?.name?.trim() || 'your protagonist';
 
 	type ViewState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -72,7 +74,7 @@
 <section class="voice-evaluator" aria-label={title}>
 	<header class="voice-head">
 		<div>
-			<p class="voice-kicker">Authoring signal</p>
+			<p class="voice-kicker">Lesson check</p>
 			<h3>{title}</h3>
 		</div>
 		<button
@@ -82,17 +84,16 @@
 			disabled={viewState === 'loading'}
 			data-testid="voice-evaluator-run"
 		>
-			{viewState === 'loading' ? 'Testing…' : result ? 'Re-test' : "Test Sydney's voice"}
+			{viewState === 'loading' ? 'Testing…' : result ? 'Re-test' : 'Test voice'}
 		</button>
 	</header>
 
 	{#if viewState === 'idle'}
 		<p class="voice-empty">
-			Generates five sample Sydney lines from the current voice constraints, then flags lines
-			where she sounds too articulate, too self-aware, or out of register.
+			Generate five sample lines from your protagonist and check they sound right.
 		</p>
 	{:else if viewState === 'loading'}
-		<p class="voice-empty" aria-live="polite">Asking Grok to put Sydney in five different moments…</p>
+		<p class="voice-empty" aria-live="polite">Asking the AI to put {protagonistName} in five different moments…</p>
 	{:else if viewState === 'error'}
 		<p class="voice-error" role="alert">{errorMessage}</p>
 	{:else if viewState === 'ready' && result}
@@ -100,7 +101,7 @@
 			<div class="voice-meta">
 				{#if resultSource}
 					<p class="voice-source">
-						Source: {resultSource === 'ai' ? 'Grok evaluator' : 'Heuristic fallback'}
+						Source: {resultSource === 'ai' ? 'AI graded' : 'Estimated (AI unavailable)'}
 					</p>
 				{/if}
 				<p class="voice-flagged">
