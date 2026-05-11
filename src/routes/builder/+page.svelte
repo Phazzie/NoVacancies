@@ -6,6 +6,7 @@
 	import BranchMap, { type BranchMapNode } from '$lib/components/builder/BranchMap.svelte';
 	import AlignmentScore from '$lib/components/builder/AlignmentScore.svelte';
 	import VoiceEvaluator from '$lib/components/builder/VoiceEvaluator.svelte';
+	import DraftDiff from '$lib/components/builder/DraftDiff.svelte';
 	import { lessons } from '$lib/narrative/lessonsCatalog';
 	import type {
 		BuilderDraftEvaluation,
@@ -38,6 +39,17 @@
 	let activeNodeId: string | null = 'root:story';
 	let branchMapCollapsed = false;
 	let alignmentLessonId: string = lessons[0] ? String(lessons[0].id) : '';
+	let snapshotId: string | null = null;
+
+	function handleSnapshotSelected(event: CustomEvent<{ id: string | null }>): void {
+		snapshotId = event.detail.id;
+	}
+
+	function handleSnapshotSaved(event: CustomEvent<{ id: string; createdAt: string }>): void {
+		// Default the diff view to compare against the freshly saved snapshot so
+		// the author sees exactly what the next regeneration changed.
+		snapshotId = event.detail.id;
+	}
 
 	onMount(() => {
 		draft = loadBuilderDraft(draftScope, fallbackDraft);
@@ -707,6 +719,14 @@
 			<div class="builder-rail-card builder-rail-voice" data-testid="builder-voice-evaluator">
 				<VoiceEvaluator {draft} />
 			</div>
+			<div class="builder-rail-card builder-rail-diff" data-testid="builder-draft-diff">
+				<DraftDiff
+					currentDraft={draft}
+					{snapshotId}
+					on:snapshotSelected={handleSnapshotSelected}
+					on:snapshotSaved={handleSnapshotSaved}
+				/>
+			</div>
 			<div class="builder-rail-card">
 				<h3>Gold medal bar</h3>
 				<p class="builder-rail-copy">
@@ -785,6 +805,10 @@
 	}
 
 	.builder-rail-voice {
+		padding: 0.75rem;
+	}
+
+	.builder-rail-diff {
 		padding: 0.75rem;
 	}
 </style>
