@@ -31,11 +31,11 @@ export interface VoiceEvaluationResponse {
 }
 
 const SYDNEY_MOMENTS: readonly string[] = [
-	'Receiving a low rating from a customer.',
-	'Being asked to pick up more shifts on top of an already-long day.',
-	'Explaining her situation to a stranger who has just asked what she does for work.',
-	'Deciding in the moment whether to accept another booking when she is already past her limit.',
-	'Noticing, in passing, that she has not slept in a long time.'
+	'Receiving a 1-star rating on a task she completed while running three other jobs simultaneously.',
+	"Being asked by the motel manager if she plans to stay another night — she doesn't have a clear answer.",
+	'Explaining to another motel guest why she has four phones charging at once.',
+	'Deciding whether to accept another booking that would push her past 20 hours awake.',
+	"Noticing she hasn't eaten since yesterday but there's money in one of her accounts."
 ];
 
 function clampScore(value: unknown): number {

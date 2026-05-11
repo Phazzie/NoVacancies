@@ -34,7 +34,7 @@
 </script>
 
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher, onMount, tick } from 'svelte';
 	import type { BuilderStoryDraft } from '$lib/stories/types';
 
 	export let currentDraft: BuilderStoryDraft;
@@ -144,6 +144,15 @@
 			saveState = 'saved';
 			dispatch('snapshotSaved', { id: payload.id, createdAt: payload.created_at });
 			await refreshSnapshotList();
+			// Reset the button label back to "Save snapshot" after a brief confirmation
+			// window so a subsequent save doesn't show "Saved ✓" while the network
+			// call is still in flight.
+			await tick();
+			setTimeout(() => {
+				if (saveState === 'saved') {
+					saveState = 'idle';
+				}
+			}, 2500);
 		} catch (error) {
 			saveState = 'error';
 			saveError = error instanceof Error ? error.message : 'Failed to save snapshot.';
@@ -294,7 +303,7 @@
 			disabled={saveState === 'saving'}
 			data-testid="draft-diff-save"
 		>
-			{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save snapshot'}
+			{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved ✓' : 'Save snapshot'}
 		</button>
 	</header>
 
@@ -315,7 +324,7 @@
 			<option value="">— No snapshot selected —</option>
 			{#each snapshots as snap (snap.id)}
 				<option value={snap.id}>
-					{snap.draft_title} · {formatCreatedAt(snap.created_at)}
+					{snap.draft_title} — {formatCreatedAt(snap.created_at)} (#{snap.id.slice(-4)})
 				</option>
 			{/each}
 		</select>
