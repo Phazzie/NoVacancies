@@ -7,6 +7,7 @@
 	import AlignmentScore from '$lib/components/builder/AlignmentScore.svelte';
 	import VoiceEvaluator from '$lib/components/builder/VoiceEvaluator.svelte';
 	import DraftDiff from '$lib/components/builder/DraftDiff.svelte';
+	import RemixButton from '$lib/components/builder/RemixButton.svelte';
 	import { lessons } from '$lib/narrative/lessonsCatalog';
 	import type {
 		BuilderDraftEvaluation,
@@ -49,6 +50,21 @@
 		// Default the diff view to compare against the freshly saved snapshot so
 		// the author sees exactly what the next regeneration changed.
 		snapshotId = event.detail.id;
+	}
+
+	function handleRemixed(event: CustomEvent<{ newDraft: BuilderStoryDraft }>): void {
+		// Replace the working draft with the remixed version. The rail's
+		// alignmentLessonId already points at the lesson the author swapped to,
+		// so the rest of the page (alignment, voice eval, QA chips, diff)
+		// re-renders against the new draft without further wiring.
+		draft = event.detail.newDraft;
+		// Any in-flight QA is no longer valid against the new draft — clear it
+		// so the readiness pill is honest about what's been graded.
+		draftQa = null;
+		draftQaState = 'idle';
+		lastQaDraftSignature = null;
+		lastDraftSource = 'ai';
+		statusMessage = 'Draft remixed against a different lesson. Re-run QA to grade the remix.';
 	}
 
 	onMount(() => {
@@ -727,6 +743,13 @@
 					on:snapshotSaved={handleSnapshotSaved}
 				/>
 			</div>
+			<div class="builder-rail-card builder-rail-remix" data-testid="builder-remix">
+				<RemixButton
+					{draft}
+					currentLessonId={Number(alignmentLessonId) || 0}
+					on:remixed={handleRemixed}
+				/>
+			</div>
 			<div class="builder-rail-card">
 				<h3>Gold medal bar</h3>
 				<p class="builder-rail-copy">
@@ -809,6 +832,10 @@
 	}
 
 	.builder-rail-diff {
+		padding: 0.75rem;
+	}
+
+	.builder-rail-remix {
 		padding: 0.75rem;
 	}
 </style>
