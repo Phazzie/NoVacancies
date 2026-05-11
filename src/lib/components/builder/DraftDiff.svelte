@@ -34,7 +34,7 @@
 </script>
 
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import type { BuilderStoryDraft } from '$lib/stories/types';
 
 	export let currentDraft: BuilderStoryDraft;
@@ -274,7 +274,11 @@
 	}
 
 	// Eagerly fetch the snapshot list on mount so the dropdown is populated.
-	refreshSnapshotList();
+	// Wrapped in onMount so the fetch only fires in the browser — calling it at
+	// module/component load time runs during SSR and crashes the server render.
+	onMount(() => {
+		refreshSnapshotList();
+	});
 </script>
 
 <section class="draft-diff" aria-label="Draft version comparison">
