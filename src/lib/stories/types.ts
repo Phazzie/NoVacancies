@@ -125,6 +125,29 @@ export interface BuilderStoryDraft {
 	systemPrompt: string;
 }
 
+/**
+ * Runtime type guard for BuilderStoryDraft. Use across all builder API routes
+ * (alignment, evaluate-voice, snapshot, remix) instead of route-local weaker checks.
+ *
+ * Checks the minimum shape: title, premise, setting, voiceCeilingLines, characters,
+ * mechanics, openingPrompt, systemPrompt. Per-field payload caps (length / count
+ * limits) are enforced separately in each route via `assertDraftWithinLimits`.
+ */
+export function isBuilderStoryDraft(value: unknown): value is BuilderStoryDraft {
+	if (!value || typeof value !== 'object') return false;
+	const draft = value as Partial<BuilderStoryDraft>;
+	return (
+		typeof draft.title === 'string' &&
+		typeof draft.premise === 'string' &&
+		typeof draft.setting === 'string' &&
+		Array.isArray(draft.voiceCeilingLines) &&
+		Array.isArray(draft.characters) &&
+		Array.isArray(draft.mechanics) &&
+		typeof draft.openingPrompt === 'string' &&
+		typeof draft.systemPrompt === 'string'
+	);
+}
+
 export interface StoryBuilderDefinition {
 	referencePromptGuide: string;
 	proseRubric: string[];
