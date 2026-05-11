@@ -5,6 +5,11 @@ import { env } from '$env/dynamic/private';
 export const BUILDER_ROLES = ['author', 'editor'] as const;
 export const SESSION_COOKIE_NAME = 'nv_session';
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
+// Allow a small amount of clock skew (in seconds) between the issuer and the
+// verifier so a session minted on a host whose clock is slightly fast does not
+// look like it was issued in the future. Bounding skew also caps how far
+// `iat` and `exp` are allowed to drift past their nominal values.
+const CLOCK_SKEW_SECONDS = 60;
 
 const encoder = new TextEncoder();
 // Keep this small and bounded: normal runtime uses one active secret, but rotation overlap
@@ -101,16 +106,27 @@ function constantTimeEquals(a: string, b: string): boolean {
 }
 
 function isValidSessionEnvelope(payload: SessionEnvelope, nowSeconds: number): payload is Required<SessionEnvelope> {
+	// Bound `iat` and `exp` on BOTH sides:
+	//   - `iat` must not be in the future (allowing a small skew window). Without
+	//     this, a leaked signing secret could mint cookies with `iat` set to
+	//     MAX_SAFE_INTEGER that would appear valid effectively forever.
+	//   - `exp` must lie within `iat + SESSION_MAX_AGE_SECONDS` (plus skew), so
+	//     even a valid `iat` cannot be paired with an unboundedly distant `exp`.
+	//   - `exp` must still be in the future to be considered active.
 	return (
 		typeof payload.userId === 'string' &&
 		payload.userId.length > 0 &&
 		typeof payload.role === 'string' &&
 		payload.role.length > 0 &&
 		typeof payload.iat === 'number' &&
+		Number.isFinite(payload.iat) &&
 		typeof payload.exp === 'number' &&
+		Number.isFinite(payload.exp) &&
 		payload.iat > 0 &&
+		payload.iat <= nowSeconds + CLOCK_SKEW_SECONDS &&
 		payload.exp > nowSeconds &&
-		payload.exp >= payload.iat
+		payload.exp >= payload.iat &&
+		payload.exp <= payload.iat + SESSION_MAX_AGE_SECONDS + CLOCK_SKEW_SECONDS
 	);
 }
 

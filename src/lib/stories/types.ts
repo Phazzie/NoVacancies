@@ -118,7 +118,11 @@ export interface BuilderStoryDraft {
 	premise: string;
 	setting: string;
 	aestheticStatement: string;
-	voiceCeilingLines: readonly string[];
+	// Builder UI mutates this array via `bind:value` and append operations, so
+	// `readonly` here was a type-level lie. Keep `StoryVoiceDef.voiceCeilingLines`
+	// readonly (the cartridge-level voice contract is immutable) but allow the
+	// in-progress draft to be edited freely.
+	voiceCeilingLines: string[];
 	characters: BuilderStoryCharacterDraft[];
 	mechanics: BuilderStoryMechanicDraft[];
 	openingPrompt: string;
