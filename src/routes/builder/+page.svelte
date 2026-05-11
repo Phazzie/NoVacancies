@@ -5,6 +5,7 @@
 	import { loadBuilderDraft, saveBuilderDraft } from '$lib/builder/store';
 	import BranchMap, { type BranchMapNode } from '$lib/components/builder/BranchMap.svelte';
 	import AlignmentScore from '$lib/components/builder/AlignmentScore.svelte';
+	import VoiceEvaluator from '$lib/components/builder/VoiceEvaluator.svelte';
 	import { lessons } from '$lib/narrative/lessonsCatalog';
 	import type {
 		BuilderDraftEvaluation,
@@ -703,6 +704,9 @@
 				</label>
 				<AlignmentScore {draft} lessonId={alignmentLessonId} />
 			</div>
+			<div class="builder-rail-card builder-rail-voice" data-testid="builder-voice-evaluator">
+				<VoiceEvaluator {draft} />
+			</div>
 			<div class="builder-rail-card">
 				<h3>Gold medal bar</h3>
 				<p class="builder-rail-copy">
@@ -778,5 +782,9 @@
 		text-transform: none;
 		letter-spacing: normal;
 		font-size: 0.9rem;
+	}
+
+	.builder-rail-voice {
+		padding: 0.75rem;
 	}
 </style>
