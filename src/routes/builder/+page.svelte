@@ -8,6 +8,7 @@
 	import VoiceEvaluator from '$lib/components/builder/VoiceEvaluator.svelte';
 	import DraftDiff from '$lib/components/builder/DraftDiff.svelte';
 	import RemixButton from '$lib/components/builder/RemixButton.svelte';
+	import VoiceGuide from '$lib/components/builder/VoiceGuide.svelte';
 	import { lessons } from '$lib/narrative/lessonsCatalog';
 	import type {
 		BuilderDraftEvaluation,
@@ -41,6 +42,17 @@
 	let branchMapCollapsed = false;
 	let alignmentLessonId: string = lessons[0] ? String(lessons[0].id) : '';
 	let snapshotId: string | null = null;
+	let builderVoiceCeilingExtra: string[] = [];
+
+	function handleAddToVoiceCeiling(event: CustomEvent<{ lines: string[] }>): void {
+		// Append the author's own annotated-equivalent lines to the draft's
+		// voice ceiling. Track the additions locally so the rail card can
+		// surface confirmation feedback if it needs to in the future.
+		const incoming = event.detail.lines.filter((line) => line.trim().length > 0);
+		if (incoming.length === 0) return;
+		builderVoiceCeilingExtra = [...builderVoiceCeilingExtra, ...incoming];
+		draft = { ...draft, voiceCeilingLines: [...draft.voiceCeilingLines, ...incoming] };
+	}
 
 	function handleSnapshotSelected(event: CustomEvent<{ id: string | null }>): void {
 		snapshotId = event.detail.id;
@@ -697,6 +709,9 @@
 		</div>
 
 		<aside class="builder-rail" aria-label="Builder audit rail">
+			<div class="builder-rail-card builder-rail-voice-guide" data-testid="builder-voice-guide">
+				<VoiceGuide {draft} on:addToVoiceCeiling={handleAddToVoiceCeiling} />
+			</div>
 			<div class="builder-rail-card builder-rail-branch-map">
 				<div class="builder-rail-branch-map-head">
 					<h3>Branch map</h3>
@@ -790,6 +805,10 @@
 </section>
 
 <style>
+	.builder-rail-voice-guide {
+		padding: 0.75rem;
+	}
+
 	.builder-rail-branch-map {
 		padding: 0.75rem;
 	}
