@@ -319,7 +319,7 @@ export const lessons: Lesson[] = [
             "She can't unsee it now"
         ],
         unconventionalAngle: "The question you're afraid to ask because you already know the answer"
-    }
+    },
 
     {
         id: 18,

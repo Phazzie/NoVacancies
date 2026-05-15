@@ -41,3 +41,19 @@ test.describe('Prompt ownership delegation', () => {
 		expect(narrative.getRecoveryPrompt('bad json')).toBe(active.prompts.getRecoveryPrompt('bad json'));
 	});
 });
+
+test.describe('No Vacancies prompt budget', () => {
+	test('keeps lesson catalog references concise in the system prompt', async () => {
+		process.env.PUBLIC_STORY_ID = 'no-vacancies';
+		const { formatLessonsForPrompt } = await import('../../src/lib/narrative/promptFormatting');
+		const { lessons } = await import('../../src/lib/narrative/lessonsCatalog');
+		const active = getActiveStoryCartridge();
+		const lessonPrompt = formatLessonsForPrompt(lessons);
+
+		expect(lessonPrompt).toContain('1. Load-Bearing Beams Get Leaned On');
+		expect(lessonPrompt).not.toContain('Core Insight:');
+		expect(lessonPrompt).not.toContain('Common Triggers:');
+		expect(lessonPrompt.length).toBeLessThan(2200);
+		expect(active.prompts.systemPrompt.length).toBeLessThan(10000);
+	});
+});

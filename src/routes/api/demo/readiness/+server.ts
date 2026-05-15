@@ -80,6 +80,13 @@ function buildConfigFailurePayload(errorMessage: string): ReadinessPayload {
 				ok: false,
 				details: errorMessage,
 				weight: 100
+			},
+			{
+				id: 'image_pipeline_status',
+				label: 'Image pipeline instrumentation available',
+				ok: true,
+				details: 'status endpoint active; AI config invalid',
+				weight: 0
 			}
 		]
 	};

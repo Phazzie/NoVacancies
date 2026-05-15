@@ -78,18 +78,31 @@ function trimRecentSceneProse(text: string): string {
 function applyContextBudget(context: NarrativeContext, maxChars: number): NarrativeContext {
 	const budgeted = {
 		...context,
+		threadState: context.threadState
+			? {
+					...context.threadState,
+					boundariesSet: [...context.threadState.boundariesSet]
+				}
+			: null,
 		recentChoiceTexts: [...context.recentChoiceTexts],
 		threadNarrativeLines: [...context.threadNarrativeLines],
 		boundaryNarrativeLines: [...context.boundaryNarrativeLines],
 		lessonHistoryLines: [...context.lessonHistoryLines],
 		recentOpenings: [...context.recentOpenings],
 		recentSceneProse: [...context.recentSceneProse],
-		olderSceneSummaries: [...context.olderSceneSummaries]
+		olderSceneSummaries: [...context.olderSceneSummaries],
+		transitionBridge: context.transitionBridge
+			? {
+					keys: [...context.transitionBridge.keys],
+					moments: context.transitionBridge.moments.map((moment) => ({ ...moment }))
+				}
+			: null
 	};
 
 	const dropped = {
 		olderSummaries: 0,
-		recentProse: 0
+		recentProse: 0,
+		secondaryLines: 0
 	};
 
 	// Older summaries are the cheapest information to lose; keep the freshest prose until we have to trim it.
@@ -119,11 +132,37 @@ function applyContextBudget(context: NarrativeContext, maxChars: number): Narrat
 		if (!trimmed) break;
 	}
 
+	// If durable summaries and recent prose are not enough, shed oldest derived prompt hints.
+	// This preserves playability by making the budget a real cap instead of an aspirational note.
+	const secondaryQueues = [
+		budgeted.lessonHistoryLines,
+		budgeted.boundaryNarrativeLines,
+		budgeted.threadNarrativeLines,
+		budgeted.recentOpenings,
+		budgeted.recentChoiceTexts
+	];
+	for (const queue of secondaryQueues) {
+		while (estimateContextChars(budgeted) > maxChars && queue.length > 1) {
+			queue.shift();
+			dropped.secondaryLines += 1;
+		}
+	}
+
+	while (estimateContextChars(budgeted) > maxChars && (budgeted.threadState?.boundariesSet.length ?? 0) > 1) {
+		budgeted.threadState?.boundariesSet.shift();
+		dropped.secondaryLines += 1;
+	}
+
+	while (estimateContextChars(budgeted) > maxChars && (budgeted.transitionBridge?.moments.length ?? 0) > 1) {
+		budgeted.transitionBridge?.moments.pop();
+		dropped.secondaryLines += 1;
+	}
+
 	budgeted.meta = {
 		...budgeted.meta,
 		contextChars: estimateContextChars(budgeted),
 		budgetChars: maxChars,
-		truncated: dropped.olderSummaries > 0 || dropped.recentProse > 0,
+		truncated: dropped.olderSummaries > 0 || dropped.recentProse > 0 || dropped.secondaryLines > 0,
 		droppedOlderSummaries: dropped.olderSummaries,
 		droppedRecentProse: dropped.recentProse
 	};
