@@ -37,13 +37,6 @@ function parseIntInRange(value: string | undefined, fallback: number, min: numbe
 	return Math.min(max, Math.max(min, parsed));
 }
 
-function parseFloatInRange(value: string | undefined, fallback: number, min: number, max: number): number {
-	if (typeof value !== 'string' || value.trim().length === 0) return fallback;
-	const parsed = Number.parseFloat(value);
-	if (!Number.isFinite(parsed)) return fallback;
-	return Math.min(max, Math.max(min, parsed));
-}
-
 function parseProvider(value: string | undefined): AiProviderName {
 	if (value === 'mock') {
 		throw new Error('AI_PROVIDER=mock is disabled in Grok-only mode');

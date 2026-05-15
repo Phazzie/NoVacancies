@@ -144,4 +144,37 @@ test.describe('Narrative Context Budget (The Limit Breaker)', () => {
 		expect(recentText).toContain('RECENT_SMALL_KEEP_1');
 		expect(recentText).toContain('RECENT_SMALL_KEEP_2');
 	});
+	test('trims derived lesson and boundary lines when summaries and prose are not enough', () => {
+		const state = createGameState({ apiKey: null });
+		state.sceneLog.push(
+			{
+				sceneId: 'recent_1',
+				sceneText: 'RECENT_MINIMUM_KEEP_1 ' + 'A'.repeat(130),
+				viaChoiceText: 'choice',
+				isEnding: false
+			},
+			{
+				sceneId: 'recent_2',
+				sceneText: 'RECENT_MINIMUM_KEEP_2 ' + 'B'.repeat(130),
+				viaChoiceText: 'choice',
+				isEnding: false
+			}
+		);
+		state.lessonsEncountered = Array.from({ length: 80 }, (_, index) => index + 1);
+		state.storyThreads.boundariesSet = Array.from(
+			{ length: 80 },
+			(_, index) => `custom boundary ${index} ${'X'.repeat(120)}`
+		);
+
+		const context = buildNarrativeContext(state, { maxChars: 5000 });
+
+		expect(context.meta.contextChars).toBeLessThanOrEqual(5000);
+		expect(context.meta.truncated).toBe(true);
+		expect(context.lessonHistoryLines.length).toBeLessThan(80);
+		expect(context.boundaryNarrativeLines.length).toBeLessThan(80);
+		const recentText = context.recentSceneProse.map((p: { text: string }) => p.text).join(' ');
+		expect(recentText).toContain('RECENT_MINIMUM_KEEP_1');
+		expect(recentText).toContain('RECENT_MINIMUM_KEEP_2');
+	});
+
 });

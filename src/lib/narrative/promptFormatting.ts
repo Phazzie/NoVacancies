@@ -2,20 +2,7 @@ import type { NarrativeContext } from '$lib/contracts';
 import type { Lesson } from '$lib/narrative/lessonsCatalog';
 
 export function formatLessonsForPrompt(lessons: Lesson[]): string {
-	return lessons
-		.map((lesson) => {
-			const triggers = Array.isArray(lesson.storyTriggers)
-				? lesson.storyTriggers.slice(0, 2).join(' | ')
-				: '';
-			const unconventionalAngle = lesson.unconventionalAngle || '';
-
-			return `${lesson.id}. ${lesson.title}
-   Quote: "${lesson.quote}"
-   Core Insight: ${lesson.insight}
-   Common Triggers: ${triggers}
-   Unconventional Angle: ${unconventionalAngle}`;
-		})
-		.join('\n\n');
+	return lessons.map((lesson) => `${lesson.id}. ${lesson.title}`).join('\n');
 }
 
 export function formatNarrativeContextSection(context: NarrativeContext): string {

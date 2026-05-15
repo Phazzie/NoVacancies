@@ -328,3 +328,10 @@
 
 **Insight:** `npm run lint` only linted test files. TypeScript source under `src/` was type-checked by `svelte-check` but never linted for style or correctness rules. This meant issues like loose equality operators (`==` instead of `===`), unused variables, and inline `import()` type annotations in source code were invisible to the lint gate.
 **Lesson:** Add `src/**/*.{ts,svelte}` to the ESLint file globs in the same pass as tests. Pair with `@typescript-eslint/parser` and `eslint-plugin-svelte` so that TypeScript and Svelte syntax are parsed correctly. The `eqeqeq` rule should use `{ null: 'ignore' }` to preserve the intentional `value == null` null-coalescing idiom without forcing verbose `=== null || === undefined` everywhere.
+## 2026-05-14 — Prompt budgets must cover dynamic catalog payloads
+
+**Context:** Review follow-up found the No Vacancies system prompt was carrying too much durable catalog prose and repeated Oswaldo examples, while the narrative context budget could still overrun when derived lesson/boundary/thread state payloads grew large.
+
+**Lesson:** Prompt budget tests should measure the fully rendered active cartridge prompt, not only static source sections. Context-budget estimators must include serialized fields such as `threadState`, or hidden payloads can silently defeat an otherwise sensible trimming policy.
+
+**Rule:** Keep system prompts to compact operating guidance plus identifiers; put volatile scene memory in `NarrativeContext`, and trim lower-priority derived lines before claiming a hard budget is enforced.

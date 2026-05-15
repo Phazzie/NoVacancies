@@ -149,6 +149,7 @@ async function runScenario({
 		ENABLE_GROK_IMAGES: '0',
 		AI_AUTH_BYPASS: '0',
 		AUTH_SESSION_SECRET,
+		DEMO_AUTH_ENABLED: '1',
 		XAI_API_KEY: 'test_key_for_selection_smoke',
 		FORCE_COLOR: '0',
 		...extraEnv

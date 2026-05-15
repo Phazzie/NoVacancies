@@ -15,9 +15,11 @@ function isBuilderProtectedRoute(path: string): boolean {
 function expectsJsonResponse(event: Parameters<Handle>[0]['event']): boolean {
 	// Requests to /api/* are always JSON consumers.
 	if (event.url.pathname.startsWith('/api/')) return true;
-	// Explicit content-type negotiation.
+	// Explicit content-type negotiation. Node/test fetches send */*, not the
+	// browser navigation HTML accept header, so keep them on the JSON 401 path.
 	const accept = event.request.headers.get('accept') ?? '';
 	if (accept.includes('application/json')) return true;
+	if (!accept.includes('text/html')) return true;
 	// Conventional XHR sentinel.
 	if (event.request.headers.get('x-requested-with') === 'XMLHttpRequest') return true;
 	// SvelteKit's own data-fetching requests include this header.
