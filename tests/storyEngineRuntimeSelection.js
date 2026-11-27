@@ -149,6 +149,7 @@ async function runScenario({
 		ENABLE_GROK_IMAGES: '0',
 		AI_AUTH_BYPASS: '0',
 		AUTH_SESSION_SECRET,
+		DEMO_AUTH_ENABLED: '1',
 		XAI_API_KEY: 'test_key_for_selection_smoke',
 		FORCE_COLOR: '0',
 		...extraEnv
@@ -217,8 +218,19 @@ async function runScenario({
 			assert.doesNotMatch(homeHtml, /No Vacancies/i, `${label}: should not leak No Vacancies shell copy`);
 		}
 
-		const anonymousBuilder = await fetch(`http://${HOST}:${port}/builder`);
-		assert.equal(anonymousBuilder.status, 401, `${label}: anonymous /builder should be 401`);
+		const anonymousBuilder = await fetch(`http://${HOST}:${port}/builder`, { redirect: 'manual' });
+		assert.equal(anonymousBuilder.status, 302, `${label}: anonymous /builder should redirect to login`);
+		assert.equal(
+			anonymousBuilder.headers.get('location'),
+			'/login?next=%2Fbuilder',
+			`${label}: anonymous /builder should redirect to login`
+		);
+		const anonymousBuilderApi = await fetch(`http://${HOST}:${port}/api/builder/remix`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: '{}'
+		});
+		assert.equal(anonymousBuilderApi.status, 401, `${label}: anonymous builder API should be 401`);
 
 		const invalidRoleLogin = await fetch(`http://${HOST}:${port}/api/auth/login`, {
 			method: 'POST',
@@ -254,20 +266,22 @@ async function runScenario({
 
 		const logoutResponse = await fetch(`http://${HOST}:${port}/api/auth/logout`, {
 			method: 'POST',
+			redirect: 'manual',
 			headers: {
 				cookie: authCookie
 			}
 		});
-		assert.equal(logoutResponse.status, 200, `${label}: logout should succeed`);
+		assert.equal(logoutResponse.status, 302, `${label}: logout should redirect to login`);
 		const logoutSetCookie = logoutResponse.headers.get('set-cookie');
 		assert.match(String(logoutSetCookie || ''), /Max-Age=0/i, `${label}: logout should clear cookie`);
 
 		const clearedBuilder = await fetch(`http://${HOST}:${port}/builder`, {
+			redirect: 'manual',
 			headers: {
 				cookie: extractCookiePair(logoutSetCookie)
 			}
 		});
-		assert.equal(clearedBuilder.status, 401, `${label}: cleared session should return /builder to 401`);
+		assert.equal(clearedBuilder.status, 302, `${label}: cleared session should send /builder back to login`);
 
 		const sessionCookie = await createSignedSessionCookieValue({
 			userId: 'story-smoke-author',

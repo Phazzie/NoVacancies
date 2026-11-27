@@ -30,7 +30,7 @@ test.describe('Opening Scene Thread Updates (Wu-Bob Hardening)', () => {
                 choices: [{ id: '1', text: 'Enter the 36 Chambers' }],
             }),
             getNextScene: async () => { throw new Error("Should not be called in this test"); },
-            getSceneById: () => null
+            getSceneById: () => undefined
         };
 
         // 2. Act: Execute the Contract
@@ -65,8 +65,8 @@ test.describe('Opening Scene Thread Updates (Wu-Bob Hardening)', () => {
                 choices: [],
                 // No thread updates provided
             }),
-            getNextScene: async () => null,
-            getSceneById: () => null
+            getNextScene: async () => { throw new Error('Should not be called in this test'); },
+            getSceneById: () => undefined
         };
 
         const runtime = createGameRuntime({ storyService: deterministicStoryService });

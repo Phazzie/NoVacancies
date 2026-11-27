@@ -2,41 +2,60 @@ import { test, expect } from '@playwright/test';
 import { MemoryRateLimitStore } from '../../../src/lib/server/rateLimit/memoryStore';
 
 test.describe('MemoryRateLimitStore', () => {
-	test('allows requests up to maxRequests then blocks', () => {
-		const store = new MemoryRateLimitStore({ maxRequests: 2, windowMs: 60_000 });
+    test('counts requests within a window', async () => {
+        const store = new MemoryRateLimitStore();
 
-		expect(store.consume('1.2.3.4', 1000).allowed).toBe(true);
-		expect(store.consume('1.2.3.4', 1500).allowed).toBe(true);
+        expect((await store.increment('1.2.3.4', 60_000, 1000)).count).toBe(1);
+        expect((await store.increment('1.2.3.4', 60_000, 1500)).count).toBe(2);
 
-		const blocked = store.consume('1.2.3.4', 2000);
-		expect(blocked.allowed).toBe(false);
-		expect(blocked.retryAfterSeconds).toBe(59);
-	});
+        const third = await store.increment('1.2.3.4', 60_000, 2000);
+        expect(third.count).toBe(3);
+        expect(third.resetAt).toBe(61_000);
+    });
 
-	test('tracks counters independently per key', () => {
-		const store = new MemoryRateLimitStore({ maxRequests: 1, windowMs: 60_000 });
+    test('tracks counters independently per key', async () => {
+        const store = new MemoryRateLimitStore();
 
-		expect(store.consume('ip-a', 1000).allowed).toBe(true);
-		expect(store.consume('ip-b', 1000).allowed).toBe(true);
-		expect(store.consume('ip-a', 2000).allowed).toBe(false);
-		expect(store.consume('ip-b', 2000).allowed).toBe(false);
-	});
+        expect((await store.increment('ip-a', 60_000, 1000)).count).toBe(1);
+        expect((await store.increment('ip-b', 60_000, 1000)).count).toBe(1);
+        expect((await store.increment('ip-a', 60_000, 2000)).count).toBe(2);
+        expect((await store.increment('ip-b', 60_000, 2000)).count).toBe(2);
+    });
 
-	test('lazy GC prunes expired entries when map exceeds threshold', () => {
-		// windowMs=50 so entries expire after 50ms from their creation time.
-		const store = new MemoryRateLimitStore({ maxRequests: 20, windowMs: 50 });
+    test('reset clears a key immediately', async () => {
+        const store = new MemoryRateLimitStore();
+        await store.increment('ip-a', 60_000, 1000);
+        await store.increment('ip-a', 60_000, 1000);
+        await store.reset('ip-a');
+        expect((await store.increment('ip-a', 60_000, 1500)).count).toBe(1);
+    });
 
-		// Seed 600 unique keys at t=0.
-		for (let i = 0; i < 600; i += 1) {
-			store.consume(`key_${i}`, 0);
-		}
+    test('lazy GC prunes expired entries when map exceeds threshold', async () => {
+        const store = new MemoryRateLimitStore();
 
-		// At t=100 all 600 entries are expired. Trigger GC via a new key.
-		store.consume('trigger', 100);
+        for (let i = 0; i < 600; i += 1) {
+            await store.increment(`key_${i}`, 50, 0);
+        }
 
-		// The map should have shrunk: only the 'trigger' entry should remain.
-		const counters = (store as unknown as { counters: Map<string, unknown> }).counters;
-		expect(counters.size).toBeLessThan(600);
-		expect(counters.has('trigger')).toBe(true);
-	});
+        await store.increment('trigger', 50, 10_000);
+
+        expect(store.size).toBe(1);
+    });
+
+    test('GC runs at most once per interval while the map stays large', async () => {
+        const store = new MemoryRateLimitStore();
+        for (let i = 0; i < 600; i += 1) {
+            await store.increment(`live_${i}`, 60_000, 0);
+        }
+        // These expire quickly but are added right after a sweep, so they survive
+        // until the next interval instead of triggering a full scan per request.
+        for (let i = 0; i < 10; i += 1) {
+            await store.increment(`short_${i}`, 10, 100);
+        }
+        await store.increment('probe', 60_000, 200);
+        expect(store.size).toBe(611);
+
+        await store.increment('probe-2', 60_000, 6_000);
+        expect(store.size).toBe(602);
+    });
 });

@@ -17,7 +17,7 @@ permissions:
 jobs:
     quality-gate:
         name: Blocking Quality Gate (Tier 1)
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         timeout-minutes: 30
         env:
             AI_PROVIDER: grok
@@ -72,6 +72,9 @@ jobs:
               env:
                   E2E_SERVER_COMMAND: npm run serve
 
+            - name: E2E — main player and builder flows (stubbed xAI)
+              run: npm run test:e2e:flows
+
             - name: Upload Tier 1 artifacts
               if: always()
               uses: actions/upload-artifact@v4
@@ -83,7 +86,7 @@ jobs:
 
     narrative-eval:
         name: Claude Narrative Evaluation (Tier 2)
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         needs: quality-gate
         continue-on-error: true
@@ -229,7 +232,7 @@ jobs:
 
     canary:
         name: Live Provider Canary
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         needs: quality-gate
         continue-on-error: true

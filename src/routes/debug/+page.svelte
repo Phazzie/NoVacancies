@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { page } from '$app/stores';
     import { appendDebugError, clearDebugErrors, readDebugErrors, type DebugErrorEntry } from '$lib/debug/errorLog';
     import type { ImagePipelineSummary } from '$lib/server/ai/imagePipeline';
 
@@ -95,14 +96,14 @@
         hydrated = true;
         refresh();
         void loadDiagnostics();
-        void refreshImageStatus();
+        if ($page.data.canUseCreatorTools) void refreshImageStatus();
     });
 </script>
 
 <section class="utility-page utility-page-debug">
 	<header class="page-intro">
-		<p class="card-kicker">Operator console</p>
-		<h2>Debug</h2>
+		<p class="card-kicker">Bureau terminal · Operator access</p>
+		<h2>Audit Log</h2>
 		<p class="lede">Runtime error log for play and session troubleshooting.</p>
 	</header>
 
@@ -115,7 +116,9 @@
 			<button class="btn btn-secondary btn-sm" on:click={refresh}>Refresh</button>
 			<button class="btn btn-secondary btn-sm" on:click={addTestEntry}>Add Test Entry</button>
 			<button class="btn btn-secondary btn-sm" on:click={clearAll}>Clear Log</button>
-			<button class="btn btn-secondary btn-sm" on:click={refreshImageStatus}>Refresh Image Status</button>
+			{#if $page.data.canUseCreatorTools}
+				<button class="btn btn-secondary btn-sm" on:click={refreshImageStatus}>Refresh Image Status</button>
+			{/if}
 		</div>
 
 		{#if diagnosticsError}
@@ -134,6 +137,7 @@
 			</section>
 		{/if}
 
+		{#if $page.data.canUseCreatorTools}
 		<section class="settings-section" data-testid="debug-image-status">
 			<h3>Image Pipeline Status</h3>
 			{#if imageStatusError}
@@ -166,6 +170,7 @@
 				{/if}
 			{/if}
 		</section>
+		{/if}
 
 		{#if entries.length === 0}
 			<div class="debug-empty">

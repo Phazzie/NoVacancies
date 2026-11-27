@@ -37,6 +37,15 @@
 	--font-display: 'Baskerville', 'Palatino Linotype', 'Book Antiqua', 'Georgia', serif;
 	--font-body: 'Avenir Next', 'Franklin Gothic Medium', 'Trebuchet MS', 'Segoe UI', sans-serif;
 	--font-mono: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+	/* Aliases referenced by builder/share styles that were never defined, which left
+	   those elements rendering in inherited or invalid colors. */
+	--amber-300: #f6c891;
+	--text-main: var(--text-100);
+	--text-soft: var(--text-200);
+	--text-dim: var(--text-300);
+	--accent-bright: var(--amber-400);
+	--border-strong: var(--line-strong);
+	--shadow-soft: var(--shadow-md);
 }
 
 *,
@@ -1718,7 +1727,7 @@ margin-bottom: 8px;
     padding: 10px;
     border: 1px solid var(--line-soft);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.75);
+    background: var(--bg-soft);
 }
 
 .debug-diagnostics h3 {
@@ -1730,19 +1739,61 @@ margin-bottom: 8px;
     padding-left: 18px;
     display: grid;
     gap: 4px;
-    color: var(--ink-500);
+    color: var(--text-200);
     font-size: 0.85rem;
 }
 
 .readiness-item-title {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--ink-400);
+    color: var(--text-300);
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
 
 .readiness-item-detail {
     font-size: 0.9rem;
-    color: var(--ink-700);
+    color: var(--text-200);
+}
+
+/* The hero copy sits on a light paper card, so the default dark-theme secondary
+   button (light text on near-transparent fill) disappears there. */
+.home-copy .btn-secondary {
+    border-color: rgba(39, 28, 22, 0.22);
+    background: rgba(39, 28, 22, 0.05);
+    color: var(--ink-800);
+}
+
+.share-status-error {
+	margin: 16px auto 0;
+	max-width: 560px;
+	text-align: center;
+	color: var(--warn-ink);
+}
+
+.share-fallback {
+	margin: 8px auto 0;
+	max-width: 560px;
+	display: grid;
+	gap: 6px;
+}
+
+.share-fallback-label {
+	margin: 0;
+	font-size: 0.8rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-300);
+}
+
+.share-fallback-input {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 10px 12px;
+	border-radius: 12px;
+	border: 1px solid var(--line-strong);
+	background: var(--panel-dark-strong);
+	color: var(--text-100);
+	font-family: var(--font-mono);
+	font-size: 0.85rem;
 }

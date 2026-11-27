@@ -45,7 +45,7 @@ test.describe('builder modelClient', () => {
     });
 
     test('sends expected request payload and returns first content choice', async () => {
-        let body: Record<string, unknown> | null = null;
+        let body = null as Record<string, unknown> | null;
         globalThis.fetch = (async (_url, init) => {
             body = JSON.parse(String(init?.body));
             return new Response(

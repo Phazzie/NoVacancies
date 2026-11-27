@@ -159,7 +159,9 @@ export class ImagePipeline {
 					maxOutputTokens: 1800,
 					requestTimeoutMs: 20000,
 					maxRetries: 2,
-					retryBackoffMs: [400, 1200]
+					retryBackoffMs: [400, 1200],
+					builderTemperature: 0.7,
+					builderMaxTokens: 1400
 				};
 				this.configError = error instanceof Error ? error.message : 'Invalid AI config';
 			}

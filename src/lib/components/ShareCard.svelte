@@ -117,7 +117,7 @@
 {#if open}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<div class="backdrop" on:click={() => (open = false)} aria-hidden="true"/>
+	<div class="backdrop" on:click={() => (open = false)} aria-hidden="true"></div>
 
 	<div class="panel" role="dialog" aria-modal="true" aria-label="Share story">
 		<!-- OG image preview -->

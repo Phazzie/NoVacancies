@@ -2,6 +2,15 @@
 
 No Vacancies is an interactive narrative game about invisible labor and relationship load-bearing.
 
+The player-facing pages are dressed as Sydney's consumer credit report from the "Bureau of Uncredited Labor": every payment on the file went through, and none of it was reported under her name. Home is the disclosure, Play is the consumer statement (choices are responses, story threads are account balances), and Ending is the final report.
+
+## What's Still Rough
+
+- No live preview: every Vercel deployment on this project (including a plain redeploy of the current production build) fails with "Resource provisioning failed" before the build starts. This is account/project-side, not a code failure. See `GRUDGES.md`.
+- A real playthrough needs `XAI_API_KEY`. Without it `/play` shows the "File frozen" error state by design (hard-fail mode).
+- Builder, Preferences and Audit Log still use the older dark styling. They are framed as the "bureau terminal" but were not redesigned.
+- The Sourcery check on PR #102 flags FSL-licensed `@sentry/cli` packages already in the dependency tree; that's an owner decision.
+
 ## Current Stack
 
 - Framework: SvelteKit (TypeScript)
@@ -137,7 +146,9 @@ npm run lint
 npm test
 npm run test:narrative
 npm run test:unit
+npm run build
 npm run test:e2e
+npm run test:e2e:flows
 ```
 
 Notes:
@@ -145,7 +156,8 @@ Notes:
 - `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, invalid-id fail-fast behavior, and builder auth enforcement for anonymous/unauthorized/authorized requests).
 - `npm run test:narrative` remains a deterministic Tier 1 smoke gate that validates fixture/reporting wiring only, so it stays fast and stable.
 - `npm run test:unit` runs behavior-first unit suites (story registry runtime selection/fail-fast, prompt delegation ownership, and narrative-context contract outputs) using exported runtime APIs.
-- `npm run test:e2e` runs Playwright against the SvelteKit app, including the builder flow and route-shell checks.
+- `npm run test:e2e` runs Playwright route-shell, API-contract and demo-reliability checks against the SvelteKit app.
+- `npm run test:e2e:flows` drives the main journeys end to end (home → play → ending → replay, share fallback, anonymous settings/debug, builder login → AI draft → AI QA → download). It serves the **production build** (`npm run build` first) with a stubbed xAI upstream (`tests/e2e/fixtures/fakeXai.mjs`), so it needs no API key or network.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
 - GitHub PRs run only the blocking Tier 1 workflow gate. Tier 2 Claude evaluation and the live provider canary run on `main` pushes or manual workflow dispatch so PR feedback stays deterministic and lower-noise.
 - GitHub Actions now cancel superseded in-progress runs for the same PR/branch, which reduces duplicate check spam while iterating quickly.
@@ -170,7 +182,9 @@ Required gate before each lane merge:
 npm run lint
 npm test
 npm run test:narrative
+npm run build
 npm run test:e2e
+npm run test:e2e:flows
 ```
 
 Release blockers (must hold to ship):

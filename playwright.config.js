@@ -10,6 +10,8 @@ const serverCommand = process.env.E2E_SERVER_COMMAND || `npm run dev -- --host $
 
 export default defineConfig({
     testDir: './tests/e2e',
+    // Main-flow specs need the stubbed-xAI server from playwright.flows.config.js.
+    testIgnore: ['**/flows/**'],
     timeout: 45000,
     fullyParallel: false,
     workers: 1,

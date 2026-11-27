@@ -1,0 +1,13 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "$lib": ["src/lib"],
+            "$lib/*": ["src/lib/*"],
+            "$app/environment": ["tests/unit/_shims/app-environment.ts"],
+            "$env/dynamic/private": ["tests/unit/_shims/env-dynamic-private.ts"],
+            "$env/dynamic/public": ["tests/unit/_shims/env-dynamic-public.ts"]
+        }
+    }
+}

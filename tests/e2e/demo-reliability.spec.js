@@ -70,10 +70,6 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		const checkIds = body.checks.map((check) => check.id);
 		const totalWeight = body.checks.reduce((sum, check) => sum + Number(check.weight || 0), 0);
 		expect(totalWeight).toBe(100);
-		const pipelineCheck = body.checks.find((check) => check.id === 'image_pipeline_status');
-		expect(pipelineCheck).toBeTruthy();
-		expect(typeof pipelineCheck.details).toBe('string');
-
 		if (checkIds.includes('config_valid')) {
 			const configCheck = body.checks.find((check) => check.id === 'config_valid');
 			expect(configCheck.ok).toBeFalsy();
@@ -89,9 +85,11 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 				'outage_policy',
 				'security_mode',
 				'image_generation',
-				'connectivity_probe'
+				'image_pipeline_status'
 			])
 		);
+		const pipelineCheck = body.checks.find((check) => check.id === 'image_pipeline_status');
+		expect(typeof pipelineCheck.details).toBe('string');
 
 		const apiKeyCheck = body.checks.find((check) => check.id === 'api_key_status');
 		expect(Boolean(apiKeyCheck)).toBeTruthy();
@@ -165,7 +163,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await page.goto('/');
 		await expectPathname(page, '/');
 		await expect(page.locator('.home-page')).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Begin Story' })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Begin Statement' })).toBeVisible();
 		await expect(page.locator('.story-brief')).toBeVisible();
 		await expect(page.getByTestId('home-readiness')).toBeVisible();
 		await expect(page.getByTestId('home-readiness-summary')).toBeVisible();
@@ -177,15 +175,15 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 
 		await page.goto('/settings');
 		await expectPathname(page, '/settings');
-		await expect(page.getByRole('heading', { level: 2, name: 'Settings' })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 2, name: 'Preferences' })).toBeVisible();
 
 		await page.goto('/play');
 		await expectPathname(page, '/play');
-		await expect(page.getByRole('heading', { level: 2, name: 'Play' })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 2, name: 'Consumer Statement' })).toBeVisible();
 		if (HAS_XAI_KEY) {
 			const modePill = page.getByTestId('mode-pill');
 			if ((await modePill.count()) > 0) {
-				await expect(modePill).toContainText(/AI Mode/i);
+				await expect(modePill).toContainText(/AI-written record/i);
 				await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 20000 });
 			} else {
 				await expect(page.locator('.error-banner')).toContainText(/provider|grok|xai|something went wrong/i);
@@ -196,12 +194,12 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 
 		await page.goto('/debug');
 		await expectPathname(page, '/debug');
-		await expect(page.getByRole('heading', { level: 2, name: 'Debug' })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 2, name: 'Audit Log' })).toBeVisible();
 
 		await page.goto('/ending');
 		await expectPathname(page, '/ending');
-		await expect(page.getByRole('heading', { level: 2, name: 'Ending' })).toBeVisible();
-		await expect(page.getByRole('link', { name: /Open Debug/i })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 2, name: 'Final Report' })).toBeVisible();
+		await expect(page.getByRole('link', { name: /Audit log/i })).toBeVisible();
 	});
 
 	test('settings no longer exposes Static Story toggle', async ({ page }) => {
@@ -215,7 +213,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		if (HAS_XAI_KEY) {
 			const modePill = page.getByTestId('mode-pill');
 			if ((await modePill.count()) > 0) {
-				await expect(modePill).toContainText('AI Mode');
+				await expect(modePill).toContainText('AI-written record');
 			} else {
 				await expect(page.locator('.error-banner')).toContainText(/provider|grok|xai|something went wrong/i);
 			}
@@ -224,7 +222,7 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 
 	test('debug page supports manual test entry', async ({ page }) => {
 		await page.goto('/debug');
-		await expect(page.getByRole('heading', { level: 2, name: 'Debug' })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 2, name: 'Audit Log' })).toBeVisible();
 		await expect(page.getByTestId('debug-ready')).toHaveText('ready');
 		await page.getByRole('button', { name: 'Add Test Entry' }).click();
 		await expect(page.locator('.debug-log-item').first()).toBeVisible();
@@ -232,8 +230,14 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await expect(page.getByText(/No debug errors recorded yet/i)).toBeVisible();
 	});
 
-	test('builder route is protected for anonymous users', async ({ request }) => {
-		const response = await request.get('/builder');
+	test('builder page redirects anonymous users to login', async ({ request }) => {
+		const response = await request.get('/builder', { maxRedirects: 0 });
+		expect(response.status()).toBe(302);
+		expect(response.headers()['location']).toBe('/login?next=%2Fbuilder');
+	});
+
+	test('builder API is protected for anonymous users', async ({ request }) => {
+		const response = await request.post('/api/builder/generate-draft', { data: {} });
 		expect(response.status()).toBe(401);
 		const body = await response.json();
 		expect(body.error?.code).toBe('auth_required');

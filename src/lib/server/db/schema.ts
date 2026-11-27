@@ -10,7 +10,7 @@
 
 // ─── Row shapes (what SELECT returns) ────────────────────────────────────────
 
-export interface PlaySessionRow {
+export type PlaySessionRow = {
 	id: string;
 	user_id: string;
 	story_id: string;
@@ -24,7 +24,7 @@ export interface PlaySessionRow {
 	updated_at: string;
 }
 
-export interface BuilderDraftRow {
+export type BuilderDraftRow = {
 	id: string;
 	user_id: string;
 	story_id: string;
@@ -34,7 +34,7 @@ export interface BuilderDraftRow {
 	updated_at: string;
 }
 
-export interface DraftVersionRow {
+export type DraftVersionRow = {
 	id: string;
 	session_user_id: string;
 	draft_title: string;
@@ -56,24 +56,31 @@ export type DraftVersionUpdate = Partial<Omit<DraftVersionRow, 'id' | 'created_a
 
 // ─── Database type (passed to createClient<Database>()) ──────────────────────
 
-export interface Database {
+export type Database = {
 	public: {
 		Tables: {
 			play_sessions: {
 				Row: PlaySessionRow;
 				Insert: PlaySessionInsert;
 				Update: PlaySessionUpdate;
+				Relationships: [];
 			};
 			builder_drafts: {
 				Row: BuilderDraftRow;
 				Insert: BuilderDraftInsert;
 				Update: BuilderDraftUpdate;
+				Relationships: [];
 			};
 			draft_versions: {
 				Row: DraftVersionRow;
 				Insert: DraftVersionInsert;
 				Update: DraftVersionUpdate;
+				Relationships: [];
 			};
 		};
+		Views: Record<string, never>;
+		Functions: Record<string, never>;
+		Enums: Record<string, never>;
+		CompositeTypes: Record<string, never>;
 	};
 }

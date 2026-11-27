@@ -5,10 +5,8 @@
 		"checkJs": false,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
-		"moduleResolution": "node",
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"strict": true
-	},
-	"include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "vite.config.ts"]
+	}
 }

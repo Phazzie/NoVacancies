@@ -1,7 +1,7 @@
 /**
  * AI rate-limit middleware (SvelteKit Handle).
  *
- * Guards routes under /api/ai/ with a per-user (or per-IP) request cap.
+ * Guards every route that spends AI provider budget with a per-user (or per-IP) request cap.
  * Backed by Redis when REDIS_URL is set; falls back to an in-memory
  * window counter for local dev / single-instance deployments.
  *
@@ -14,7 +14,7 @@
  */
 import type { Handle } from '@sveltejs/kit';
 import { json } from '@sveltejs/kit';
-import { getRateLimitStore } from '$lib/server/rateLimit/factory';
+import { getRateLimitStore, resetRateLimitStore } from '$lib/server/rateLimit/factory';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -35,10 +35,32 @@ const WINDOW_MS = (() => {
 
 // ─── Route matching ───────────────────────────────────────────────────────────
 
-/** Only these URL prefixes are rate-limited. */
-const GUARDED_PREFIXES = ['/api/ai'];
+// Every route that calls the AI provider. Sprint 9 narrowed this to '/api/ai' only,
+// which left story and builder generation unthrottled; keep this list in sync with
+// any new provider-backed route.
+const GUARDED_PREFIXES = [
+	'/api/ai',
+	'/api/story/opening',
+	'/api/story/next',
+	'/api/image',
+	'/api/builder/generate-draft',
+	'/api/builder/evaluate-prose',
+	'/api/builder/evaluate-draft',
+	'/api/builder/evaluate-voice',
+	'/api/builder/alignment',
+	'/api/builder/remix',
+	// Runs a live provider probe when ENABLE_PROVIDER_PROBE=1.
+	'/api/demo/readiness'
+];
 
-function isGuardedRoute(pathname: string): boolean {
+// Image status polling (GET) never calls the provider, so it must not eat the quota
+// that the generate POST needs.
+const POST_ONLY_PREFIXES = ['/api/image'];
+
+function isGuardedRoute(pathname: string, method: string): boolean {
+	if (POST_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix)) && method !== 'POST') {
+		return false;
+	}
 	return GUARDED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
@@ -53,61 +75,75 @@ function getRateLimitKey(event: Parameters<Handle>[0]['event']): string {
 	const userId = (event.locals as WithSessionUser).sessionUser?.userId;
 	if (userId) return `user:${userId}`;
 
-	// Fall back to the originating IP.
-	const forwarded = event.request.headers.get('x-forwarded-for');
-	const ip = forwarded?.split(',')[0].trim() ?? 'unknown';
+	// getClientAddress() is adapter-aware (trusted proxy handling on Vercel), unlike a raw
+	// x-forwarded-for read, which any client can spoof to dodge the limit.
+	let ip = 'unknown';
+	try {
+		ip = event.getClientAddress();
+	} catch {
+		// Some test/dev harnesses don't provide a client address.
+	}
 	return `ip:${ip}`;
 }
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 export const aiRateLimit: Handle = async ({ event, resolve }) => {
-	if (!isGuardedRoute(event.url.pathname)) {
+	if (!isGuardedRoute(event.url.pathname, event.request.method)) {
 		return resolve(event);
 	}
 
+	let count: number;
+	let resetAt: number;
 	try {
 		const store = await getRateLimitStore();
-		const key = getRateLimitKey(event);
-		const { count, resetAt } = await store.increment(key, WINDOW_MS);
-
-		const remaining = Math.max(0, MAX_REQUESTS - count);
-		const resetSec = Math.floor(resetAt / 1000);
-		const retryAfterSec = Math.ceil((resetAt - Date.now()) / 1000);
-
-		if (count > MAX_REQUESTS) {
-			return json(
-				{
-					error: 'rate_limit_exceeded',
-					message: 'Too many AI requests. Please wait before trying again.',
-					retryAfter: retryAfterSec
-				},
-				{
-					status: 429,
-					headers: {
-						'Retry-After': String(retryAfterSec),
-						'X-RateLimit-Limit': String(MAX_REQUESTS),
-						'X-RateLimit-Remaining': '0',
-						'X-RateLimit-Reset': String(resetSec)
-					}
-				}
-			);
-		}
-
-		const response = await resolve(event);
-
-		// Surface rate-limit info on every successful response too.
-		response.headers.set('X-RateLimit-Limit', String(MAX_REQUESTS));
-		response.headers.set('X-RateLimit-Remaining', String(remaining));
-		response.headers.set('X-RateLimit-Reset', String(resetSec));
-
-		return response;
+		({ count, resetAt } = await store.increment(getRateLimitKey(event), WINDOW_MS));
 	} catch (err) {
-		// Store threw (Redis down, etc.) — fail open so the app stays up.
+		// Store threw (Redis down, etc.) — fail open so the app stays up. Only store errors
+		// land here: retrying resolve() after a handler failure would run generation twice.
 		console.error(
 			'[ratelimit] store error — failing open:',
 			err instanceof Error ? err.message : err
 		);
 		return resolve(event);
 	}
+
+	const remaining = Math.max(0, MAX_REQUESTS - count);
+	const resetSec = Math.floor(resetAt / 1000);
+	const retryAfterSec = Math.ceil((resetAt - Date.now()) / 1000);
+
+	if (count > MAX_REQUESTS) {
+		return json(
+			{
+				// Same shape as routeHelpers' AI errors so storyService maps it to the
+				// "wait and retry" message instead of a generic failure.
+				error: 'Too many requests. Please wait a moment before continuing.',
+				code: 'rate_limit',
+				status: 429,
+				retryAfterSeconds: retryAfterSec
+			},
+			{
+				status: 429,
+				headers: {
+					'Retry-After': String(retryAfterSec),
+					'X-RateLimit-Limit': String(MAX_REQUESTS),
+					'X-RateLimit-Remaining': '0',
+					'X-RateLimit-Reset': String(resetSec)
+				}
+			}
+		);
+	}
+
+	const response = await resolve(event);
+
+	// Surface rate-limit info on every successful response too.
+	response.headers.set('X-RateLimit-Limit', String(MAX_REQUESTS));
+	response.headers.set('X-RateLimit-Remaining', String(remaining));
+	response.headers.set('X-RateLimit-Reset', String(resetSec));
+
+	return response;
 };
+
+export function resetAiRateLimitForTests(): void {
+	resetRateLimitStore();
+}

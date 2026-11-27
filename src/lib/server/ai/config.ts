@@ -114,6 +114,8 @@ export function loadAiConfig(env: Record<string, string | undefined> = runtimeEn
 		maxOutputTokens: parseIntInRange(env.AI_MAX_OUTPUT_TOKENS, 1800, 200, 3200),
 		requestTimeoutMs: parseIntInRange(env.AI_REQUEST_TIMEOUT_MS, 20_000, 5_000, 60_000),
 		maxRetries: parseIntInRange(env.AI_MAX_RETRIES, 2, 0, 5),
-		retryBackoffMs: parseRetryBackoffMs(env.AI_RETRY_BACKOFF_MS)
+		retryBackoffMs: parseRetryBackoffMs(env.AI_RETRY_BACKOFF_MS),
+		builderTemperature: parseFloatInRange(env.BUILDER_TEMPERATURE, 0.7, 0, 2),
+		builderMaxTokens: parseIntInRange(env.BUILDER_MAX_TOKENS, 1400, 256, 8192)
 	};
 }

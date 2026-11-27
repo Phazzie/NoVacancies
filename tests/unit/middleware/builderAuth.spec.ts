@@ -61,8 +61,19 @@ async function runMiddleware(
 }
 
 test.describe('builderAuth — anonymous requests', () => {
-    test('returns 401 auth_required when no cookie is present on /builder', async () => {
-        const { response, resolveCalled } = await runMiddleware('/builder', undefined);
+    test('redirects browser navigation to /builder to the login page', async () => {
+        let thrown: unknown = null;
+        try {
+            await runMiddleware('/builder', undefined);
+        } catch (error) {
+            thrown = error;
+        }
+
+        expect(thrown).toMatchObject({ status: 302, location: '/login?next=%2Fbuilder' });
+    });
+
+    test('returns 401 auth_required JSON on /api/builder/* with no cookie', async () => {
+        const { response, resolveCalled } = await runMiddleware('/api/builder/remix', undefined);
 
         expect(response.status).toBe(401);
         expect(resolveCalled).toBe(false);
@@ -119,13 +130,13 @@ test.describe('builderAuth — tampered cookies', () => {
         const tamperedSig = parts[1].slice(0, -1) + (parts[1].at(-1) === 'a' ? 'b' : 'a');
         const tampered = `${parts[0]}.${tamperedSig}`;
 
-        const { response, resolveCalled } = await runMiddleware('/builder', tampered);
+        const { response, resolveCalled } = await runMiddleware('/api/builder/remix', tampered);
         expect(response.status).toBe(401);
         expect(resolveCalled).toBe(false);
     });
 
     test('returns 401 for a malformed (non-signed) cookie value', async () => {
-        const { response } = await runMiddleware('/builder', 'not-a-valid-cookie');
+        const { response } = await runMiddleware('/api/builder/remix', 'not-a-valid-cookie');
         expect(response.status).toBe(401);
     });
 });

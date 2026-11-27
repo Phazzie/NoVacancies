@@ -9,8 +9,8 @@ import {
 // ---------- Catalog completeness ----------
 
 test.describe('lessons catalog — completeness', () => {
-    test('contains exactly 17 lessons', () => {
-        expect(lessons.length).toBe(17);
+    test('contains exactly 27 lessons', () => {
+        expect(lessons.length).toBe(27);
     });
 
     test('every lesson has a non-empty storyTriggers array', () => {
@@ -19,7 +19,7 @@ test.describe('lessons catalog — completeness', () => {
         }
     });
 
-    test('lesson IDs are unique and sequential from 1 to 17', () => {
+    test('lesson IDs are unique and sequential from 1 to 27', () => {
         const ids = lessons.map((l) => l.id).sort((a, b) => a - b);
         for (let i = 0; i < ids.length; i += 1) {
             expect(ids[i]).toBe(i + 1);

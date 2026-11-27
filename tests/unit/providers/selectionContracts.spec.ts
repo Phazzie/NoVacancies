@@ -13,7 +13,6 @@ function makeConfig(overrides: Partial<AiConfig> = {}): AiConfig {
 		enableGrokText: true,
 		enableGrokImages: true,
 		enableProviderProbe: true,
-		aiAuthBypass: false,
 		outageMode: 'hard_fail',
 		xaiApiKey: 'test-key',
 		grokTextModel: 'grok-test-text',
@@ -22,6 +21,8 @@ function makeConfig(overrides: Partial<AiConfig> = {}): AiConfig {
 		requestTimeoutMs: 10_000,
 		maxRetries: 0,
 		retryBackoffMs: [50, 100],
+		builderTemperature: 0.7,
+		builderMaxTokens: 1400,
 		...overrides
 	};
 }

@@ -2,25 +2,25 @@ import { test, expect } from '@playwright/test';
 import { MemoryRateLimitStore } from '../../../src/lib/server/rateLimit/memoryStore';
 
 test.describe('MemoryRateLimitStore window reset behavior', () => {
-	test('resets count when the time window has elapsed', () => {
-		const store = new MemoryRateLimitStore({ maxRequests: 2, windowMs: 60_000 });
+	test('resets count when the time window has elapsed', async () => {
+		const store = new MemoryRateLimitStore();
 
-		expect(store.consume('1.2.3.4', 1000).allowed).toBe(true);
-		expect(store.consume('1.2.3.4', 2000).allowed).toBe(true);
-		expect(store.consume('1.2.3.4', 3000).allowed).toBe(false);
+		await store.increment('1.2.3.4', 60_000, 1000);
+		await store.increment('1.2.3.4', 60_000, 2000);
+		expect((await store.increment('1.2.3.4', 60_000, 3000)).count).toBe(3);
 
-		const afterReset = store.consume('1.2.3.4', 61_000);
-		expect(afterReset.allowed).toBe(true);
-		expect(afterReset.retryAfterSeconds).toBe(60);
+		const afterReset = await store.increment('1.2.3.4', 60_000, 61_000);
+		expect(afterReset.count).toBe(1);
+		expect(afterReset.resetAt).toBe(121_000);
 	});
 
-	test('treats boundary timestamp (now === resetAt) as reset', () => {
-		const store = new MemoryRateLimitStore({ maxRequests: 1, windowMs: 60_000 });
+	test('treats boundary timestamp (now === resetAt) as reset', async () => {
+		const store = new MemoryRateLimitStore();
 
-		expect(store.consume('1.2.3.4', 1000).allowed).toBe(true);
-		expect(store.consume('1.2.3.4', 2000).allowed).toBe(false);
+		await store.increment('1.2.3.4', 60_000, 1000);
+		expect((await store.increment('1.2.3.4', 60_000, 2000)).count).toBe(2);
 
-		const atBoundary = store.consume('1.2.3.4', 61_000);
-		expect(atBoundary.allowed).toBe(true);
+		const atBoundary = await store.increment('1.2.3.4', 60_000, 61_000);
+		expect(atBoundary.count).toBe(1);
 	});
 });

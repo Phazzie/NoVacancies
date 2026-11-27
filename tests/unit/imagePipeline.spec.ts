@@ -7,7 +7,6 @@ const baseConfig = {
 	enableGrokText: true,
 	enableGrokImages: true,
 	enableProviderProbe: false,
-	aiAuthBypass: false,
 	outageMode: 'hard_fail' as const,
 	xaiApiKey: 'test',
 	grokTextModel: 'text-model',
@@ -15,7 +14,9 @@ const baseConfig = {
 	maxOutputTokens: 1000,
 	requestTimeoutMs: 5000,
 	maxRetries: 2,
-	retryBackoffMs: [1, 1]
+	retryBackoffMs: [1, 1],
+	builderTemperature: 0.7,
+	builderMaxTokens: 1400
 };
 
 test('reuses cache for same prompt on generate action', async () => {

@@ -77,7 +77,7 @@ function createEmptyDraft() {
 		setting: 'A daily-rate motel room at dawn, rent due by 11 AM, with 3-5 phones glowing in the dark.',
 		aestheticStatement:
 			'Motive-driven anthropomorphism: every line behaves, nothing explains itself, consequences are felt before they are named.',
-		voiceCeilingLines: VOICE_CEILING_LINES,
+		voiceCeilingLines: [...VOICE_CEILING_LINES],
 		characters: [
 			{
 				name: 'Sydney',

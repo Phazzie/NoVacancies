@@ -52,7 +52,7 @@ export async function upsertPlaySession(data: PlaySessionData): Promise<string |
 				story_id: data.storyId,
 				scene_id: data.sceneId ?? null,
 				beat_count: data.beatCount ?? 0,
-				game_state: data.gameState as Record<string, unknown>,
+				game_state: data.gameState as unknown as Record<string, unknown>,
 				threads: (data.threads ?? null) as Record<string, unknown> | null
 			},
 			{ onConflict: 'user_id,story_id', ignoreDuplicates: false }
