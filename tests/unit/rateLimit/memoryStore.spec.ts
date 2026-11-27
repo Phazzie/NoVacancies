@@ -37,8 +37,25 @@ test.describe('MemoryRateLimitStore', () => {
 			await store.increment(`key_${i}`, 50, 0);
 		}
 
-		await store.increment('trigger', 50, 100);
+		await store.increment('trigger', 50, 10_000);
 
 		expect(store.size).toBe(1);
+	});
+
+	test('GC runs at most once per interval while the map stays large', async () => {
+		const store = new MemoryRateLimitStore();
+		for (let i = 0; i < 600; i += 1) {
+			await store.increment(`live_${i}`, 60_000, 0);
+		}
+		// These expire quickly but are added right after a sweep, so they survive
+		// until the next interval instead of triggering a full scan per request.
+		for (let i = 0; i < 10; i += 1) {
+			await store.increment(`short_${i}`, 10, 100);
+		}
+		await store.increment('probe', 60_000, 200);
+		expect(store.size).toBe(611);
+
+		await store.increment('probe-2', 60_000, 6_000);
+		expect(store.size).toBe(602);
 	});
 });

@@ -16,12 +16,19 @@ interface WindowEntry {
 }
 
 const GC_THRESHOLD = 500;
+// Unexpired entries can't be swept, so without a time gate every request above the
+// threshold would rescan the whole map.
+const GC_INTERVAL_MS = 5_000;
 
 export class MemoryRateLimitStore implements RateLimitStore {
 	private readonly map = new Map<string, WindowEntry>();
+	private lastSweepAt = Number.NEGATIVE_INFINITY;
 
 	async increment(key: string, windowMs: number, now: number = Date.now()): Promise<RateLimitEntry> {
-		if (this.map.size > GC_THRESHOLD) this.sweep(now);
+		if (this.map.size > GC_THRESHOLD && now - this.lastSweepAt >= GC_INTERVAL_MS) {
+			this.lastSweepAt = now;
+			this.sweep(now);
+		}
 		const existing = this.map.get(key);
 
 		if (!existing || now >= existing.resetAt) {

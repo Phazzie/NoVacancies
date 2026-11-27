@@ -48,10 +48,19 @@ const GUARDED_PREFIXES = [
 	'/api/builder/evaluate-draft',
 	'/api/builder/evaluate-voice',
 	'/api/builder/alignment',
-	'/api/builder/remix'
+	'/api/builder/remix',
+	// Runs a live provider probe when ENABLE_PROVIDER_PROBE=1.
+	'/api/demo/readiness'
 ];
 
-function isGuardedRoute(pathname: string): boolean {
+// Image status polling (GET) never calls the provider, so it must not eat the quota
+// that the generate POST needs.
+const POST_ONLY_PREFIXES = ['/api/image'];
+
+function isGuardedRoute(pathname: string, method: string): boolean {
+	if (POST_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix)) && method !== 'POST') {
+		return false;
+	}
 	return GUARDED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
@@ -80,54 +89,56 @@ function getRateLimitKey(event: Parameters<Handle>[0]['event']): string {
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 export const aiRateLimit: Handle = async ({ event, resolve }) => {
-	if (!isGuardedRoute(event.url.pathname)) {
+	if (!isGuardedRoute(event.url.pathname, event.request.method)) {
 		return resolve(event);
 	}
 
+	let count: number;
+	let resetAt: number;
 	try {
 		const store = await getRateLimitStore();
-		const key = getRateLimitKey(event);
-		const { count, resetAt } = await store.increment(key, WINDOW_MS);
-
-		const remaining = Math.max(0, MAX_REQUESTS - count);
-		const resetSec = Math.floor(resetAt / 1000);
-		const retryAfterSec = Math.ceil((resetAt - Date.now()) / 1000);
-
-		if (count > MAX_REQUESTS) {
-			return json(
-				{
-					error: 'rate_limit',
-					message: 'Too many requests. Please wait a moment before continuing.',
-					retryAfter: retryAfterSec
-				},
-				{
-					status: 429,
-					headers: {
-						'Retry-After': String(retryAfterSec),
-						'X-RateLimit-Limit': String(MAX_REQUESTS),
-						'X-RateLimit-Remaining': '0',
-						'X-RateLimit-Reset': String(resetSec)
-					}
-				}
-			);
-		}
-
-		const response = await resolve(event);
-
-		// Surface rate-limit info on every successful response too.
-		response.headers.set('X-RateLimit-Limit', String(MAX_REQUESTS));
-		response.headers.set('X-RateLimit-Remaining', String(remaining));
-		response.headers.set('X-RateLimit-Reset', String(resetSec));
-
-		return response;
+		({ count, resetAt } = await store.increment(getRateLimitKey(event), WINDOW_MS));
 	} catch (err) {
-		// Store threw (Redis down, etc.) — fail open so the app stays up.
+		// Store threw (Redis down, etc.) — fail open so the app stays up. Only store errors
+		// land here: retrying resolve() after a handler failure would run generation twice.
 		console.error(
 			'[ratelimit] store error — failing open:',
 			err instanceof Error ? err.message : err
 		);
 		return resolve(event);
 	}
+
+	const remaining = Math.max(0, MAX_REQUESTS - count);
+	const resetSec = Math.floor(resetAt / 1000);
+	const retryAfterSec = Math.ceil((resetAt - Date.now()) / 1000);
+
+	if (count > MAX_REQUESTS) {
+		return json(
+			{
+				error: 'rate_limit',
+				message: 'Too many requests. Please wait a moment before continuing.',
+				retryAfter: retryAfterSec
+			},
+			{
+				status: 429,
+				headers: {
+					'Retry-After': String(retryAfterSec),
+					'X-RateLimit-Limit': String(MAX_REQUESTS),
+					'X-RateLimit-Remaining': '0',
+					'X-RateLimit-Reset': String(resetSec)
+				}
+			}
+		);
+	}
+
+	const response = await resolve(event);
+
+	// Surface rate-limit info on every successful response too.
+	response.headers.set('X-RateLimit-Limit', String(MAX_REQUESTS));
+	response.headers.set('X-RateLimit-Remaining', String(remaining));
+	response.headers.set('X-RateLimit-Reset', String(resetSec));
+
+	return response;
 };
 
 export function resetAiRateLimitForTests(): void {
