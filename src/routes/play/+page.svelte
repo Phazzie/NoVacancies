@@ -4,6 +4,12 @@
 	import { gameStore } from '$lib/game';
 	import { getLessonById } from '$lib/narrative/lessonsCatalog';
 	import type { Scene, StoryThreads } from '$lib/contracts';
+	import { getSafeActiveStoryCartridge } from '$lib/stories';
+
+	// The ledger and identity lines describe No Vacancies' threads; other cartridges get neutral copy.
+	const activeStory = getSafeActiveStoryCartridge();
+	const isNoVacancies = activeStory?.id === 'no-vacancies';
+	const subject = isNoVacancies ? 'Sydney' : (activeStory?.title ?? 'subject');
 
 	let scene: Scene | null = null;
 	let isProcessing = false;
@@ -132,7 +138,7 @@
 			<h2 class="bu-doc-title">Consumer Statement</h2>
 			<ul class="bu-pending-lines" aria-live="polite">
 				<li>Pulling report</li>
-				<li>Verifying identity: Sydney, 44</li>
+				<li>Verifying identity: {isNoVacancies ? 'Sydney, 44' : subject}</li>
 				<li>Writing the next scene<span class="bu-cursor" aria-hidden="true"></span></li>
 			</ul>
 		{/if}
@@ -141,7 +147,7 @@
 	<article class="bu-paper" data-testid="play-command-deck">
 		<header class="bu-doc-head">
 			<div>
-				<p class="bu-doc-kicker">File No. NV-0647 · Consumer: Sydney</p>
+				<p class="bu-doc-kicker">File No. NV-0647 · Consumer: {subject}</p>
 				<h2 class="bu-doc-title">Consumer Statement</h2>
 				<p class="bu-doc-sub">Reporting period {sceneCount}. Pick one response for the record.</p>
 			</div>
@@ -160,7 +166,7 @@
 		<div class="bu-play">
 			<div class="bu-play-main">
 				<figure class="bu-exhibit">
-					<img src={imagePath()} alt="Exhibit for reporting period {sceneCount}: the motel room" />
+					<img src={imagePath()} alt="Exhibit for reporting period {sceneCount}{isNoVacancies ? ': the motel room' : ''}" />
 					<span class="bu-exhibit-tag">Exhibit {sceneCount}</span>
 					<figcaption>
 						<span>Period {sceneCount}</span>
@@ -211,7 +217,7 @@
 				{/if}
 			</div>
 
-			{#if threads}
+			{#if threads && isNoVacancies}
 				<aside class="bu-ledger" aria-label="Account balances">
 					<p class="bu-ledger-head">Balances · Period {sceneCount}</p>
 					{#each ledgerLines(threads) as line}

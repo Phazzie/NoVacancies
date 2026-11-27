@@ -14,6 +14,8 @@
 	export let data: LayoutData;
 
 	const activeStory = getSafeActiveStoryCartridge();
+	// The file header names No Vacancies' subject only when that cartridge is active.
+	const fileSubject = activeStory?.id === 'no-vacancies' ? 'Sydney, 44' : (activeStory?.title ?? 'unknown');
 	const shellStoryTitle = activeStory?.title ?? 'Story Configuration Blocked';
 	const shellPresentation = selectStoryPresentation(activeStory, {
 		metaDescription:
@@ -75,7 +77,7 @@
 	<header class="bu-masthead">
 		<a class="bu-masthead-top" href="/">
 			<span class="bu-bureau-name">Bureau of Uncredited Labor <em>{shellStoryTitle}</em></span>
-			<span class="bu-file-meta">Consumer Disclosure · File No. NV-0647 · Subject: Sydney, 44</span>
+			<span class="bu-file-meta">Consumer Disclosure · File No. NV-0647 · Subject: {fileSubject}</span>
 		</a>
 		<nav class="route-nav" aria-label="Primary navigation">
 			{#each navItems as item}

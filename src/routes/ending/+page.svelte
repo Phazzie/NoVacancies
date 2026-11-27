@@ -4,6 +4,10 @@
 	import { gameStore } from '$lib/game';
 	import type { EndingPayload } from '$lib/game';
 	import type { PageData } from './$types';
+	import { getSafeActiveStoryCartridge } from '$lib/stories';
+
+	// Final statuses and the consumer block are No Vacancies copy; other cartridges show stats only.
+	const isNoVacancies = getSafeActiveStoryCartridge()?.id === 'no-vacancies';
 
 	export let data: PageData;
 
@@ -64,7 +68,8 @@
 		}
 	};
 
-	$: finalStatus = activeEnding ? FINAL_STATUS[activeEnding.endingType] ?? null : null;
+	$: finalStatus =
+		activeEnding && isNoVacancies ? (FINAL_STATUS[activeEnding.endingType] ?? null) : null;
 
 	function formatDuration(ms: number): string {
 		const seconds = Math.round(ms / 1000);
@@ -121,10 +126,12 @@
 					<h2 class="bu-doc-title">Final Report</h2>
 					<p class="bu-doc-sub">What the file shows when the bureau stops taking statements.</p>
 				</div>
-				<div class="bu-doc-ids">
-					<span>Consumer: Sydney, 44</span>
-					<span>Address: same motel room</span>
-				</div>
+				{#if isNoVacancies}
+					<div class="bu-doc-ids">
+						<span>Consumer: Sydney, 44</span>
+						<span>Address: same motel room</span>
+					</div>
+				{/if}
 			</header>
 
 			<div class="bu-final-status">

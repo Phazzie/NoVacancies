@@ -211,9 +211,15 @@
 					will keep it on record.
 				</p>
 				<ul class="bu-fine">
-					<li>Each turn, the AI writes one scene of Sydney's morning. You answer with one of three responses (keys 1, 2, 3).</li>
-					<li>Every response moves a balance: who she sees clearly, what she stops paying for, how tired she gets.</li>
-					<li>The file closes one of four ways. Most of them still bill her.</li>
+					{#if isNoVacancies}
+						<li>Each turn, the AI writes one scene of Sydney's morning. You answer with one of three responses (keys 1, 2, 3).</li>
+						<li>Every response moves a balance: who she sees clearly, what she stops paying for, how tired she gets.</li>
+						<li>The file closes one of four ways. Most of them still bill her.</li>
+					{:else}
+						{#each presentation.storyBriefItems as item}
+							<li>{item}</li>
+						{/each}
+					{/if}
 				</ul>
 				<div class="bu-statement-actions">
 					<button class="bu-btn bu-btn-primary" on:click={beginStory}>Begin Statement</button>

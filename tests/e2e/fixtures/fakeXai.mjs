@@ -106,11 +106,34 @@ const BUILDER_EVALUATION = {
     ]
 };
 
+// Outage drill for the builder recovery spec. A premise containing OUTAGE_DRILL_MARKER walks
+// this cycle: first draft call fails, retry succeeds, first QA call after that fails, QA retry
+// succeeds. 400 is used because the builder client does not retry 4xx, so one failed call
+// equals one failed user request. The cycle restarts, so a reused preview server still works.
+const OUTAGE_DRILL_MARKER = 'outage drill';
+let drillPhase = 'idle';
+
 function contentFor(body) {
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const prompt = messages.map((m) => String(m?.content ?? '')).join('\n');
-    if (prompt.includes('Generate the first draft now.')) return JSON.stringify(BUILDER_DRAFT);
-    if (prompt.includes('draft QA evaluator')) return JSON.stringify(BUILDER_EVALUATION);
+    if (prompt.includes('Generate the first draft now.')) {
+        if (prompt.includes(OUTAGE_DRILL_MARKER)) {
+            if (drillPhase !== 'draft_failed') {
+                drillPhase = 'draft_failed';
+                return null;
+            }
+            drillPhase = 'qa_armed';
+        }
+        return JSON.stringify(BUILDER_DRAFT);
+    }
+    if (prompt.includes('draft QA evaluator')) {
+        if (drillPhase === 'qa_armed') {
+            drillPhase = 'qa_failed';
+            return null;
+        }
+        if (drillPhase === 'qa_failed') drillPhase = 'idle';
+        return JSON.stringify(BUILDER_EVALUATION);
+    }
     return JSON.stringify(sceneFor(prompt.includes('## OPENING SCENE')));
 }
 
@@ -120,6 +143,12 @@ globalThis.fetch = async (input, init) => {
 
     const body = JSON.parse(String(init?.body ?? '{}'));
     const content = contentFor(body);
+    if (content === null) {
+        return new Response(JSON.stringify({ error: 'fake outage drill' }), {
+            status: 400,
+            headers: { 'content-type': 'application/json' }
+        });
+    }
     return new Response(JSON.stringify({ choices: [{ message: { content } }] }), {
         status: 200,
         headers: { 'content-type': 'application/json' }

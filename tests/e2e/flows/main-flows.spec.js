@@ -120,4 +120,52 @@ test.describe('builder flow', () => {
 
         expect(failures).toEqual([]);
     });
+
+    test('a failed draft and a failed QA run both recover on retry without losing work', async ({
+        page
+    }) => {
+        await page.goto('/login?next=%2Fbuilder');
+        await page.getByRole('button', { name: /Enter as author/i }).click();
+        await expect(page).toHaveURL(/\/builder$/);
+
+        // The fixture fails the first draft call and the first QA call for this premise.
+        const premise =
+            'An outage drill: a dispatcher keeps the radio log honest for a crew that lies.';
+        const premiseField = page.getByLabel(/story premise/i);
+        await premiseField.fill(premise);
+
+        const generateButton = page.getByRole('button', { name: 'Generate Draft' });
+        const failedDraft = page.waitForResponse('**/api/builder/generate-draft');
+        await generateButton.click();
+        expect((await (await failedDraft).json()).source).toBe('fallback');
+        await expect(page.getByText(/AI was unavailable/i)).toBeVisible();
+        await expect(premiseField).toHaveValue(premise);
+        await expect(generateButton).toBeEnabled();
+
+        const retriedDraft = page.waitForResponse('**/api/builder/generate-draft');
+        await generateButton.click();
+        const retriedBody = await (await retriedDraft).json();
+        expect(retriedBody.source).toBe('ai');
+        await expect(page.getByText(/Draft generated with AI/i)).toBeVisible();
+        await expect(premiseField).toHaveValue(premise);
+
+        const qaButton = page.getByRole('button', { name: 'Run Draft QA' });
+        const failedQa = page.waitForResponse('**/api/builder/evaluate-draft');
+        await qaButton.click();
+        expect((await (await failedQa).json()).source).toBe('fallback');
+        await expect(page.getByText(/Estimated \(AI unavailable\)/i)).toBeVisible();
+        await expect(qaButton).toBeEnabled();
+
+        // The AI draft must survive the failed QA run untouched.
+        const download = page.waitForEvent('download');
+        await page.getByRole('button', { name: 'Download JSON' }).click();
+        // Browsers swap filename-unsafe characters (the title's colon) for underscores.
+        const expectedName = `${retriedBody.draft.title.replace(/[\\/:*?"<>|]/g, '_')}.json`;
+        expect((await download).suggestedFilename()).toBe(expectedName);
+
+        const retriedQa = page.waitForResponse('**/api/builder/evaluate-draft');
+        await qaButton.click();
+        expect((await (await retriedQa).json()).source).toBe('ai');
+        await expect(page.getByText(/Source: AI graded/i)).toBeVisible();
+    });
 });
