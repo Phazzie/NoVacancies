@@ -40,6 +40,39 @@ test.describe('main player flow', () => {
         expect(failures).toEqual([]);
     });
 
+    test('a failed next scene keeps the current scene and recovers on retry', async ({ page }) => {
+        await page.goto('/play');
+        await expect(page.getByText(/^Scene 1\./)).toBeVisible();
+
+        // Fail exactly one continuation the way the server reports a provider outage.
+        let failed = false;
+        await page.route('**/api/story/next', async (route) => {
+            if (failed) return route.continue();
+            failed = true;
+            await route.fulfill({
+                status: 503,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    error: 'The story service is temporarily unavailable.',
+                    code: 'provider_down',
+                    status: 503
+                })
+            });
+        });
+
+        await page.getByRole('button', { name: /Pay the rent again/i }).click();
+        await expect(page.locator('.error-banner')).toBeVisible();
+        await expect(page.locator('.error-banner')).not.toBeEmpty();
+        await expect(page.getByText(/^Scene 1\./)).toBeVisible();
+        const retryChoice = page.getByRole('button', { name: /Pay the rent again/i });
+        await expect(retryChoice).toBeEnabled();
+
+        await retryChoice.click();
+        await expect(page.getByText(/^Scene 2\./)).toBeVisible();
+        await expect(page.locator('.error-banner')).toHaveCount(0);
+        expect(failed).toBe(true);
+    });
+
     test('share ending falls back to a copyable link when clipboard is unavailable', async ({
         page
     }) => {
