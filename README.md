@@ -2,6 +2,15 @@
 
 No Vacancies is an interactive narrative game about invisible labor and relationship load-bearing.
 
+The player-facing pages are dressed as Sydney's consumer credit report from the "Bureau of Uncredited Labor": every payment on the file went through, and none of it was reported under her name. Home is the disclosure, Play is the consumer statement (choices are responses, story threads are account balances), and Ending is the final report.
+
+## What's Still Rough
+
+- No live preview: every Vercel deployment on this project (including a plain redeploy of the current production build) fails with "Resource provisioning failed" before the build starts. This is account/project-side, not a code failure. See `GRUDGES.md`.
+- A real playthrough needs `XAI_API_KEY`. Without it `/play` shows the "File frozen" error state by design (hard-fail mode).
+- Builder, Preferences and Audit Log still use the older dark styling. They are framed as the "bureau terminal" but were not redesigned.
+- The Sourcery check on PR #102 flags FSL-licensed `@sentry/cli` packages already in the dependency tree; that's an owner decision.
+
 ## Current Stack
 
 - Framework: SvelteKit (TypeScript)

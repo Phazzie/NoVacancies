@@ -17,10 +17,10 @@ test.describe('main player flow', () => {
 
 		await page.goto('/');
 		await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-		await page.getByRole('button', { name: 'Begin Story' }).click();
+		await page.getByRole('button', { name: 'Begin Statement' }).click();
 		await expect(page).toHaveURL(/\/play$/);
 
-		await expect(page.getByTestId('mode-pill')).toHaveText(/AI Mode/i);
+		await expect(page.getByTestId('mode-pill')).toHaveText(/AI-written record/i);
 		await expect(page.getByText(/^Scene 1\./)).toBeVisible();
 
 		// Mix click and quick-key input; both paths must advance the run.
@@ -33,7 +33,7 @@ test.describe('main player flow', () => {
 		await expect(page).toHaveURL(/\/ending/);
 		await expect(page.locator('.ending-title')).toHaveText(/exit/i);
 
-		await page.getByRole('button', { name: /Play Again/i }).click();
+		await page.getByRole('button', { name: /Open a new period/i }).click();
 		await expect(page).toHaveURL(/\/play$/);
 		await expect(page.getByText(/^Scene 1\./)).toBeVisible();
 
@@ -54,7 +54,7 @@ test.describe('main player flow', () => {
 				configurable: true
 			});
 		});
-		await page.getByRole('button', { name: /Share Ending/i }).click();
+		await page.getByRole('button', { name: /Request a copy/i }).click();
 		const link = page.locator('.share-fallback-input');
 		await expect(link).toBeVisible();
 		await expect(link).toHaveValue(/\/ending\?/);
@@ -68,7 +68,7 @@ test.describe('main player flow', () => {
 		const failures = trackFailures(page);
 
 		await page.goto('/settings');
-		await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Preferences' })).toBeVisible();
 		await expect(page.getByTestId('creator-image-panel')).toHaveCount(0);
 
 		await page.goto('/debug');

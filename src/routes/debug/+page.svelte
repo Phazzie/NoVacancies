@@ -102,8 +102,8 @@
 
 <section class="utility-page utility-page-debug">
 	<header class="page-intro">
-		<p class="card-kicker">Operator console</p>
-		<h2>Debug</h2>
+		<p class="card-kicker">Bureau terminal · Operator access</p>
+		<h2>Audit Log</h2>
 		<p class="lede">Runtime error log for play and session troubleshooting.</p>
 	</header>
 

@@ -1,0 +1,1121 @@
+/*
+ * Bureau of Uncredited Labor: the world the player pages live in.
+ * Home, Play and Ending are a consumer credit report printed on security paper.
+ * Creator/operator routes stay on the dark "bureau terminal" surface from app.css,
+ * so their existing panels keep working without a rewrite.
+ * System font stacks only: the CSP blocks external fonts.
+ */
+
+:root {
+    --bu-paper: #f3efe4;
+    --bu-paper-deep: #e6dfcc;
+    --bu-ink: #1d1f22;
+    --bu-ink-soft: #3d4146;
+    --bu-ink-faint: #5f646b;
+    --bu-rule: #1d1f22;
+    --bu-rule-faint: rgba(29, 31, 34, 0.22);
+    --bu-guilloche: rgba(40, 92, 112, 0.09);
+    --bu-teal: #285c70;
+    --bu-red: #b3261e;
+    --bu-red-wash: rgba(179, 38, 30, 0.08);
+    --bu-amber: #8a5a00;
+    --bu-font-data:
+        'SFMono-Regular', 'Menlo', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+    --bu-font-prose: 'Georgia', 'Iowan Old Style', 'Times New Roman', serif;
+    --bu-font-head: 'Arial Narrow', 'Helvetica Neue', 'Arial', 'Liberation Sans', sans-serif;
+}
+
+/* ---------- Masthead (all routes) ---------- */
+
+.bu-masthead {
+    max-width: 1160px;
+    margin: 0 auto 14px;
+    border: 2px solid var(--bu-rule);
+    background: var(--bu-paper);
+    color: var(--bu-ink);
+    font-family: var(--bu-font-data);
+}
+
+.bu-masthead-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 18px;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--bu-rule);
+    text-decoration: none;
+    color: inherit;
+}
+
+.bu-bureau-name {
+    font-family: var(--bu-font-head);
+    font-size: clamp(0.92rem, 2.2vw, 1.15rem);
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.bu-bureau-name em {
+    font-family: var(--bu-font-prose);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: var(--bu-red);
+}
+
+.bu-file-meta {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--bu-ink-soft);
+}
+
+.bu-masthead .route-nav {
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0;
+}
+
+.bu-masthead .route-nav a {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 9px 12px;
+    border: 0;
+    border-right: 1px solid var(--bu-rule-faint);
+    border-radius: 0;
+    background: transparent;
+    color: var(--bu-ink);
+    font-family: var(--bu-font-data);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    box-shadow: none;
+}
+
+.bu-masthead .route-nav a:hover {
+    transform: none;
+    background: var(--bu-paper-deep);
+}
+
+.bu-masthead .route-nav a.active {
+    background: var(--bu-ink);
+    color: var(--bu-paper);
+    box-shadow: none;
+}
+
+.bu-masthead .route-index {
+    min-width: 0;
+    padding: 0;
+    background: none;
+    font-size: 0.66rem;
+    opacity: 0.7;
+}
+
+.bu-masthead .route-nav a:focus-visible,
+.bu-masthead .sign-out-btn:focus-visible {
+    outline: 3px solid var(--bu-teal);
+    outline-offset: -3px;
+}
+
+.bu-masthead .sign-out-form {
+    display: flex;
+}
+
+.bu-masthead .sign-out-btn {
+    border: 0;
+    border-left: 1px solid var(--bu-rule-faint);
+    border-radius: 0;
+    padding: 9px 12px;
+    font-family: var(--bu-font-data);
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+/* ---------- Paper surface ---------- */
+
+.bu-paper {
+    position: relative;
+    padding: clamp(16px, 3.5vw, 40px);
+    border: 1px solid var(--bu-rule);
+    color: var(--bu-ink);
+    font-family: var(--bu-font-data);
+    line-height: 1.5;
+    background-color: var(--bu-paper);
+    /* Security-paper guilloche, drawn inline so the CSP needs no extra origins. */
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='60' viewBox='0 0 160 60'%3E%3Cpath d='M0 30 Q 20 0 40 30 T 80 30 T 120 30 T 160 30' fill='none' stroke='%23285c70' stroke-opacity='0.08' stroke-width='1'/%3E%3Cpath d='M0 30 Q 20 60 40 30 T 80 30 T 120 30 T 160 30' fill='none' stroke='%23285c70' stroke-opacity='0.08' stroke-width='1'/%3E%3C/svg%3E"),
+        repeating-linear-gradient(0deg, transparent 0 23px, var(--bu-guilloche) 23px 24px);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+.bu-paper a {
+    color: var(--bu-teal);
+}
+
+.bu-paper h1,
+.bu-paper h2,
+.bu-paper h3 {
+    font-family: var(--bu-font-head);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    color: var(--bu-ink);
+}
+
+.bu-doc-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 20px;
+    align-items: end;
+    padding-bottom: 12px;
+    border-bottom: 3px double var(--bu-rule);
+}
+
+.bu-doc-kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--bu-ink-soft);
+}
+
+.bu-doc-title {
+    margin-top: 4px;
+    font-size: clamp(2rem, 6vw, 3.6rem);
+    text-transform: uppercase;
+}
+
+.bu-doc-sub {
+    margin-top: 6px;
+    max-width: 60ch;
+    font-family: var(--bu-font-prose);
+    font-size: 1.05rem;
+    color: var(--bu-ink-soft);
+}
+
+.bu-doc-ids {
+    display: grid;
+    gap: 2px;
+    font-size: 0.74rem;
+    text-align: right;
+    color: var(--bu-ink-soft);
+    white-space: nowrap;
+}
+
+.bu-section {
+    margin-top: 26px;
+}
+
+.bu-section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 4px 8px;
+    background: var(--bu-ink);
+    color: var(--bu-paper);
+    font-family: var(--bu-font-head);
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.bu-section-head span {
+    opacity: 0.7;
+    font-family: var(--bu-font-data);
+    letter-spacing: 0.04em;
+}
+
+.bu-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    margin: 0;
+    border-left: 1px solid var(--bu-rule-faint);
+}
+
+.bu-fields div {
+    padding: 8px 10px;
+    border-right: 1px solid var(--bu-rule-faint);
+    border-bottom: 1px solid var(--bu-rule-faint);
+}
+
+.bu-fields dt {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bu-ink-faint);
+}
+
+.bu-fields dd {
+    margin: 2px 0 0;
+    font-size: 0.92rem;
+}
+
+/* Score block */
+
+.bu-score {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 18px 26px;
+    align-items: center;
+    padding: 16px 12px;
+    border-bottom: 1px solid var(--bu-rule-faint);
+}
+
+.bu-score-number {
+    font-family: var(--bu-font-head);
+    font-size: clamp(4rem, 12vw, 6.5rem);
+    font-weight: 800;
+    line-height: 0.9;
+    color: var(--bu-ink-faint);
+}
+
+.bu-score-scale {
+    position: relative;
+    height: 14px;
+    margin-top: 10px;
+    border: 1px solid var(--bu-rule);
+    background: repeating-linear-gradient(90deg, transparent 0 9px, var(--bu-rule-faint) 9px 10px);
+}
+
+.bu-score-scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--bu-ink-faint);
+}
+
+.bu-score-reason {
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.bu-score-note {
+    margin-top: 4px;
+    font-family: var(--bu-font-prose);
+    color: var(--bu-ink-soft);
+}
+
+/* Tables */
+
+.bu-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.bu-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+
+.bu-table th,
+.bu-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--bu-rule-faint);
+    text-align: left;
+    vertical-align: top;
+}
+
+.bu-table th {
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bu-ink-faint);
+    border-bottom-color: var(--bu-rule);
+}
+
+.bu-table .bu-credited-other {
+    color: var(--bu-red);
+    font-weight: 700;
+}
+
+.bu-status {
+    display: inline-block;
+    padding: 1px 6px;
+    border: 1.5px solid currentColor;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.bu-status-bad {
+    color: var(--bu-red);
+}
+
+.bu-status-warn {
+    color: var(--bu-amber);
+}
+
+.bu-status-dim {
+    color: var(--bu-ink-faint);
+}
+
+/* Stacked rows on phones: a report with a sideways scroll reads like a bug. */
+@media (max-width: 640px) {
+    .bu-table-stack thead {
+        display: none;
+    }
+
+    .bu-table-stack tr {
+        display: block;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--bu-rule);
+    }
+
+    .bu-table-stack td {
+        display: grid;
+        grid-template-columns: 7.5rem 1fr;
+        gap: 8px;
+        padding: 3px 4px;
+        border: 0;
+    }
+
+    .bu-table-stack td::before {
+        content: attr(data-label);
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--bu-ink-faint);
+        padding-top: 2px;
+    }
+}
+
+.bu-inquiries {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.bu-inquiries li {
+    display: grid;
+    grid-template-columns: 5.2rem 8rem 1fr;
+    gap: 10px;
+    padding: 7px 10px;
+    border-bottom: 1px dashed var(--bu-rule-faint);
+    font-size: 0.86rem;
+}
+
+.bu-inquiries .bu-inq-time {
+    color: var(--bu-ink-faint);
+}
+
+.bu-inquiries .bu-inq-who {
+    font-weight: 700;
+}
+
+.bu-inquiries q {
+    font-family: var(--bu-font-prose);
+    font-style: italic;
+}
+
+@media (max-width: 640px) {
+    .bu-inquiries li {
+        grid-template-columns: 4.6rem 1fr;
+    }
+
+    .bu-inquiries q {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Stamps */
+
+.bu-stamp {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 3px solid var(--bu-red);
+    border-radius: 4px;
+    color: var(--bu-red);
+    font-family: var(--bu-font-head);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    line-height: 1.15;
+    text-transform: uppercase;
+    transform: rotate(-4deg);
+    mix-blend-mode: multiply;
+    background: var(--bu-red-wash);
+}
+
+.bu-stamp small {
+    display: block;
+    font-family: var(--bu-font-data);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+
+.bu-stamp-float {
+    position: absolute;
+    top: clamp(70px, 12vw, 120px);
+    right: clamp(10px, 4vw, 48px);
+    max-width: 16rem;
+    font-size: 0.86rem;
+    text-align: center;
+    pointer-events: none;
+}
+
+@media (max-width: 720px) {
+    .bu-stamp-float {
+        position: static;
+        display: block;
+        margin: 14px auto 0;
+        width: fit-content;
+    }
+
+    .bu-doc-head {
+        grid-template-columns: 1fr;
+    }
+
+    .bu-doc-ids {
+        text-align: left;
+    }
+}
+
+/* Consumer statement box */
+
+.bu-statement {
+    margin-top: 10px;
+    padding: 16px;
+    border: 2px solid var(--bu-rule);
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.bu-statement-prompt {
+    font-family: var(--bu-font-prose);
+    font-size: 1.05rem;
+}
+
+.bu-statement-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.bu-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 2px solid var(--bu-ink);
+    border-radius: 0;
+    background: var(--bu-paper);
+    color: var(--bu-ink);
+    font-family: var(--bu-font-data);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--bu-ink);
+    transition:
+        transform 100ms ease-out,
+        box-shadow 100ms ease-out;
+}
+
+.bu-btn:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--bu-ink);
+}
+
+.bu-btn:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--bu-ink);
+}
+
+.bu-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+.bu-btn:focus-visible {
+    outline: 3px solid var(--bu-teal);
+    outline-offset: 3px;
+}
+
+.bu-btn-primary {
+    background: var(--bu-ink);
+    color: var(--bu-paper);
+    box-shadow: 3px 3px 0 var(--bu-red);
+}
+
+.bu-btn-primary:hover:not(:disabled) {
+    box-shadow: 4px 4px 0 var(--bu-red);
+}
+
+.bu-btn-sm {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 0.74rem;
+}
+
+.bu-paper a.bu-btn {
+    color: var(--bu-ink);
+}
+
+.bu-paper a.bu-btn-primary {
+    color: var(--bu-paper);
+}
+
+.bu-fine {
+    font-size: 0.72rem;
+    color: var(--bu-ink-faint);
+}
+
+.bu-fine-print {
+    margin-top: 30px;
+    padding-top: 10px;
+    border-top: 1px solid var(--bu-rule);
+    font-size: 0.74rem;
+    color: var(--bu-ink-soft);
+}
+
+.bu-fine-print .bu-fine-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.bu-fine-print dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 6px 18px;
+    margin: 8px 0 0;
+}
+
+.bu-fine-print dt {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.bu-fine-print dd {
+    margin: 0;
+}
+
+.bu-fine-print ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+}
+
+.bu-fine-print .error-banner {
+    color: var(--bu-red);
+    background: var(--bu-red-wash);
+    border-color: var(--bu-red);
+}
+
+.bu-remarks {
+    margin: 6px 0 0;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: remark;
+}
+
+.bu-remarks li {
+    counter-increment: remark;
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    padding: 6px 10px;
+    border-bottom: 1px dashed var(--bu-rule-faint);
+    font-family: var(--bu-font-prose);
+    font-size: 0.98rem;
+}
+
+.bu-remarks li::before {
+    content: 'R' counter(remark, decimal-leading-zero);
+    font-family: var(--bu-font-data);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--bu-ink-faint);
+    padding-top: 3px;
+}
+
+/* ---------- Play: consumer statement ---------- */
+
+.bu-play {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 22px;
+    margin-top: 18px;
+}
+
+@media (max-width: 900px) {
+    .bu-play {
+        grid-template-columns: 1fr;
+    }
+}
+
+.bu-play-main {
+    min-width: 0;
+}
+
+.bu-exhibit {
+    position: relative;
+    margin: 0;
+    border: 1px solid var(--bu-rule);
+    background: var(--bu-ink);
+}
+
+.bu-exhibit img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    filter: grayscale(0.55) contrast(1.05) sepia(0.15);
+}
+
+.bu-exhibit figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--bu-paper-deep);
+    border-top: 1px solid var(--bu-rule);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bu-ink-soft);
+}
+
+.bu-exhibit-tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 3px 8px;
+    background: var(--bu-paper);
+    border: 1px solid var(--bu-rule);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.bu-paper .scene-text {
+    margin-top: 18px;
+    padding: 18px 18px 18px 22px;
+    border-left: 4px solid var(--bu-ink);
+    background: rgba(255, 255, 255, 0.6);
+    font-family: var(--bu-font-prose);
+    font-size: clamp(1.06rem, 1.6vw, 1.2rem);
+    line-height: 1.72;
+    color: var(--bu-ink);
+    white-space: pre-wrap;
+}
+
+.bu-remark-card {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 2px dashed var(--bu-red);
+    background: var(--bu-red-wash);
+}
+
+.bu-remark-card .bu-remark-title {
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bu-red);
+}
+
+.bu-remark-card .bu-remark-quote {
+    margin-top: 6px;
+    font-family: var(--bu-font-prose);
+    font-size: 1.05rem;
+    font-style: italic;
+}
+
+.bu-remark-card .bu-remark-body {
+    margin-top: 6px;
+    font-size: 0.86rem;
+    color: var(--bu-ink-soft);
+}
+
+.bu-responses {
+    margin-top: 22px;
+}
+
+.bu-responses-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--bu-rule);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.bu-responses-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.bu-paper .choice-btn {
+    appearance: none;
+    display: grid;
+    grid-template-columns: 3.2rem 1fr;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    min-height: 56px;
+    padding: 0;
+    border: 2px solid var(--bu-ink);
+    border-radius: 0;
+    background: var(--bu-paper);
+    color: var(--bu-ink);
+    font-family: var(--bu-font-prose);
+    font-size: 1.02rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-align: left;
+    text-transform: none;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--bu-ink);
+    transition:
+        transform 100ms ease-out,
+        box-shadow 100ms ease-out,
+        background 100ms ease-out;
+}
+
+.bu-paper .choice-btn:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--bu-red);
+    background: #fff;
+}
+
+.bu-paper .choice-btn:focus-visible {
+    outline: 3px solid var(--bu-teal);
+    outline-offset: 3px;
+}
+
+.bu-paper .choice-btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+}
+
+.bu-paper .choice-hotkey {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    border-right: 2px solid var(--bu-ink);
+    background: var(--bu-ink);
+    color: var(--bu-paper);
+    font-family: var(--bu-font-data);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.bu-paper .choice-copy {
+    padding: 10px 14px;
+}
+
+.bu-ledger {
+    align-self: start;
+    position: sticky;
+    top: 14px;
+    border: 2px solid var(--bu-rule);
+    background: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 900px) {
+    .bu-ledger {
+        position: static;
+    }
+}
+
+.bu-ledger-head {
+    padding: 6px 10px;
+    background: var(--bu-ink);
+    color: var(--bu-paper);
+    font-family: var(--bu-font-head);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.bu-ledger-row {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--bu-rule-faint);
+}
+
+.bu-ledger-row-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.bu-ledger-row-top span:last-child {
+    white-space: nowrap;
+}
+
+.bu-ledger-note {
+    margin-top: 2px;
+    font-size: 0.72rem;
+    color: var(--bu-ink-faint);
+}
+
+.bu-meter {
+    display: flex;
+    gap: 3px;
+    margin-top: 5px;
+}
+
+.bu-meter i {
+    flex: 1;
+    height: 8px;
+    border: 1px solid var(--bu-ink);
+}
+
+.bu-meter i.on {
+    background: var(--bu-ink);
+}
+
+.bu-meter.bu-meter-red i.on {
+    background: var(--bu-red);
+    border-color: var(--bu-red);
+}
+
+.bu-ledger-foot {
+    padding: 8px 10px;
+    font-size: 0.72rem;
+    color: var(--bu-ink-soft);
+}
+
+.bu-ledger-foot ul {
+    margin: 4px 0 0;
+    padding-left: 16px;
+}
+
+/* Loading / frozen file states */
+
+.bu-pending {
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.bu-pending-lines {
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.9rem;
+}
+
+.bu-pending-lines li {
+    padding: 4px 0;
+}
+
+.bu-pending-lines li::before {
+    content: '> ';
+    color: var(--bu-ink-faint);
+}
+
+.bu-cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: -2px;
+    background: var(--bu-ink);
+    animation: bu-blink 1s steps(1) infinite;
+}
+
+@keyframes bu-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+.bu-paper .error-banner {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border: 2px solid var(--bu-red);
+    border-radius: 0;
+    background: var(--bu-red-wash);
+    color: var(--bu-red);
+    font-family: var(--bu-font-data);
+    font-size: 0.86rem;
+}
+
+/* ---------- Ending: final report ---------- */
+
+.bu-final-status {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+    margin-top: 20px;
+    padding: 18px;
+    border: 2px solid var(--bu-rule);
+    background: rgba(255, 255, 255, 0.55);
+}
+
+@media (max-width: 720px) {
+    .bu-final-status {
+        grid-template-columns: 1fr;
+    }
+}
+
+.bu-final-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--bu-ink-faint);
+}
+
+.bu-paper .ending-title {
+    margin-top: 4px;
+    font-family: var(--bu-font-head);
+    font-size: clamp(2.4rem, 8vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--bu-ink);
+}
+
+.bu-final-meaning {
+    margin-top: 6px;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.bu-final-line {
+    margin-top: 8px;
+    font-family: var(--bu-font-prose);
+    font-size: 1.08rem;
+    color: var(--bu-ink-soft);
+}
+
+.bu-final-stamp {
+    font-size: 1rem;
+    text-align: center;
+    max-width: 15rem;
+}
+
+.bu-paper .share-status-error {
+    margin-top: 12px;
+    color: var(--bu-red);
+    font-weight: 700;
+}
+
+.bu-paper .share-fallback {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px dashed var(--bu-rule);
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 0;
+}
+
+.bu-paper .share-fallback-label {
+    color: var(--bu-ink-soft);
+}
+
+.bu-paper .share-fallback-input {
+    width: 100%;
+    margin-top: 6px;
+    padding: 8px;
+    border: 1px solid var(--bu-rule);
+    border-radius: 0;
+    background: #fff;
+    color: var(--bu-ink);
+    font-family: var(--bu-font-data);
+    font-size: 0.82rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bu-cursor {
+        animation: none;
+    }
+
+    .bu-btn,
+    .bu-paper .choice-btn {
+        transition: none;
+    }
+}
+
+.bu-statement .bu-fine {
+    display: grid;
+    gap: 4px;
+    margin: 10px 0 0;
+    padding-left: 18px;
+    font-size: 0.8rem;
+}
+
+.bu-paper.story-brief,
+.bu-section.story-brief {
+    display: block;
+}
+
+.bu-fine-print > p,
+.bu-fine-print .home-readiness-summary {
+    margin-top: 6px;
+}
+
+.bu-fine-print [data-testid='home-readiness-summary'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 8px;
+}
+
+/* ---------- Critique round 1 fixes ---------- */
+
+/* `.bu-paper h2` outranked the section bar's own color, leaving empty black bars. */
+.bu-paper .bu-section-head {
+    color: var(--bu-paper);
+    font-size: 0.8rem;
+    letter-spacing: 0.18em;
+}
+
+.bu-score-number {
+    padding: 4px 14px;
+    border: 3px solid var(--bu-ink-faint);
+    font-size: clamp(2.6rem, 8vw, 4rem);
+    letter-spacing: 0.04em;
+}
+
+.bu-stamp-float {
+    top: 22px;
+}
+
+/* Old dark-theme rules for these legacy names still apply; square them back to paper. */
+.bu-paper .choice-hotkey {
+    width: auto;
+    height: auto;
+    min-width: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.bu-paper .scene-text::first-line {
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .bu-bureau-name em {
+        display: block;
+        margin-top: 2px;
+    }
+}

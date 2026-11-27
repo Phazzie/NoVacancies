@@ -3,6 +3,7 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import '../app.css';
+	import '../bureau.css';
 	import { registerPwaServiceWorker } from '$lib/client/pwa';
 	import { getSafeActiveStoryCartridge } from '$lib/stories';
 	import { selectStoryPresentation } from '$lib/stories/selectors';
@@ -24,6 +25,15 @@
 		homeSupportCopy: 'Visible shell copy is running in fallback mode until configuration is fixed.',
 		storyBriefItems: ['Check Story Selection in settings to resolve cartridge configuration.']
 	});
+
+	// Nav labels stay in the bureau's vocabulary; the route names are what tests and links rely on.
+	const navItems = [
+		{ href: '/', index: '§1', label: 'Summary' },
+		{ href: '/play', index: '§2', label: 'Statement' },
+		{ href: '/ending', index: '§3', label: 'Final Report' },
+		{ href: '/builder', index: '§4', label: 'Builder' },
+		{ href: '/settings', index: '§5', label: 'Preferences' }
+	];
 
 	// Track the last pathname we sent a pageview for to avoid double-firing on initial load.
 	let lastTrackedPath = '';
@@ -62,56 +72,26 @@
 
 <div class="app-shell">
 	<a class="skip-link" href="#page-content">Skip to content</a>
-	<header class="shell-bar">
-		<a class="brand-lockup" href="/">
-			<span class="brand-kicker">{shellPresentation.shellKicker}</span>
-			<span class="brand-name">{shellStoryTitle}</span>
+	<header class="bu-masthead">
+		<a class="bu-masthead-top" href="/">
+			<span class="bu-bureau-name">Bureau of Uncredited Labor <em>{shellStoryTitle}</em></span>
+			<span class="bu-file-meta">Consumer Disclosure · File No. NV-0647 · Subject: Sydney, 44</span>
 		</a>
 		<nav class="route-nav" aria-label="Primary navigation">
-			<a
-				href="/"
-				class:active={$page.url.pathname === '/'}
-				aria-current={$page.url.pathname === '/' ? 'page' : undefined}
-			>
-				<span class="route-index">01</span>
-				<span>Home</span>
-			</a>
-			<a
-				href="/play"
-				class:active={$page.url.pathname === '/play'}
-				aria-current={$page.url.pathname === '/play' ? 'page' : undefined}
-			>
-				<span class="route-index">02</span>
-				<span>Play</span>
-			</a>
-			<a
-				href="/builder"
-				class:active={$page.url.pathname === '/builder'}
-				aria-current={$page.url.pathname === '/builder' ? 'page' : undefined}
-			>
-				<span class="route-index">03</span>
-				<span>Builder</span>
-			</a>
-			<a
-				href="/settings"
-				class:active={$page.url.pathname === '/settings'}
-				aria-current={$page.url.pathname === '/settings' ? 'page' : undefined}
-			>
-				<span class="route-index">04</span>
-				<span>Settings</span>
-			</a>
-			<a
-				href="/ending"
-				class:active={$page.url.pathname === '/ending'}
-				aria-current={$page.url.pathname === '/ending' ? 'page' : undefined}
-			>
-				<span class="route-index">05</span>
-				<span>Ending</span>
-			</a>
+			{#each navItems as item}
+				<a
+					href={item.href}
+					class:active={$page.url.pathname === item.href}
+					aria-current={$page.url.pathname === item.href ? 'page' : undefined}
+				>
+					<span class="route-index">{item.index}</span>
+					<span>{item.label}</span>
+				</a>
+			{/each}
 			{#if $page.url.pathname === '/debug'}
 				<a href="/debug" class:active={true} aria-current="page">
-					<span class="route-index">06</span>
-					<span>Debug</span>
+					<span class="route-index">§6</span>
+					<span>Audit Log</span>
 				</a>
 			{/if}
 			{#if data.sessionUser}

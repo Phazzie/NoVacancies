@@ -13,10 +13,10 @@ test.describe('Live Grok canary (opt-in)', () => {
         test.setTimeout(180000);
 
         await page.goto('/play');
-        await expect(page.getByRole('heading', { level: 2, name: 'Play' })).toBeVisible({
+        await expect(page.getByRole('heading', { level: 2, name: 'Consumer Statement' })).toBeVisible({
             timeout: 20000
         });
-        await expect(page.getByTestId('mode-pill')).toContainText('AI Mode');
+        await expect(page.getByTestId('mode-pill')).toContainText('AI-written record');
         await expect(page.locator('.choice-btn').first()).toBeVisible({ timeout: 90000 });
 
         const sceneText = page.locator('.scene-text');

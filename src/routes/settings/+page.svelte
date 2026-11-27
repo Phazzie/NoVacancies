@@ -114,8 +114,8 @@
 
 <section class="utility-page">
 	<header class="page-intro">
-		<p class="card-kicker">Runtime controls</p>
-		<h2>Settings</h2>
+		<p class="card-kicker">Bureau terminal · Consumer preferences</p>
+		<h2>Preferences</h2>
 		<p class="lede">Tune what the player sees without changing the core story flow.</p>
 	</header>
 
