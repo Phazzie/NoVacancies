@@ -38,3 +38,4 @@
 ## Log
 - Build fix + shakedown + main-flow E2E suite (see CHANGELOG "Build restore + full shakedown").
 - World pitch: (1) Sydney's credit report (picked), (2) the motel's lost-and-found log, (3) a 911 dispatch log where every call is "no incident". The obvious version I rejected was a neon motel-noir hero with Begin Story and three feature cards. I picked the credit report because the story already speaks its language ("respect is still in collections", "a loan with hidden interest", "The Emotional Accountant").
+- Review follow-up: fixed four Sourcery/Codex rate-limiter findings (double resolve on handler error, per-request GC scans, image status GETs eating quota, unguarded readiness probe) and reformatted the new test files to the repo's 4-space Prettier config. 210 unit tests pass.
