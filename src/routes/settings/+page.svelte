@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { page } from '$app/stores';
     import { gameStore } from '$lib/game';
     import type { GameSettings } from '$lib/contracts';
     import { imageCreatorStore } from '$lib/client/imageCreatorState';
@@ -61,7 +62,7 @@
     onMount(() => {
         gameStore.initialize();
         void loadReadiness();
-        void imageCreatorStore.refreshStatus();
+        if ($page.data.canUseCreatorTools) void imageCreatorStore.refreshStatus();
         return () => {
             unsubscribe();
             unsubscribeImage();
@@ -230,6 +231,7 @@
 			</div>
 		</section>
 
+		{#if $page.data.canUseCreatorTools}
 		<section class="settings-section" data-testid="creator-image-panel">
 			<h3>Creator Image Pipeline</h3>
 			<p class="hint">Generate, review, and decide whether to ship dynamic images for demo scenes.</p>
@@ -284,5 +286,6 @@
 				</p>
 			{/if}
 		</section>
+		{/if}
 	{/if}
 </section>

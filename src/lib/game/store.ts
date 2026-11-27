@@ -97,6 +97,22 @@ function applyTurnResult(result: GameTurnResult): void {
 	}));
 }
 
+// Service errors are sometimes plain objects (not Error instances); String() on those
+// produced "[object Object]" in the debug log and hid the real cause.
+function describeError(error: unknown, fallback: string): string {
+	if (error instanceof Error) return error.message;
+	if (error && typeof error === 'object') {
+		const message = (error as { message?: unknown }).message;
+		if (typeof message === 'string' && message) return message;
+		try {
+			return JSON.stringify(error);
+		} catch {
+			return fallback;
+		}
+	}
+	return String(error ?? fallback);
+}
+
 export const gameStore = {
 	subscribe: appGameStateStore.subscribe,
 	initialize(): void {
@@ -120,8 +136,7 @@ export const gameStore = {
 				scope: 'game.start',
 				message,
 				details: {
-					raw:
-						error instanceof Error ? error.message : String(error ?? 'Unknown start error'),
+					raw: describeError(error, 'Unknown start error'),
 					sceneCount: current.gameState?.sceneCount ?? 0
 				}
 			});
@@ -143,8 +158,7 @@ export const gameStore = {
 				scope: 'game.choice',
 				message,
 				details: {
-					raw:
-						error instanceof Error ? error.message : String(error ?? 'Unknown choice error'),
+					raw: describeError(error, 'Unknown choice error'),
 					choiceId,
 					sceneCount: get(appGameStateStore).gameState?.sceneCount ?? 0
 				}

@@ -5,8 +5,8 @@
  * development and single-instance deployments; not shared across
  * serverless replicas (use RedisRateLimitStore in production).
  *
- * Stale entries are pruned lazily on `reset` or on the next `increment`
- * call for the same key once its window has expired.
+ * Expired entries are swept lazily once the map grows past GC_THRESHOLD so a
+ * long-lived instance hit by many distinct IPs doesn't grow without bound.
  */
 import type { RateLimitStore, RateLimitEntry } from './store';
 
@@ -15,11 +15,13 @@ interface WindowEntry {
 	resetAt: number; // epoch ms
 }
 
+const GC_THRESHOLD = 500;
+
 export class MemoryRateLimitStore implements RateLimitStore {
 	private readonly map = new Map<string, WindowEntry>();
 
-	async increment(key: string, windowMs: number): Promise<RateLimitEntry> {
-		const now = Date.now();
+	async increment(key: string, windowMs: number, now: number = Date.now()): Promise<RateLimitEntry> {
+		if (this.map.size > GC_THRESHOLD) this.sweep(now);
 		const existing = this.map.get(key);
 
 		if (!existing || now >= existing.resetAt) {
@@ -31,6 +33,16 @@ export class MemoryRateLimitStore implements RateLimitStore {
 
 		existing.count += 1;
 		return { count: existing.count, resetAt: existing.resetAt };
+	}
+
+	get size(): number {
+		return this.map.size;
+	}
+
+	private sweep(now: number): void {
+		for (const [key, entry] of this.map) {
+			if (now >= entry.resetAt) this.map.delete(key);
+		}
 	}
 
 	async reset(key: string): Promise<void> {

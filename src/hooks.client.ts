@@ -11,7 +11,9 @@
  */
 import * as Sentry from '@sentry/sveltekit';
 import { handleErrorWithSentry } from '@sentry/sveltekit';
-import { PUBLIC_SENTRY_DSN } from '$env/static/public';
+import { env } from '$env/dynamic/public';
+
+const PUBLIC_SENTRY_DSN = env.PUBLIC_SENTRY_DSN;
 
 if (PUBLIC_SENTRY_DSN) {
 	Sentry.init({

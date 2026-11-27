@@ -70,10 +70,6 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		const checkIds = body.checks.map((check) => check.id);
 		const totalWeight = body.checks.reduce((sum, check) => sum + Number(check.weight || 0), 0);
 		expect(totalWeight).toBe(100);
-		const pipelineCheck = body.checks.find((check) => check.id === 'image_pipeline_status');
-		expect(pipelineCheck).toBeTruthy();
-		expect(typeof pipelineCheck.details).toBe('string');
-
 		if (checkIds.includes('config_valid')) {
 			const configCheck = body.checks.find((check) => check.id === 'config_valid');
 			expect(configCheck.ok).toBeFalsy();
@@ -89,9 +85,11 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 				'outage_policy',
 				'security_mode',
 				'image_generation',
-				'connectivity_probe'
+				'image_pipeline_status'
 			])
 		);
+		const pipelineCheck = body.checks.find((check) => check.id === 'image_pipeline_status');
+		expect(typeof pipelineCheck.details).toBe('string');
 
 		const apiKeyCheck = body.checks.find((check) => check.id === 'api_key_status');
 		expect(Boolean(apiKeyCheck)).toBeTruthy();
@@ -232,8 +230,14 @@ test.describe('SvelteKit route + playthrough reliability', () => {
 		await expect(page.getByText(/No debug errors recorded yet/i)).toBeVisible();
 	});
 
-	test('builder route is protected for anonymous users', async ({ request }) => {
-		const response = await request.get('/builder');
+	test('builder page redirects anonymous users to login', async ({ request }) => {
+		const response = await request.get('/builder', { maxRedirects: 0 });
+		expect(response.status()).toBe(302);
+		expect(response.headers()['location']).toBe('/login?next=%2Fbuilder');
+	});
+
+	test('builder API is protected for anonymous users', async ({ request }) => {
+		const response = await request.post('/api/builder/generate-draft', { data: {} });
 		expect(response.status()).toBe(401);
 		const body = await response.json();
 		expect(body.error?.code).toBe('auth_required');

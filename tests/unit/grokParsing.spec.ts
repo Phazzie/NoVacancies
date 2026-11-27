@@ -4,6 +4,12 @@ import { AiProviderError } from '../../src/lib/server/ai/provider.interface';
 import { GrokAiProvider } from '../../src/lib/server/ai/providers/grok';
 
 const mockConfig: AiConfig = {
+	provider: 'grok',
+	enableGrokText: true,
+	enableProviderProbe: false,
+	outageMode: 'hard_fail',
+	builderTemperature: 0.7,
+	builderMaxTokens: 1400,
 	xaiApiKey: 'test-key',
 	grokTextModel: 'grok-test',
 	grokImageModel: 'grok-image-test',

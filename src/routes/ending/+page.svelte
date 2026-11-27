@@ -109,6 +109,9 @@
 			{/if}
 			<a class="btn btn-secondary" href="/debug">Open Debug</a>
 		</div>
+		{#if shareFailed}
+			<p class="share-status-error">Could not access clipboard. Copy the link below:</p>
+		{/if}
 		{#if shareUrlVisible}
 			<div class="share-fallback">
 				<p class="share-fallback-label">Copy this link:</p>
@@ -120,9 +123,6 @@
 					on:click={(e) => (e.currentTarget as HTMLInputElement).select()}
 				/>
 			</div>
-		{/if}
-		{#if shareFailed}
-			<p class="share-status-error">Could not access clipboard. Copy the link below:</p>
 		{/if}
 	{/if}
 </section>

@@ -72,6 +72,9 @@ jobs:
               env:
                   E2E_SERVER_COMMAND: npm run serve
 
+            - name: E2E — main player and builder flows (stubbed xAI)
+              run: npm run test:e2e:flows
+
             - name: Upload Tier 1 artifacts
               if: always()
               uses: actions/upload-artifact@v4

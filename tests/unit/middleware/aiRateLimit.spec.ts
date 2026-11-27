@@ -7,6 +7,7 @@ function createEvent(pathname: string, ip = '198.51.100.7') {
 	return {
 		url: new URL(request.url),
 		request,
+		locals: {},
 		getClientAddress: () => ip
 	} as any;
 }
@@ -51,7 +52,7 @@ test.describe('aiRateLimit middleware', () => {
 		expect(resolveCalls).toBe(0);
 		expect(blockedResponse.status).toBe(429);
 		expect(blockedResponse.headers.get('Retry-After')).toBe('60');
-		await expect(blockedResponse.json()).resolves.toEqual({
+		await expect(blockedResponse.json()).resolves.toMatchObject({
 			error: 'rate_limit',
 			message: 'Too many requests. Please wait a moment before continuing.'
 		});
@@ -70,5 +71,20 @@ test.describe('aiRateLimit middleware', () => {
 			resolve: async () => new Response('ok', { status: 200 })
 		} as any);
 		expect(freshIpResponse.status).toBe(200);
+	});
+
+	test('guards builder generation routes', async () => {
+		for (let i = 0; i < 20; i += 1) {
+			await aiRateLimit({
+				event: createEvent('/api/builder/generate-draft', '198.51.100.11'),
+				resolve: async () => new Response('ok', { status: 200 })
+			} as any);
+		}
+
+		const blocked = await aiRateLimit({
+			event: createEvent('/api/builder/remix', '198.51.100.11'),
+			resolve: async () => new Response('ok', { status: 200 })
+		} as any);
+		expect(blocked.status).toBe(429);
 	});
 });

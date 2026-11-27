@@ -7,7 +7,7 @@
 	import { getSafeActiveStoryCartridge } from '$lib/stories';
 	import { selectStoryPresentation } from '$lib/stories/selectors';
 	import { initPosthog, capturePageview, identifyUser } from '$lib/client/analytics/posthog';
-	import { PUBLIC_POSTHOG_API_KEY } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	import type { LayoutData } from './$types';
 
 	export let data: LayoutData;
@@ -32,7 +32,7 @@
 		registerPwaServiceWorker();
 
 		// Initialise PostHog. No-op when PUBLIC_POSTHOG_API_KEY is absent.
-		initPosthog(PUBLIC_POSTHOG_API_KEY);
+		initPosthog(env.PUBLIC_POSTHOG_API_KEY);
 
 		// Capture the initial pageview.
 		lastTrackedPath = $page.url.pathname;

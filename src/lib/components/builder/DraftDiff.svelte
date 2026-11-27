@@ -536,7 +536,7 @@
 						<p class="diff-entry-field"><code>{entry.field}</code></p>
 						{#if entry.kind === 'string'}
 							<div class="diff-string">
-								<p class="diff-old">
+								<div class="diff-old">
 									<span class="diff-old-label">Was</span>
 									{#if entry.oldValue.length > TRUNCATE_AT}
 										{#if isExpanded(`${entry.field}:was`)}
@@ -563,8 +563,8 @@
 									{:else}
 										<span class="diff-old-text">{entry.oldValue || '(empty)'}</span>
 									{/if}
-								</p>
-								<p class="diff-new">
+								</div>
+								<div class="diff-new">
 									<span class="diff-new-label">Now</span>
 									{#if entry.newValue.length > TRUNCATE_AT}
 										{#if isExpanded(`${entry.field}:now`)}
@@ -591,7 +591,7 @@
 									{:else}
 										<span class="diff-new-text">{entry.newValue || '(empty)'}</span>
 									{/if}
-								</p>
+								</div>
 							</div>
 						{:else}
 							<p class="diff-count">
