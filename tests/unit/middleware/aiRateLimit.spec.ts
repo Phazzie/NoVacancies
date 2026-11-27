@@ -59,8 +59,10 @@ test.describe('aiRateLimit middleware', () => {
         expect(blockedResponse.status).toBe(429);
         expect(blockedResponse.headers.get('Retry-After')).toBe('60');
         await expect(blockedResponse.json()).resolves.toMatchObject({
-            error: 'rate_limit',
-            message: 'Too many requests. Please wait a moment before continuing.'
+            code: 'rate_limit',
+            status: 429,
+            retryAfterSeconds: 60,
+            error: 'Too many requests. Please wait a moment before continuing.'
         });
     });
 

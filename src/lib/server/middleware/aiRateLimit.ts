@@ -115,9 +115,12 @@ export const aiRateLimit: Handle = async ({ event, resolve }) => {
 	if (count > MAX_REQUESTS) {
 		return json(
 			{
-				error: 'rate_limit',
-				message: 'Too many requests. Please wait a moment before continuing.',
-				retryAfter: retryAfterSec
+				// Same shape as routeHelpers' AI errors so storyService maps it to the
+				// "wait and retry" message instead of a generic failure.
+				error: 'Too many requests. Please wait a moment before continuing.',
+				code: 'rate_limit',
+				status: 429,
+				retryAfterSeconds: retryAfterSec
 			},
 			{
 				status: 429,
