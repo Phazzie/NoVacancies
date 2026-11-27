@@ -137,7 +137,9 @@ npm run lint
 npm test
 npm run test:narrative
 npm run test:unit
+npm run build
 npm run test:e2e
+npm run test:e2e:flows
 ```
 
 Notes:
@@ -145,7 +147,8 @@ Notes:
 - `npm test` enforces the active-runtime decommission guard and runs runtime story-selection smoke scenarios (default story, explicit `PUBLIC_STORY_ID`, invalid-id fail-fast behavior, and builder auth enforcement for anonymous/unauthorized/authorized requests).
 - `npm run test:narrative` remains a deterministic Tier 1 smoke gate that validates fixture/reporting wiring only, so it stays fast and stable.
 - `npm run test:unit` runs behavior-first unit suites (story registry runtime selection/fail-fast, prompt delegation ownership, and narrative-context contract outputs) using exported runtime APIs.
-- `npm run test:e2e` runs Playwright against the SvelteKit app, including the builder flow and route-shell checks.
+- `npm run test:e2e` runs Playwright route-shell, API-contract and demo-reliability checks against the SvelteKit app.
+- `npm run test:e2e:flows` drives the main journeys end to end (home → play → ending → replay, share fallback, anonymous settings/debug, builder login → AI draft → AI QA → download). It serves the **production build** (`npm run build` first) with a stubbed xAI upstream (`tests/e2e/fixtures/fakeXai.mjs`), so it needs no API key or network.
 - `tests/e2e/grok-live.spec.js` is a Grok live canary and runs only when `LIVE_GROK=1` and `XAI_API_KEY` are set.
 - GitHub PRs run only the blocking Tier 1 workflow gate. Tier 2 Claude evaluation and the live provider canary run on `main` pushes or manual workflow dispatch so PR feedback stays deterministic and lower-noise.
 - GitHub Actions now cancel superseded in-progress runs for the same PR/branch, which reduces duplicate check spam while iterating quickly.
@@ -170,7 +173,9 @@ Required gate before each lane merge:
 npm run lint
 npm test
 npm run test:narrative
+npm run build
 npm run test:e2e
+npm run test:e2e:flows
 ```
 
 Release blockers (must hold to ship):

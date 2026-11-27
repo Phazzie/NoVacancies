@@ -91,11 +91,19 @@ test.describe('builder flow', () => {
 		await page
 			.getByLabel(/story premise/i)
 			.fill('A night-shift nurse covers for her brother while the hospital audits the drug cabinet.');
+		const generated = page.waitForResponse('**/api/builder/generate-draft');
 		await page.getByRole('button', { name: 'Generate Draft' }).click();
-		await expect(page.getByText(/Draft generated/i)).toBeVisible();
+		const generatedBody = await (await generated).json();
+		// Guard against fallback scaffolding silently satisfying the happy path.
+		expect(generatedBody.source).toBe('ai');
+		expect(generatedBody.draft?.title).toBe('Fixture Draft: Night Shift Ledger');
+		await expect(page.getByText(/Draft generated with AI/i)).toBeVisible();
 
+		const evaluated = page.waitForResponse('**/api/builder/evaluate-draft');
 		await page.getByRole('button', { name: 'Run Draft QA' }).click();
-		await expect(page.getByText(/Readiness: (ready|needs-revision|blocked)/i).first()).toBeVisible();
+		expect((await (await evaluated).json()).source).toBe('ai');
+		await expect(page.getByText(/Source: AI graded/i)).toBeVisible();
+		await expect(page.getByText(/Fixture finding: sleep debt/i)).toBeVisible();
 
 		const download = page.waitForEvent('download');
 		await page.getByRole('button', { name: 'Download JSON' }).click();
