@@ -328,3 +328,18 @@
 
 **Insight:** `npm run lint` only linted test files. TypeScript source under `src/` was type-checked by `svelte-check` but never linted for style or correctness rules. This meant issues like loose equality operators (`==` instead of `===`), unused variables, and inline `import()` type annotations in source code were invisible to the lint gate.
 **Lesson:** Add `src/**/*.{ts,svelte}` to the ESLint file globs in the same pass as tests. Pair with `@typescript-eslint/parser` and `eslint-plugin-svelte` so that TypeScript and Svelte syntax are parsed correctly. The `eqeqeq` rule should use `{ null: 'ignore' }` to preserve the intentional `value == null` null-coalescing idiom without forcing verbose `=== null || === undefined` everywhere.
+
+## 60. Undefined CSS Custom Properties Fail Silently as Invisible Text
+
+**Insight:** Diagnostics panels and home buttons referenced `--text-main` and other variables that were never defined. Nothing errored; the text simply rendered in an unreadable or transparent color.
+**Lesson:** When a stylesheet relies on custom properties, keep every referenced name defined in one token block, and check new UI with screenshots, not only DOM assertions. A passing E2E that finds the element does not prove it is readable.
+
+## 61. Fallback Paths Can Make a Happy-Path Test Pass With the Real Path Broken
+
+**Insight:** The builder E2E checked that "draft generated" appeared, but the server's fallback scaffolding produced the same message when the AI path failed. The fixture was returning the wrong payload shape and the test still passed.
+**Lesson:** Happy-path tests for anything with a fallback must assert which path ran (for example `source: 'ai'`) and fixture-specific content. Pair each with an explicit failure-and-recovery test so both branches are exercised on purpose.
+
+## 62. Scoped Element Selectors Can Outrank Class Selectors and Erase Components
+
+**Insight:** `.bu-paper h2` (class + element) outranked `.bu-section-head` (single class), so section headers drew in the paper's ink color on a dark band. Tests passed; only screenshots caught it.
+**Lesson:** When a container styles bare elements, give component classes inside it a selector at least as specific as the container rule (for example `.bu-paper .bu-section-head`), and review screenshots after any theme-level CSS change.

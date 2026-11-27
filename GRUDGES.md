@@ -1,6 +1,6 @@
 # GRUDGES — things that failed silently or lied
 
-Check this list before every deploy.
+Check this list before every deploy. This is the incident log for this branch; the reusable lessons from items 4-6 live in `AI_LESSONS_LEARNED.md` (#60-62).
 
 1. **`main` CI was red for months and nobody noticed.** A missing comma in `lessonsCatalog.ts` broke the build. The lockfile was out of sync, and the type check and unit runner had both been failing. Before deploying, run every gate locally; don't assume green.
 2. **The Sprint 9 rate limiter shrank its own scope.** A refactor left story/image/builder AI routes unthrottled and keyed on spoofable `x-forwarded-for`. Its tests still passed because they only covered `/api/ai`. The test now covers a builder route too.
