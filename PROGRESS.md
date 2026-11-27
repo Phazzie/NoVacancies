@@ -2,7 +2,7 @@
 
 ## Morning report (2026-11-27)
 
-**Status: code done; preview blocked.** Everything is committed on `claude/project-thread-q83f8k` (PR #102, **not merged**; main untouched). The one Definition-of-Done line that fails is **"deployed to a private preview link that you opened and verified"**. Every Vercel deploy on this project fails with "Resource provisioning failed" before the build starts. That includes a plain redeploy of the current production build, so it is not this branch's code.
+**Status: code done; preview blocked.** Everything is committed on `claude/project-thread-q83f8k` (PR #102, merged to main on 27 Nov). The one Definition-of-Done line that fails is **"deployed to a private preview link that you opened and verified"**. Every Vercel deploy on this project fails with "Resource provisioning failed" before the build starts. That includes a plain redeploy of the current production build, so it is not this branch's code.
 
 - **The world:** Sydney's credit report from the Bureau of Uncredited Labor. Her score is "N/A: not enough credit history in consumer's own name", because every bill she paid got credited to someone else.
 - **Preview link:** none working (see Blockers). The branch alias would be `no-vacancies-git-claude-project-thread-q83f8k-phazzies-projects.vercel.app` once Vercel builds again. Previews on this team need a Vercel login, so they stay private.
@@ -16,7 +16,7 @@
 3. **Bureau Remarks:** the home page lists the first six lines from the story's own voice-ceiling lines in `prompts.ts`. No new invented lines.
 4. **Accounts table:** written from story canon ($65 due by 11, $47 on hand, 6:47, Trina's referral money, Dex relaying). The labels "Floor-space dispute" and "Confidences resold" are mine.
 5. **Ending statuses:** loop is "Revolving", shift is "Dispute accepted", exit is "Closed by consumer, balance transferred to consumer", and rare is "Acknowledged by co-signer". Each one reuses the ending lines already in the prompt.
-6. **Not merged:** PR #102 stays open on its branch, per the overnight brief.
+6. **Merged:** PR #102 was merged to main on 27 Nov under the merge standard. Production still serves the old build because every Vercel deploy fails (see Blockers).
 
 ### Blockers and what's needed
 - **Vercel "Resource provisioning failed"** on every deploy (git-triggered, API-created, and a redeploy of production). Open the project in the Vercel dashboard and check for a usage/billing hold or a paused project. I didn't touch billing (that would spend money).
